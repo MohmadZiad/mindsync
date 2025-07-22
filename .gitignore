@@ -1,0 +1,19 @@
+# node
+node_modules/
+.next/
+dist/
+build/
+out/
+
+# env files
+.env*
+*.log
+
+# IDE/editor
+.vscode/
+.DS_Store
+
+# prisma
+*.sqlite
+prisma/dev.db
+    
