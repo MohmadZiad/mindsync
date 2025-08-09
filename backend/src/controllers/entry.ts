@@ -158,7 +158,7 @@ export const topHabit = async (req: Request, res: Response) => {
       res.status(500).json({ message: "Server error", error });
     }
   };
-  // 3️ Weekly entries grouped by habit
+  //  Weekly entries grouped by habit
 export const weeklyGrouped = async (req: Request, res: Response) => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -196,3 +196,33 @@ export const weeklyGrouped = async (req: Request, res: Response) => {
       res.status(500).json({ message: "Server error", error });
     }
   };
+  
+  // monthly summry 
+  export const monthlySummary = async (req: Request, res: Response) => {
+    const { from, to } = req.query;
+  
+    if (!from || !to) {
+      return res.status(400).json({ message: "from and to dates are required." });
+    }
+  
+    const fromDate = new Date(from as string);
+    const toDate = new Date(to as string);
+  
+    try {
+      const summary = await prisma.entry.findMany({
+        where: {
+          userId: req.user!.id,
+          createdAt: {
+            gte: fromDate,
+            lte: toDate,
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+  
+      res.status(200).json(summary);
+    } catch (error) {
+      res.status(500).json({ message: "Server error", error });
+    }
+  };
+  
