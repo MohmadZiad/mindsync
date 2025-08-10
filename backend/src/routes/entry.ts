@@ -11,6 +11,7 @@ import {
   weeklyGrouped,
   monthlySummary,
 } from "../controllers/entry";
+import { getAIReflection } from "../controllers/reflection";
 
 const router = express.Router();
 router.use(protect);
@@ -27,4 +28,6 @@ router.get("/top-habit", topHabit);
 router.get("/weekly-grouped", weeklyGrouped);
 router.get("/summary", monthlySummary);
 
+//Ai
+router.get("/ai-reflection", getAIReflection);
 export default router;
