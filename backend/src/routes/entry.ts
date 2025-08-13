@@ -1,4 +1,6 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
+
 import { protect } from "../middleware/authMiddleware";
 import {
   getEntries,
@@ -16,6 +18,14 @@ import { getAIReflection } from "../controllers/reflection";
 const router = express.Router();
 router.use(protect);
 
+const aiLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, 
+  standardHeaders: true, 
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id || req.ip, 
+  message: { error: "يمكنك طلب الانعكاس الذاتي مرة واحدة كل 10 دقائق." },
+});
+
 //Api request
 
 router.get("/", getEntries);
@@ -29,5 +39,5 @@ router.get("/weekly-grouped", weeklyGrouped);
 router.get("/summary", monthlySummary);
 
 //Ai
-router.get("/ai-reflection", getAIReflection);
+router.get("/ai-reflection", aiLimiter, getAIReflection);
 export default router;
