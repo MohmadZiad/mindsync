@@ -2,15 +2,12 @@ import { api, API_BASE } from "./api";
 
 export type User = {
   id: string;
-  name: string;
+  name?: string;
   email: string;
   image?: string;
 };
 
-export type AuthResponse = {
-  user: User;
-  accessToken?: string;
-};
+type AuthResponse = { user: User; accessToken?: string };
 
 const BASE_HOST = API_BASE.replace(/\/api\/?$/, "");
 const OAUTH =
@@ -20,18 +17,20 @@ const OAUTH =
 export const authService = {
   me: () => api.get<User>("/auth/me"),
 
-  login: (d: { email: string; password: string }) =>
-    api.post<AuthResponse>("/auth/login", d),
+  login: async (d: { email: string; password: string }) => {
+    const r = await api.post<AuthResponse>("/auth/login", d);
+    return r.user; 
+  },
 
-  register: (d: { name: string; email: string; password: string }) =>
-    api.post<AuthResponse>("/auth/register", d),
+  register: async (d: { email: string; password: string; name?: string }) => {
+    const r = await api.post<AuthResponse>("/auth/register", d);
+    return r.user; 
+  },
 
   logout: () => api.post<{ success: true }>("/auth/logout"),
 
   googleRedirect: () => {
-    if (typeof window !== "undefined") {
-      window.location.href = OAUTH;
-    }
+    if (typeof window !== "undefined") window.location.href = OAUTH;
   },
 
   oauthUrl: OAUTH,
