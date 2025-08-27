@@ -8,8 +8,13 @@ router.post("/register", register);
 router.post("/login", login);
 
 router.post("/logout", (req, res) => {
-  res.clearCookie("token");
-  res.status(200).json({ message: "logged out Succsesfully" });
+  res.clearCookie("token", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: true,
+    path: "/",
+  });
+  res.status(200).json({ success: true });
 });
 
 router.get("/me", protect, (req, res) => {
