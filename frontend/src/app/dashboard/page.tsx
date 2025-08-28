@@ -17,13 +17,17 @@ import {
   setCurrentHabit,
 } from "@/redux/slices/entrySlice";
 import { habitsService } from "@/services/habits";
+import type { Streak } from "@/services/streaks";
 
-// === الكومبوننتس الجديدة ===
+// === components ===
 import StreakMeCard from "@/components/StreakMeCard";
 import AiReflectionControls from "@/components/AiReflectionControls";
 import WeeklyGrouped from "@/components/WeeklyGrouped";
 import MonthlySummary from "@/components/MonthlySummary";
 import HabitFormExtra from "@/components/HabitFormExtra";
+
+// Toast
+import { toast } from "react-hot-toast";
 
 export default function DashboardPage() {
   const dispatch = useAppDispatch();
@@ -34,32 +38,34 @@ export default function DashboardPage() {
   const entries = useAppSelector((s) => s.entries.items);
   const currentHabitId = useAppSelector((s) => s.entries.currentHabitId);
 
-  // إنشاء/تعديل عادة
+  // Create/Edit habit
   const [newHabit, setNewHabit] = useState("");
   const [newHabitExtra, setNewHabitExtra] = useState<{
     frequency?: "daily" | "weekly";
     description?: string;
-  }>({ frequency: "daily" });
+    icon?: string | null;
+  }>({ frequency: "daily", description: "", icon: null });
+
   const [editHabit, setEditHabit] = useState<{
     id: string;
     name: string;
   } | null>(null);
 
-  // فورم إدخال جديد
+  // New entry form (mood صار إيموجي)
   const [entryForm, setEntryForm] = useState<{
     habitId: string;
     mood: string;
     reflection: string;
   }>({
     habitId: "",
-    mood: "happy",
+    mood: "🙂",
     reflection: "",
   });
 
-  // ستريكات العادات (لكل عادة)
-  type Streak = { count: number; start?: string; current?: boolean };
+  // Streaks state for each habit
   const [streaks, setStreaks] = useState<Record<string, Streak>>({});
 
+  // Initial load
   useEffect(() => {
     (async () => {
       await dispatch(meThunk());
@@ -67,6 +73,23 @@ export default function DashboardPage() {
       await dispatch(fetchEntries(undefined));
     })();
   }, [dispatch]);
+
+  // Fetch streaks
+  useEffect(() => {
+    if (!habits.length) return;
+    (async () => {
+      const results = await Promise.allSettled(
+        habits.map((h) => habitsService.getStreak(h.id))
+      );
+      const map: Record<string, Streak> = {};
+      results.forEach((r, i) => {
+        if (r.status === "fulfilled" && r.value) {
+          map[habits[i].id] = r.value;
+        }
+      });
+      setStreaks((prev) => ({ ...prev, ...map }));
+    })();
+  }, [habits]);
 
   if (!user) {
     return (
@@ -95,7 +118,7 @@ export default function DashboardPage() {
         </button>
       </header>
 
-      {/* الشريط العلوي: Streak + AI Reflection */}
+      {/* Top bar */}
       <div className="grid md:grid-cols-3 gap-4 mb-2">
         <StreakMeCard />
         <div className="md:col-span-2">
@@ -124,14 +147,17 @@ export default function DashboardPage() {
                   addHabit({ name: newHabit.trim(), ...newHabitExtra })
                 );
                 setNewHabit("");
-                setNewHabitExtra({ frequency: "daily", description: "" });
+                setNewHabitExtra({
+                  frequency: "daily",
+                  description: "",
+                  icon: null,
+                });
               }}
             >
               Add
             </button>
           </div>
 
-          {/* الحقول الإضافية للعادة الجديدة */}
           <HabitFormExtra value={newHabitExtra} onChange={setNewHabitExtra} />
         </div>
 
@@ -177,33 +203,51 @@ export default function DashboardPage() {
                       currentHabitId === h.id ? "font-semibold underline" : ""
                     }`}
                     onClick={async () => {
-                      // تفعيل الفلتر على هذه العادة
                       dispatch(setCurrentHabit(h.id));
                       await dispatch(fetchEntries({ habitId: h.id }));
                       setEntryForm((f) => ({ ...f, habitId: h.id }));
-
-                      // جيب الستريك أول مرة يظهر فيها
                       if (!streaks[h.id]) {
                         try {
                           const s = await habitsService.getStreak(h.id);
                           setStreaks((prev) => ({ ...prev, [h.id]: s }));
-                        } catch {
-                          /* ignore */
-                        }
+                        } catch {}
                       }
                     }}
                   >
-                    {h.name}
-                    {/* عرض الستريك 🔥 جنب اسم العادة */}
+                    <span className="mr-2">{h.icon ?? ""}</span> {h.name}
                     <span className="text-xs text-gray-500 ml-2">
-                      🔥 {streaks[h.id]?.count ?? 0}
-                      {streaks[h.id] && streaks[h.id].current === false
-                        ? " (paused)"
-                        : ""}
+                      🔥 {streaks[h.id]?.current ?? 0}
                     </span>
                   </button>
 
                   <div className="flex gap-3">
+                    <button
+                      className="text-sm"
+                      onClick={async () => {
+                        try {
+                          const res = await habitsService.checkin(h.id);
+                          const fresh = await habitsService.getStreak(h.id);
+                          setStreaks((prev) => ({ ...prev, [h.id]: fresh }));
+                          if (currentHabitId) {
+                            await dispatch(
+                              fetchEntries({ habitId: currentHabitId })
+                            );
+                          } else {
+                            await dispatch(fetchEntries(undefined));
+                          }
+                          toast.success(
+                            `تم تسجيل اليوم ✅ — الستريك الحالي: ${res.current} 🔥`
+                          );
+                        } catch (e: any) {
+                          toast.error(
+                            e?.data?.error || e?.message || "فشل التشيك-إن"
+                          );
+                        }
+                      }}
+                    >
+                      تمّ اليوم
+                    </button>
+
                     <button
                       className="text-sm"
                       onClick={() => setEditHabit({ id: h.id, name: h.name })}
@@ -214,7 +258,6 @@ export default function DashboardPage() {
                       className="text-sm text-red-600"
                       onClick={async () => {
                         await dispatch(deleteHabit(h.id));
-                        // لو الحذف لعادة هي الفلتر الحالي، شيّل الفلتر وحمّل إدخالات الكل
                         if (currentHabitId === h.id) {
                           dispatch(setCurrentHabit(undefined));
                           await dispatch(fetchEntries(undefined));
@@ -247,21 +290,26 @@ export default function DashboardPage() {
             <option value="">اختر عادة</option>
             {habits.map((h) => (
               <option key={h.id} value={h.id}>
-                {h.name}
+                {h.icon ? `${h.icon} ${h.name}` : h.name}
               </option>
             ))}
           </select>
 
+          {/* mood as emojis */}
           <select
             className="border p-2 rounded"
             value={entryForm.mood}
             onChange={(e) =>
               setEntryForm({ ...entryForm, mood: e.target.value })
             }
+            title="المزاج"
           >
-            <option value="happy">happy</option>
-            <option value="neutral">neutral</option>
-            <option value="sad">sad</option>
+            <option value="🙂">🙂</option>
+            <option value="😐">😐</option>
+            <option value="😢">😢</option>
+            <option value="😡">😡</option>
+            <option value="😴">😴</option>
+            <option value="🎉">🎉</option>
           </select>
 
           <input
@@ -276,9 +324,7 @@ export default function DashboardPage() {
           <button
             className="px-3 py-2 border rounded"
             onClick={async () => {
-              if (!entryForm.habitId) return; // لازم يختار عادة
-
-              // 1) أنشئ الإدخال
+              if (!entryForm.habitId) return;
               await dispatch(
                 addEntry({
                   habitId: entryForm.habitId,
@@ -286,23 +332,15 @@ export default function DashboardPage() {
                   reflection: entryForm.reflection || undefined,
                 })
               );
-
-              // 2) حدّث قائمة الإدخالات حسب الفلتر الحالي
               if (currentHabitId) {
                 await dispatch(fetchEntries({ habitId: currentHabitId }));
               } else {
                 await dispatch(fetchEntries(undefined));
               }
-
-              // 3) حدّث الستريك للعادة المحددة
               try {
                 const s = await habitsService.getStreak(entryForm.habitId);
                 setStreaks((prev) => ({ ...prev, [entryForm.habitId]: s }));
-              } catch {
-                /* ignore */
-              }
-
-              // 4) نظّف خانة الـreflection فقط
+              } catch {}
               setEntryForm((f) => ({ ...f, reflection: "" }));
             }}
           >
@@ -333,17 +371,13 @@ export default function DashboardPage() {
                     className="text-sm"
                     onClick={async () => {
                       const newText =
-                        prompt("Edit reflection:", e.reflection || "") ??
-                        undefined;
+                        prompt("Edit reflection:", e.reflection || "") ?? undefined;
                       if (newText === undefined) return;
                       await dispatch(
                         updateEntry({ id: e.id, data: { reflection: newText } })
                       );
-                      // بعد التعديل، أعد الجلب مع المحافظة على الفلتر الحالي
                       if (currentHabitId) {
-                        await dispatch(
-                          fetchEntries({ habitId: currentHabitId })
-                        );
+                        await dispatch(fetchEntries({ habitId: currentHabitId }));
                       } else {
                         await dispatch(fetchEntries(undefined));
                       }
@@ -356,11 +390,8 @@ export default function DashboardPage() {
                     className="text-sm text-red-600"
                     onClick={async () => {
                       await dispatch(deleteEntry(e.id));
-                      // بعد الحذف، أعد الجلب مع المحافظة على الفلتر الحالي
                       if (currentHabitId) {
-                        await dispatch(
-                          fetchEntries({ habitId: currentHabitId })
-                        );
+                        await dispatch(fetchEntries({ habitId: currentHabitId }));
                       } else {
                         await dispatch(fetchEntries(undefined));
                       }
@@ -374,7 +405,6 @@ export default function DashboardPage() {
           ))}
         </ul>
 
-        {/* clear filter */}
         {currentHabitId && (
           <button
             className="px-3 py-1 border rounded"
@@ -388,12 +418,10 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* WEEKLY GROUPED */}
       <section className="mt-6">
         <WeeklyGrouped />
       </section>
 
-      {/* MONTHLY SUMMARY */}
       <section className="mt-6">
         <MonthlySummary />
       </section>

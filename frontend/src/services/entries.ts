@@ -9,9 +9,10 @@ export type Entry = {
 };
 
 // ---------- أنواع الردود العامة ----------
-export type TopHabitResp =
-  | { habit: { id: string; name: string } | null; count: number }
-  | null;
+export type TopHabitResp = {
+  habit: { id: string; name: string } | null;
+  count: number;
+} | null;
 
 // Raw types (كما قد يرجعها الباك، بدون ضمان وجود id أو createdAt)
 type WeeklyGroupedEntryRaw = {
@@ -90,12 +91,15 @@ export const entriesService = {
       )}&to=${encodeURIComponent(toISO)}`
     ),
 
-  // GET /api/entries/ai-reflection[?days=&locale=]
+
   aiReflection: (opts?: { days?: number; locale?: "ar" | "en" }) => {
     const days = opts?.days ?? 7;
     const locale = opts?.locale ?? "ar";
-    return api.get<{ reflection: string }>(
-      `/entries/ai-reflection?days=${days}&locale=${locale}`
-    );
+    const qs = new URLSearchParams({
+      days: String(days),
+      locale, 
+      language: locale, 
+    }).toString();
+    return api.get<{ summary: string }>(`/entries/ai-reflection?${qs}`);
   },
 };

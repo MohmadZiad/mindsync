@@ -4,9 +4,9 @@ import { entriesService } from "@/services/entries";
 import { Card } from "./card";
 
 export default function AiReflectionControls() {
-  const [days, setDays] = useState<number>(7);
+  const [days, setDays] = useState<number>(1);
   const [locale, setLocale] = useState<"ar" | "en">("ar");
-  const [text, setText] = useState<string>("");
+  const [text, setText] = useState<string>(""); // نترك النص الحالي
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -14,11 +14,14 @@ export default function AiReflectionControls() {
     try {
       setLoading(true);
       setErr(null);
-      setText("");
-      const { reflection } = await entriesService.aiReflection({ days, locale });
-      setText(reflection);
+      const res = await entriesService.aiReflection({ days, locale });
+      setText(res.summary); // ✅ نعرض الناتج تحت الأزرار
     } catch (e: any) {
-      setErr(e?.message || "فشل التوليد");
+      const msg =
+        e?.data?.error || e?.data?.message || e?.message || "فشل التوليد";
+      setErr(msg);
+      // لا تمسح النص الموجود؛ حتى لو ظهر 429 يظل الملخص السابق ظاهر
+      console.error("AI reflection error:", e);
     } finally {
       setLoading(false);
     }
@@ -34,7 +37,7 @@ export default function AiReflectionControls() {
             min={1}
             max={90}
             value={days}
-            onChange={(e) => setDays(parseInt(e.target.value || "7"))}
+            onChange={(e) => setDays(parseInt(e.target.value || "1"))}
             className="ml-2 w-24 px-2 py-1 border rounded"
           />
         </label>
@@ -60,10 +63,13 @@ export default function AiReflectionControls() {
         </button>
       </div>
 
-      {err ? <div className="text-red-600 mt-2">{err}</div> : null}
-      {text ? (
-        <p className="mt-3 whitespace-pre-wrap text-sm leading-6">{text}</p>
-      ) : null}
+      {err && <div className="text-red-600 mt-2">{err}</div>}
+
+      {text && (
+        <div className="mt-3 p-3 bg-gray-50 border rounded whitespace-pre-wrap text-sm leading-6">
+          {text}
+        </div>
+      )}
     </Card>
   );
 }

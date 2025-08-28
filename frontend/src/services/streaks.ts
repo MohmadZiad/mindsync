@@ -1,8 +1,20 @@
 import { api } from "./api";
 
 export type Streak = {
-  count: number;
-  history?: Array<{ data: string; value: number }>;
+  current: number; // current consecutive count
+  longest: number; // longest streak ever
+  history?: Array<{ date: string; value: number }>;
 };
 
-export const streaksService = { me: () => api.get<Streak>("/streaks/me") };
+export const streaksService = {
+  byHabit: async (habitId: string): Promise<Streak> => {
+    const res = await api.get<{ current: number; longest: number }>(
+      `/habits/${habitId}/streak`
+    );
+    return {
+      current: res.current,
+      longest: res.longest,
+      history: [], 
+    };
+  },
+};
