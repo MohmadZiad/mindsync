@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Providers from "./Providers";
 import { Toaster } from "react-hot-toast";
+import AuthBootstrap from "@/components/AuthBootstrap"; // 👈 جديد
 
 export const metadata: Metadata = {
   title: "MindSync",
@@ -58,6 +59,7 @@ export default function RootLayout({
       </head>
       <body className="bg-white dark:bg-gray-950">
         <Providers>
+          <AuthBootstrap /> 
           {children}
           <Toaster position="top-center" reverseOrder={false} />
         </Providers>

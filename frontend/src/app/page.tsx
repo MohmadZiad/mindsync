@@ -6,7 +6,21 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 // npm i lucide-react
-import { Users, LineChart, Flame, Settings, Moon, Sun } from "lucide-react";
+import {
+  Users,
+  LineChart,
+  Flame,
+  Moon,
+  Sun,
+  ChevronDown,
+  Route,
+  LogOut,
+  User2,
+} from "lucide-react";
+
+// Redux (لإظهار حالة المستخدم وتبديل زر الدخول/الداشبورد)
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { meThunk, logoutThunk } from "@/redux/slices/authSlice";
 
 import MagneticCTA from "@/components/MagneticCTA";
 import Counter from "@/components/Counter";
@@ -28,6 +42,10 @@ const STRINGS = {
       login: "Login",
       getStarted: "Get Started",
       demo: "Try Demo",
+      dashboard: "Journey",
+      account: "Account",
+      logout: "Logout",
+      openDashboard: "Open Journey",
     },
     hero: {
       title: "Track your mental habits, reflect, and grow",
@@ -131,6 +149,10 @@ const STRINGS = {
       login: "تسجيل الدخول",
       getStarted: "ابدأ الآن",
       demo: "جرّب النسخة التجريبية",
+      dashboard: "الرحلة",
+      account: "الحساب",
+      logout: "تسجيل الخروج",
+      openDashboard: "فتح الرحلة",
     },
     hero: {
       title: "تابِع عاداتك الذهنية، اكتب تأمّلاتك، وتقدّم كل يوم",
@@ -213,8 +235,17 @@ function formatCompact(n: number, lang: "en" | "ar") {
 const cx = (...x: Array<string | false | null | undefined>) =>
   x.filter(Boolean).join(" ");
 
-/* ===================== Settings menu (clean) ===================== */
-function SettingsMenu({
+function truncateEmail(email?: string) {
+  if (!email) return "";
+  const [name, domain] = email.split("@");
+  if (!domain) return email;
+  const short =
+    name.length > 12 ? `${name.slice(0, 4)}…${name.slice(-2)}` : name;
+  return `${short}@${domain}`;
+}
+
+/* ===== Quick toggles for guests (no settings menu) ===== */
+function QuickToggles({
   lang,
   setLang,
   mounted,
@@ -229,46 +260,98 @@ function SettingsMenu({
   setTheme: (t: "light" | "dark") => void;
   labels: { themeLight: string; themeDark: string; lang: string };
 }) {
+  return (
+    <div className="hidden items-center gap-2 md:flex">
+      {/* تبديل اللغة */}
+      <button
+        aria-label="Toggle language"
+        onClick={() => setLang(lang === "en" ? "ar" : "en")}
+        className="rounded-xl border border-gray-300 bg-white px-3 py-1 text-xs font-medium shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+      >
+        🌐 {labels.lang}
+      </button>
+
+      {/* تبديل الوضع (نهاري/ليلي) */}
+      {mounted && (
+        <button
+          aria-label="Toggle theme"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="rounded-xl border border-gray-300 bg-white px-3 py-1 text-xs font-medium shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+        >
+          {theme === "dark" ? (
+            <>
+              <Sun size={14} className="inline -mt-0.5" /> {labels.themeLight}
+            </>
+          ) : (
+            <>
+              <Moon size={14} className="inline -mt-0.5" /> {labels.themeDark}
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ===== User chip (اسم/إيميل + قائمة) ===== */
+function UserChip({
+  email,
+  lang,
+  onLogout,
+}: {
+  email?: string;
+  lang: "en" | "ar";
+  onLogout: () => void;
+}) {
   const [open, setOpen] = useState(false);
+  const t = STRINGS[lang];
+
   return (
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+        className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-2.5 py-1 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
       >
-        <Settings size={16} />
+        <div className="grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-white">
+          {email?.[0]?.toUpperCase() || "U"}
+        </div>
+        <span className="hidden max-w-[12ch] truncate text-sm text-gray-700 dark:text-gray-200 sm:inline">
+          {truncateEmail(email)}
+        </span>
+        <ChevronDown size={16} className="text-gray-500" />
       </button>
+
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-30 mt-2 w-48 overflow-hidden rounded-2xl border border-gray-200 bg-white/95 p-1 shadow-xl backdrop-blur-md ring-1 ring-black/5 dark:border-gray-800 dark:bg-gray-900/95"
           onMouseLeave={() => setOpen(false)}
-        >
-          <button
-            role="menuitem"
-            onClick={() => {
-              setLang(lang === "en" ? "ar" : "en");
-              setOpen(false);
-            }}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
-            {labels.lang}
-          </button>
-          {mounted && (
-            <button
-              role="menuitem"
-              onClick={() => {
-                setTheme(theme === "dark" ? "light" : "dark");
-                setOpen(false);
-              }}
-              className="mt-0.5 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-            >
-              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-              {theme === "dark" ? labels.themeLight : labels.themeDark}
-            </button>
+          className={cx(
+            "absolute right-0 z-30 mt-2 w-56 overflow-hidden rounded-2xl",
+            "border border-gray-200 bg-white/95 p-1 shadow-xl backdrop-blur-md ring-1 ring-black/5",
+            "dark:border-gray-800 dark:bg-gray-900/95"
           )}
+        >
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+          >
+            <Route size={16} />
+            {t.nav.dashboard}
+          </Link>
+          <Link
+            href="/account"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+          >
+            <User2 size={16} />
+            {t.nav.account}
+          </Link>
+          <button
+            onClick={onLogout}
+            className="mt-0.5 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+          >
+            <LogOut size={16} />
+            {t.nav.logout}
+          </button>
         </div>
       )}
     </div>
@@ -278,6 +361,13 @@ function SettingsMenu({
 /* ===================== PAGE ===================== */
 export default function Home() {
   const { theme, setTheme } = useTheme();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((s) => s.auth);
+
+  // تحقق المستخدم (كوكي) عند تحميل الصفحة
+  useEffect(() => {
+    dispatch(meThunk());
+  }, [dispatch]);
 
   // language
   const [lang, setLang] = useState<"en" | "ar">("en");
@@ -434,23 +524,45 @@ export default function Home() {
               </a>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Link
-                href="/login"
-                className="hidden text-sm text-gray-700 hover:text-gray-900 md:inline-block dark:text-gray-300 dark:hover:text-white"
-              >
-                {t.nav.login}
-              </Link>
-              <MagneticCTA href="/register" className="hidden md:inline-flex">
-                {t.nav.getStarted}
-              </MagneticCTA>
+            <div className="flex items-center gap-3">
+              {/* إذا ضيف: أزرار دخول/تسجيل — إذا مسجّل: رابط داشبورد + تشيب المستخدم */}
+              {!user ? (
+                <>
+                  <Link
+                    href="/login"
+                    className="hidden text-sm text-gray-700 hover:text-gray-900 md:inline-block dark:text-gray-300 dark:hover:text-white"
+                  >
+                    {t.nav.login}
+                  </Link>
+                  <MagneticCTA
+                    href="/register"
+                    className="hidden md:inline-flex"
+                  >
+                    {t.nav.getStarted}
+                  </MagneticCTA>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/dashboard"
+                    className="hidden rounded-full border border-gray-300 px-3 py-1 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 md:inline-block"
+                  >
+                    {t.nav.dashboard}
+                  </Link>
+                  <UserChip
+                    email={user.email}
+                    lang={lang}
+                    onLogout={() => dispatch(logoutThunk())}
+                  />
+                </>
+              )}
 
-              <SettingsMenu
+              <QuickToggles
                 lang={lang}
-                setLang={(l) => setLang(l)}
+                setLang={setLang}
                 mounted={mounted}
                 theme={theme}
-                setTheme={(t) => setTheme(t)}
+                setTheme={setTheme}
                 labels={{
                   themeLight: t.toggles.theme.light,
                   themeDark: t.toggles.theme.dark,
@@ -472,7 +584,7 @@ export default function Home() {
               className="absolute -top-32 right-[-10%] h-[700px] w-[900px] rounded-full blur-3xl"
               style={{
                 background:
-                  "radial-gradient(60% 60% at 50% 50%, rgba(168,85,247,0.35) 0%, rgba(59,130,246,0.18) 45%, rgba(14,165,233,0) 70%)",
+                  "radial-gradient(520px 520px at 78% 45%, rgba(147,51,234,0.25) 0%, rgba(147,51,234,0) 65%), radial-gradient(420px 420px at 72% 48%, rgba(59,130,246,0.22) 0%, rgba(59,130,246,0) 60%)",
               }}
             />
           </div>
@@ -488,10 +600,10 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55 }}
                 className={cx(
-                  "bg-gradient-to-r from-indigo-700 via-violet-600 to-cyan-600 bg-clip-text text-transparent",
-                  "drop-shadow-[0_1px_0_rgba(0,0,0,0.25)]",
-                  "font-extrabold leading-[1.05]",
-                  "text-[clamp(2.25rem,4vw,3.5rem)] tracking-[-0.02em]"
+                  "bg-[linear-gradient(90deg,#6d28d9_0%,#7c3aed_45%,#2563eb_100%)]",
+                  "bg-clip-text text-transparent",
+                  "text-[clamp(2.1rem,5vw,3.25rem)] font-extrabold leading-[1.07] tracking-tight",
+                  "drop-shadow-[0_1px_0_rgba(0,0,0,0.25)]"
                 )}
               >
                 {t.hero.title}
@@ -502,7 +614,13 @@ export default function Home() {
               </p>
 
               <div className="mt-8 flex flex-wrap justify-center gap-4 md:justify-start">
-                <MagneticCTA href="/register">{t.hero.cta}</MagneticCTA>
+                {user ? (
+                  <MagneticCTA href="/dashboard">
+                    {t.nav.openDashboard}
+                  </MagneticCTA>
+                ) : (
+                  <MagneticCTA href="/register">{t.hero.cta}</MagneticCTA>
+                )}
                 <Link
                   href="/demo"
                   className="rounded-2xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
@@ -556,7 +674,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Trust bar (اختياري – بيعطي نضج) */}
+          {/* Trust bar */}
           <div className="mx-auto max-w-7xl px-6 pb-6">
             <div className="flex flex-wrap items-center justify-center gap-8 opacity-70 md:justify-between">
               {["Calm", "Notion", "Headspace", "Linear", "Slack"].map((b) => (
@@ -808,6 +926,7 @@ function Stat({
     </div>
   );
 }
+
 /* ====== Dashboard (Pro) ====== */
 function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
   const [range, setRange] = useState<"7d" | "14d" | "30d">("7d");
@@ -816,37 +935,47 @@ function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
   const DATA: Record<"7d" | "14d" | "30d", number[]> = {
     "7d": [55, 80, 62, 95, 70, 85, 60],
     "14d": [40, 55, 62, 75, 68, 80, 60, 72, 78, 84, 66, 70, 77, 81],
-    "30d": Array.from({ length: 30 }, (_, i) => 42 + Math.round(50 * Math.abs(Math.sin(i / 3.8)))),
+    "30d": Array.from(
+      { length: 30 },
+      (_, i) => 42 + Math.round(50 * Math.abs(Math.sin(i / 3.8)))
+    ),
   };
 
-  const copy = lang === "ar"
-    ? {
-        title: "عرض لوحة التحكم",
-        habit: "إكمال العادات",
-        range: { "7d": "7 أيام", "14d": "14 يوم", "30d": "30 يوم" },
-        morning: "تأمل الصباح",
-        evening: "تأمل المساء",
-        sampleMorning: "رح أركز اليوم على العمل العميق 3 ساعات وأمشي 10 دقايق.",
-        sampleEvening: "حققت 2/3 عادات. الطاقة نزلت الساعة 3م؛ تمدّد بسيط ساعد كثير.",
-        completion: "نسبة الإكمال",
-        streak: "أفضل سلسلة",
-        dayUnit: "يوم",
-      }
-    : {
-        title: "Dashboard preview",
-        habit: "Habit completion",
-        range: { "7d": "7 days", "14d": "14 days", "30d": "30 days" },
-        morning: "Morning reflection",
-        evening: "Evening reflection",
-        sampleMorning: "Today I will focus on deep work for 3h and take a 10-minute walk.",
-        sampleEvening: "I hit 2/3 habits. Energy dipped at 3pm; a short stretch helped a lot.",
-        completion: "Completion",
-        streak: "Best streak",
-        dayUnit: "days",
-      };
+  const copy =
+    lang === "ar"
+      ? {
+          title: "عرض لوحة التحكم",
+          habit: "إكمال العادات",
+          range: { "7d": "7 أيام", "14d": "14 يوم", "30d": "30 يوم" },
+          morning: "تأمل الصباح",
+          evening: "تأمل المساء",
+          sampleMorning:
+            "رح أركز اليوم على العمل العميق 3 ساعات وأمشي 10 دقايق.",
+          sampleEvening:
+            "حققت 2/3 عادات. الطاقة نزلت الساعة 3م؛ تمدّد بسيط ساعد كثير.",
+          completion: "نسبة الإكمال",
+          streak: "أفضل سلسلة",
+          dayUnit: "يوم",
+        }
+      : {
+          title: "Dashboard preview",
+          habit: "Habit completion",
+          range: { "7d": "7 days", "14d": "14 days", "30d": "30 days" },
+          morning: "Morning reflection",
+          evening: "Evening reflection",
+          sampleMorning:
+            "Today I will focus on deep work for 3h and take a 10-minute walk.",
+          sampleEvening:
+            "I hit 2/3 habits. Energy dipped at 3pm; a short stretch helped a lot.",
+          completion: "Completion",
+          streak: "Best streak",
+          dayUnit: "days",
+        };
 
   const data = DATA[range];
-  const completionAvg = Math.round(data.reduce((a, b) => a + b, 0) / data.length);
+  const completionAvg = Math.round(
+    data.reduce((a, b) => a + b, 0) / data.length
+  );
   const bestStreak = 18; // مثال
 
   return (
@@ -860,7 +989,7 @@ function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
 
           {/* Segmented control */}
           <div className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-1 text-xs dark:border-gray-700 dark:bg-gray-950">
-            {(["7d","14d","30d"] as const).map((k) => (
+            {(["7d", "14d", "30d"] as const).map((k) => (
               <button
                 key={k}
                 onClick={() => setRange(k)}
