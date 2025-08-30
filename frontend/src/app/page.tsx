@@ -2,11 +2,21 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
+// npm i lucide-react
+import { Users, LineChart, Flame, Settings, Moon, Sun } from "lucide-react";
 
+import MagneticCTA from "@/components/MagneticCTA";
+import Counter from "@/components/Counter";
+import BreathingRing from "@/components/BreathingRing";
+import TestimonialMarquee from "@/components/TestimonialMarquee";
+import FAQSearch, { getFaqJsonLd, type FaqItem } from "@/components/FAQ";
+import PricingToggle from "@/components/PricingToggle";
+import HowItWorksScrolly from "@/components/HowItWorksScrolly";
 
+/* ===================== i18n strings ===================== */
 const STRINGS = {
   en: {
     app: "MindSync",
@@ -31,6 +41,7 @@ const STRINGS = {
       habits: "Habits tracked",
       streak: "Avg. streak",
     },
+    units: { days: "days", minRead: "min read", read: "Read →" },
     featuresTitle: "What you can do with MindSync",
     features: [
       {
@@ -84,36 +95,11 @@ const STRINGS = {
       { q: "Is my data private?", a: "Absolutely. Your data is yours only." },
     ],
     pricingTitle: "Simple pricing for everyone",
-    plans: [
-      {
-        name: "Free",
-        price: "$0",
-        perks: [
-          "Habit tracking",
-          "Daily journaling",
-          "Weekly summary",
-          "Basic analytics",
-        ],
-        cta: "Get started",
-      },
-      {
-        name: "Pro",
-        price: "$8/mo",
-        perks: [
-          "Everything in Free",
-          "AI suggestions",
-          "Advanced analytics",
-          "Priority support",
-        ],
-        cta: "Go Pro",
-        featured: true,
-      },
-    ],
     blogTitle: "Guides & resources",
     blog: [
       {
         tag: "Habits",
-        title: "The 2‑minute rule to start any habit",
+        title: "The 2-minute rule to start any habit",
         minutes: 4,
       },
       {
@@ -158,6 +144,7 @@ const STRINGS = {
       habits: "عادات متتبَّعة",
       streak: "متوسط السلسلة",
     },
+    units: { days: "أيام", minRead: "دقيقة قراءة", read: "اقرأ →" },
     featuresTitle: "شو بتقدر تعمل مع MindSync",
     features: [
       {
@@ -200,31 +187,6 @@ const STRINGS = {
       { q: "هل بياناتي خاصة؟", a: "أكيد. بياناتك إلك وحدك." },
     ],
     pricingTitle: "أسعار بسيطة للجميع",
-    plans: [
-      {
-        name: "مجاني",
-        price: "0$",
-        perks: [
-          "تتبّع العادات",
-          "مذكّرات يومية",
-          "ملخص أسبوعي",
-          "تحليلات أساسية",
-        ],
-        cta: "ابدأ الآن",
-      },
-      {
-        name: "احترافي",
-        price: "8$/شهر",
-        perks: [
-          "كل شي بالخطة المجانية",
-          "اقتراحات بالذكاء الاصطناعي",
-          "تحليلات متقدمة",
-          "دعم أولوية",
-        ],
-        cta: "اشترك احترافي",
-        featured: true,
-      },
-    ],
     blogTitle: "أدلة وموارد",
     blog: [
       { tag: "عادات", title: "قاعدة الدقيقتين لبدء أي عادة", minutes: 4 },
@@ -241,214 +203,377 @@ const STRINGS = {
   },
 } as const;
 
-const TESTIMONIALS = [
-  {
-    name: "Sarah A.",
-    quote: "MindSync helped me stay consistent with journaling. Love it!",
-  },
-  {
-    name: "Mohammad Z.",
-    quote:
-      "As a student, it gave me control over my routines and stress levels.",
-  },
-  {
-    name: "Lina K.",
-    quote:
-      "The weekly summaries are magic. It’s like a therapist in my pocket!",
-  },
-  {
-    name: "Jad R.",
-    quote: "The AI suggestions are scarily accurate and super helpful.",
-  },
-];
+/* ===================== helpers ===================== */
+function formatCompact(n: number, lang: "en" | "ar") {
+  return new Intl.NumberFormat(lang === "ar" ? "ar" : "en", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(n);
+}
+const cx = (...x: Array<string | false | null | undefined>) =>
+  x.filter(Boolean).join(" ");
 
+/* ===================== Settings menu (clean) ===================== */
+function SettingsMenu({
+  lang,
+  setLang,
+  mounted,
+  theme,
+  setTheme,
+  labels,
+}: {
+  lang: "en" | "ar";
+  setLang: (l: "en" | "ar") => void;
+  mounted: boolean;
+  theme?: string;
+  setTheme: (t: "light" | "dark") => void;
+  labels: { themeLight: string; themeDark: string; lang: string };
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+      >
+        <Settings size={16} />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 z-30 mt-2 w-48 overflow-hidden rounded-2xl border border-gray-200 bg-white/95 p-1 shadow-xl backdrop-blur-md ring-1 ring-black/5 dark:border-gray-800 dark:bg-gray-900/95"
+          onMouseLeave={() => setOpen(false)}
+        >
+          <button
+            role="menuitem"
+            onClick={() => {
+              setLang(lang === "en" ? "ar" : "en");
+              setOpen(false);
+            }}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+          >
+            {labels.lang}
+          </button>
+          {mounted && (
+            <button
+              role="menuitem"
+              onClick={() => {
+                setTheme(theme === "dark" ? "light" : "dark");
+                setOpen(false);
+              }}
+              className="mt-0.5 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+              {theme === "dark" ? labels.themeLight : labels.themeDark}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ===================== PAGE ===================== */
 export default function Home() {
-  // ✅ لا نستخدم isDark ولا نخزّن الثيم يدويًا
   const { theme, setTheme } = useTheme();
 
-  // لغة واجهة المستخدم + حفظها
+  // language
   const [lang, setLang] = useState<"en" | "ar">("en");
   useEffect(() => {
-    const lng = localStorage.getItem("ms_lang") as "en" | "ar" | null;
+    const lng =
+      typeof window !== "undefined"
+        ? (localStorage.getItem("ms_lang") as "en" | "ar" | null)
+        : null;
     if (lng) setLang(lng);
   }, []);
   useEffect(() => {
-    localStorage.setItem("ms_lang", lang);
+    if (typeof window !== "undefined") localStorage.setItem("ms_lang", lang);
   }, [lang]);
 
-  // لتجنّب mismatch أثناء الـ SSR: بنعرض أزرار الثيم بعد mount
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const t = useMemo(() => STRINGS[lang], [lang]);
   const dir = lang === "ar" ? "rtl" : "ltr";
 
+  // derived
+  const FAQ_ITEMS: FaqItem[] = useMemo(
+    () => t.faqs.map((f, i) => ({ q: f.q, a: f.a, id: `faq-${i + 1}` })),
+    [t]
+  );
+  const FAQ_JSON = useMemo(() => getFaqJsonLd(FAQ_ITEMS), [FAQ_ITEMS]);
+
+  const STEPS = useMemo(
+    () => [
+      {
+        title: t.steps[0]?.title || "Create your account",
+        desc: lang === "ar" ? "سجّل وحدد هدفك." : "Sign up and set your goal.",
+        emoji: "🧭",
+      },
+      {
+        title: t.steps[1]?.title || "Add your habits",
+        desc:
+          lang === "ar"
+            ? "اختر عادات الصباح/المساء."
+            : "Pick routines for morning & evening.",
+        emoji: "📋",
+      },
+      {
+        title: t.steps[2]?.title || "Track & reflect daily",
+        desc:
+          lang === "ar"
+            ? "علّم العادات واكتب تأمّل قصير."
+            : "Check off habits and write a short reflection.",
+        emoji: "🧠",
+      },
+    ],
+    [t, lang]
+  );
+
+  const PRICING_PLANS = useMemo(
+    () => [
+      {
+        name: lang === "ar" ? "مجاني" : "Free",
+        priceMonthly: 0,
+        features:
+          lang === "ar"
+            ? [
+                "تتبّع العادات",
+                "مذكّرات يومية",
+                "ملخص أسبوعي",
+                "تحليلات أساسية",
+              ]
+            : [
+                "Habit tracking",
+                "Daily journaling",
+                "Weekly summary",
+                "Basic analytics",
+              ],
+        ctaHref: "/register",
+      },
+      {
+        name: lang === "ar" ? "احترافي" : "Pro",
+        priceMonthly: 8,
+        features:
+          lang === "ar"
+            ? [
+                "كل شي بالخطة المجانية",
+                "اقتراحات بالذكاء الاصطناعي",
+                "تحليلات متقدمة",
+                "دعم أولوية",
+              ]
+            : [
+                "Everything in Free",
+                "AI suggestions",
+                "Advanced analytics",
+                "Priority support",
+              ],
+        ctaHref: "/register?plan=pro",
+        highlighted: true,
+      },
+    ],
+    [lang]
+  );
+
   return (
-    // ✨ ملاحظة: .dark بتنضاف على <html> من ThemeProvider تلقائيًا
     <main dir={dir}>
-      <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50 transition-colors duration-300">
-        {/* Decorative background gradients */}
-        <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
-          <div className="absolute -top-24 left-1/2 h-[500px] w-[900px] -translate-x-1/2 rounded-full bg-gradient-to-r from-cyan-300/30 via-indigo-400/20 to-fuchsia-300/30 blur-3xl" />
-          <div className="absolute bottom-0 right-0 h-[400px] w-[500px] rounded-full bg-indigo-500/10 blur-2xl" />
-        </div>
+      {/* Skip link */}
+      <a
+        href="#content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:rounded-lg focus:bg-indigo-600 focus:px-3 focus:py-2 focus:text-white"
+      >
+        {lang === "ar" ? "انتقل للمحتوى" : "Skip to content"}
+      </a>
 
-        {/* Navbar */}
-        <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-5">
-          <div className="flex items-center gap-3">
-            <Image src="/logo.jpg" alt="MindSync logo" width={36} height={36} />
-            <span className="text-lg font-bold tracking-tight">{t.app}</span>
-          </div>
-          <div className="hidden items-center gap-6 md:flex">
-            <a href="#features" className="text-sm hover:underline">
-              {t.nav.features}
-            </a>
-            <a href="#how" className="text-sm hover:underline">
-              {t.nav.how}
-            </a>
-            <a href="#pricing" className="text-sm hover:underline">
-              {t.nav.pricing}
-            </a>
-            <a href="#blog" className="text-sm hover:underline">
-              {t.nav.blog}
-            </a>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Language toggle */}
-            <button
-              aria-label="Toggle language"
-              onClick={() => setLang((p) => (p === "en" ? "ar" : "en"))}
-              className="rounded-xl border border-gray-300 bg-white px-3 py-1 text-xs font-medium shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
-            >
-              {t.toggles.lang}
-            </button>
-            {/* Theme toggle (next-themes) */}
-            {mounted && (
-              <button
-                aria-label="Toggle theme"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="rounded-xl border border-gray-300 bg-white px-3 py-1 text-xs font-medium shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
-              >
-                {theme === "dark"
-                  ? `☀️ ${t.toggles.theme.light}`
-                  : `🌙 ${t.toggles.theme.dark}`}
-              </button>
-            )}
-            <Link
-              href="/login"
-              className="hidden text-sm md:inline-block hover:underline"
-            >
-              {t.nav.login}
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-            >
-              {t.nav.getStarted}
-            </Link>
-          </div>
-        </nav>
-
-        {/* Hero */}
-        <section className="relative mx-auto grid min-h-[72vh] max-w-7xl place-items-center overflow-hidden px-6 pt-6 text-center">
-          <video
-            className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover opacity-20 dark:opacity-25"
-            autoPlay
-            muted
-            loop
-            playsInline
-            src="/bg-loop.mp4"
-          />
-
-          <div className="relative z-10 max-w-3xl">
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="bg-gradient-to-r from-indigo-600 via-fuchsia-500 to-cyan-500 bg-clip-text text-4xl font-extrabold leading-tight text-transparent sm:text-5xl"
-            >
-              {t.hero.title}
-            </motion.h1>
-            <p className="mx-auto mt-4 max-w-2xl text-base text-gray-600 dark:text-gray-300 sm:text-lg">
-              {t.hero.subtitle}
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Link
-                href="/register"
-                className="rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:scale-[1.02] hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-              >
-                {t.hero.cta}
-              </Link>
-              <Link
-                href="/demo"
-                className="rounded-2xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
-              >
-                {t.hero.secondary}
-              </Link>
+      <div className="min-h-screen bg-white text-gray-900 transition-colors duration-300 dark:bg-gray-950 dark:text-gray-50">
+        {/* ===================== NAV (sticky, polished) ===================== */}
+        <header className="sticky top-0 z-50 border-b border-transparent bg-white/70 backdrop-blur-xl transition-colors dark:bg-gray-950/70 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-gray-950/60">
+          <nav
+            className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4"
+            aria-label="Primary"
+          >
+            <div className="flex items-center gap-3">
+              <Image
+                src="/logo.jpg"
+                alt="MindSync"
+                width={36}
+                height={36}
+                priority
+              />
+              <span className="text-base font-semibold tracking-[-0.01em]">
+                {t.app}
+              </span>
             </div>
 
-            {/* Hero stats */}
-            <div className="mx-auto mt-10 grid max-w-2xl grid-cols-3 gap-4 text-sm">
-              <Stat value={"120k+"} label={t.stats.users} />
-              <Stat value={"3.2M+"} label={t.stats.habits} />
-              <Stat value={"18 days"} label={t.stats.streak} />
+            <div className="hidden items-center gap-6 md:flex">
+              <a
+                href="#features"
+                className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              >
+                {t.nav.features}
+              </a>
+              <a
+                href="#how"
+                className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              >
+                {t.nav.how}
+              </a>
+              <a
+                href="#pricing"
+                className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              >
+                {t.nav.pricing}
+              </a>
+              <a
+                href="#blog"
+                className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              >
+                {t.nav.blog}
+              </a>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className="hidden text-sm text-gray-700 hover:text-gray-900 md:inline-block dark:text-gray-300 dark:hover:text-white"
+              >
+                {t.nav.login}
+              </Link>
+              <MagneticCTA href="/register" className="hidden md:inline-flex">
+                {t.nav.getStarted}
+              </MagneticCTA>
+
+              <SettingsMenu
+                lang={lang}
+                setLang={(l) => setLang(l)}
+                mounted={mounted}
+                theme={theme}
+                setTheme={(t) => setTheme(t)}
+                labels={{
+                  themeLight: t.toggles.theme.light,
+                  themeDark: t.toggles.theme.dark,
+                  lang: t.toggles.lang,
+                }}
+              />
+            </div>
+          </nav>
+        </header>
+
+        {/* ===================== HERO ===================== */}
+        <section className="relative overflow-hidden">
+          {/* Background glow (smoother gradient + mask) */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 -z-10"
+          >
+            <div
+              className="absolute -top-32 right-[-10%] h-[700px] w-[900px] rounded-full blur-3xl"
+              style={{
+                background:
+                  "radial-gradient(60% 60% at 50% 50%, rgba(168,85,247,0.35) 0%, rgba(59,130,246,0.18) 45%, rgba(14,165,233,0) 70%)",
+              }}
+            />
+          </div>
+
+          <div
+            id="content"
+            className="mx-auto grid max-w-7xl items-center gap-12 px-6 pt-14 pb-24 md:grid-cols-2 md:pt-20 md:pb-28"
+          >
+            {/* Left */}
+            <div className="text-center md:text-left">
+              <motion.h1
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55 }}
+                className={cx(
+                  "bg-gradient-to-r from-indigo-700 via-violet-600 to-cyan-600 bg-clip-text text-transparent",
+                  "drop-shadow-[0_1px_0_rgba(0,0,0,0.25)]",
+                  "font-extrabold leading-[1.05]",
+                  "text-[clamp(2.25rem,4vw,3.5rem)] tracking-[-0.02em]"
+                )}
+              >
+                {t.hero.title}
+              </motion.h1>
+
+              <p className="mx-auto mt-4 max-w-[62ch] text-[1.05rem] leading-[1.7] text-gray-700 dark:text-gray-300 md:mx-0">
+                {t.hero.subtitle}
+              </p>
+
+              <div className="mt-8 flex flex-wrap justify-center gap-4 md:justify-start">
+                <MagneticCTA href="/register">{t.hero.cta}</MagneticCTA>
+                <Link
+                  href="/demo"
+                  className="rounded-2xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+                >
+                  {t.hero.secondary}
+                </Link>
+              </div>
+
+              {/* Stats */}
+              <div className="mx-auto mt-10 grid max-w-md grid-cols-3 gap-4 md:mx-0">
+                <Stat
+                  icon={<Users size={18} />}
+                  value={`${formatCompact(120000, lang)}+`}
+                  label={t.stats.users}
+                />
+                <Stat
+                  icon={<LineChart size={18} />}
+                  value={`${formatCompact(3200000, lang)}+`}
+                  label={t.stats.habits}
+                />
+                <Stat
+                  icon={<Flame size={18} />}
+                  value={
+                    <>
+                      <Counter to={18} />{" "}
+                      <span className="text-sm opacity-70">{t.units.days}</span>
+                    </>
+                  }
+                  label={t.stats.streak}
+                />
+              </div>
+            </div>
+
+            {/* Right */}
+            <div className="relative flex items-center justify-center md:justify-end">
+              <div className="relative">
+                <BreathingRing size={320} variant="soft" />
+                <div className="absolute inset-0 grid place-items-center">
+                  <div className="w-[230px] rounded-2xl border border-gray-200 bg-white/85 p-5 shadow-xl backdrop-blur-md dark:border-gray-700 dark:bg-gray-900/85">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                      {lang === "ar" ? "تأمل الصباح" : "Morning reflection"}
+                    </p>
+                    <p className="mt-2 text-sm text-gray-800 dark:text-gray-200">
+                      {lang === "ar"
+                        ? "رح أركز اليوم على العمل العميق 3 ساعات وأمشي 10 دقايق."
+                        : "Today I will focus on deep work for 3h and take a 10-minute walk."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Trust bar (اختياري – بيعطي نضج) */}
+          <div className="mx-auto max-w-7xl px-6 pb-6">
+            <div className="flex flex-wrap items-center justify-center gap-8 opacity-70 md:justify-between">
+              {["Calm", "Notion", "Headspace", "Linear", "Slack"].map((b) => (
+                <span key={b} className="text-sm">
+                  {b}
+                </span>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Demo Dashboard preview */}
-        <section className="mx-auto max-w-6xl px-6 pb-6">
-          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl shadow-indigo-500/5 dark:border-gray-800 dark:bg-gray-900">
-            <div className="border-b border-gray-200 px-4 py-2 text-left text-xs uppercase tracking-wider text-gray-500 dark:border-gray-800">
-              Dashboard preview
-            </div>
-            <div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2">
-              {/* chart mock */}
-              <div className="rounded-xl bg-gray-50 p-4 dark:bg-gray-800">
-                <p className="mb-3 text-sm text-gray-500">
-                  Habit completion (last 7 days)
-                </p>
-                <div className="flex h-40 items-end gap-2">
-                  {[55, 80, 62, 95, 70, 85, 60].map((h, i) => (
-                    <div key={i} className="flex-1">
-                      <div
-                        style={{ height: `${h}%` }}
-                        className="rounded-t-md bg-gradient-to-t from-indigo-600 to-cyan-400"
-                        aria-hidden
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
+        {/* ===================== DASHBOARD PREVIEW ===================== */}
+        <DashboardPreviewPro lang={lang} />
 
-              {/* reflection cards mock */}
-              <div className="grid gap-4">
-                <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-                  <p className="text-xs uppercase tracking-wider text-gray-500">
-                    Morning reflection
-                  </p>
-                  <p className="mt-2 text-sm text-gray-700 dark:text-gray-200">
-                    Today I will focus on deep work for 3 hours and take a
-                    10‑minute walk.
-                  </p>
-                </div>
-                <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-                  <p className="text-xs uppercase tracking-wider text-gray-500">
-                    Evening reflection
-                  </p>
-                  <p className="mt-2 text-sm text-gray-700 dark:text-gray-200">
-                    I hit 2/3 habits. Energy dipped at 3pm; a short stretch
-                    helped a lot.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Features */}
+        {/* ===================== FEATURES ===================== */}
         <section id="features" className="bg-gray-50 py-16 dark:bg-gray-900/40">
-          <div className="mx-auto max-w-6xl px-6 text-center">
+          <div className="mx-auto max-w-7xl px-6 text-center">
             <h2 className="text-3xl font-bold sm:text-4xl">
               {t.featuresTitle}
             </h2>
@@ -473,133 +598,147 @@ export default function Home() {
           </div>
         </section>
 
-        {/* How it works */}
+        {/* ===================== HOW IT WORKS ===================== */}
         <section id="how" className="py-16">
-          <div className="mx-auto max-w-6xl px-6 text-center">
-            <h2 className="text-3xl font-bold sm:text-4xl">{t.howTitle}</h2>
-            <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
-              {t.steps.map((s, i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
-                >
-                  <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white">
-                    {s.num}
-                  </div>
-                  <p className="mt-3 text-lg font-medium">{s.title}</p>
-                </div>
-              ))}
-            </div>
+          <div className="mx-auto max-w-7xl px-6">
+            <h2 className="text-center text-3xl font-bold sm:text-4xl">
+              {t.howTitle}
+            </h2>
+            <HowItWorksScrolly steps={STEPS} className="mt-10" />
           </div>
         </section>
 
-        {/* Day / Night sample cards */}
+        {/* ===================== DAY / NIGHT SAMPLES ===================== */}
         <section className="bg-indigo-50 py-16 dark:bg-indigo-950/40">
-          <div className="mx-auto max-w-6xl px-6">
+          <div className="mx-auto max-w-7xl px-6">
             <h2 className="text-center text-3xl font-bold sm:text-4xl">
               🌙 / ☀️
             </h2>
             <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-                <h3 className="text-xl font-semibold">Morning routine</h3>
+                <h3 className="text-xl font-semibold">
+                  {lang === "ar" ? "روتين الصباح" : "Morning routine"}
+                </h3>
                 <ul className="mt-3 list-disc space-y-1 pl-6 text-sm text-gray-700 dark:text-gray-300">
-                  <li>2‑minute breathing</li>
-                  <li>Write 3 priorities</li>
-                  <li>15‑minute walk</li>
+                  <li>
+                    {lang === "ar" ? "تنفّس دقيقتين" : "2-minute breathing"}
+                  </li>
+                  <li>
+                    {lang === "ar" ? "اكتب 3 أولويات" : "Write 3 priorities"}
+                  </li>
+                  <li>{lang === "ar" ? "مشي 15 دقيقة" : "15-minute walk"}</li>
                 </ul>
               </div>
               <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-                <h3 className="text-xl font-semibold">Evening wind‑down</h3>
+                <h3 className="text-xl font-semibold">
+                  {lang === "ar" ? "تهدئة المساء" : "Evening wind-down"}
+                </h3>
                 <ul className="mt-3 list-disc space-y-1 pl-6 text-sm text-gray-700 dark:text-gray-300">
-                  <li>Reflect on 1 win</li>
-                  <li>Rate your day (1‑5)</li>
-                  <li>Plan tomorrow in 3 bullets</li>
+                  <li>
+                    {lang === "ar" ? "دوّن إنجاز واحد" : "Reflect on 1 win"}
+                  </li>
+                  <li>
+                    {lang === "ar" ? "قيّم يومك (1-5)" : "Rate your day (1-5)"}
+                  </li>
+                  <li>
+                    {lang === "ar"
+                      ? "خطّط بكرة بثلاث نقاط"
+                      : "Plan tomorrow in 3 bullets"}
+                  </li>
                 </ul>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Testimonials */}
+        {/* ===================== TESTIMONIALS ===================== */}
         <section className="py-16">
           <div className="mx-auto max-w-5xl px-6 text-center">
             <h2 className="text-3xl font-bold sm:text-4xl">
               {t.testimonialsTitle}
             </h2>
-            <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2">
-              {TESTIMONIALS.map((tm, i) => (
-                <motion.blockquote
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: i * 0.1 }}
-                  className="rounded-2xl border border-gray-200 bg-white p-6 text-left italic shadow-sm dark:border-gray-800 dark:bg-gray-900"
-                >
-                  <p>“{tm.quote}”</p>
-                  <footer className="mt-2 not-italic">— {tm.name}</footer>
-                </motion.blockquote>
-              ))}
+            <div className="mt-10">
+              <TestimonialMarquee
+                items={[
+                  {
+                    name: "Sarah A.",
+                    quote:
+                      "MindSync helped me stay consistent with journaling. Love it!",
+                  },
+                  {
+                    name: "Mohammad Z.",
+                    quote:
+                      "As a student, it gave me control over my routines and stress levels.",
+                  },
+                  {
+                    name: "Lina K.",
+                    quote:
+                      "The weekly summaries are magic. It’s like a therapist in my pocket!",
+                  },
+                  {
+                    name: "Jad R.",
+                    quote:
+                      "The AI suggestions are scarily accurate and super helpful.",
+                  },
+                ]}
+                speed={28}
+                dir={lang === "ar" ? "rtl" : "ltr"}
+                className="mt-10"
+              />
             </div>
           </div>
         </section>
 
-        {/* FAQ */}
+        {/* ===================== FAQ ===================== */}
         <section className="bg-gray-50 py-16 dark:bg-gray-900/40">
           <div className="mx-auto max-w-4xl px-6">
             <h2 className="text-center text-3xl font-bold sm:text-4xl">
               {t.faqsTitle}
             </h2>
-            <div className="mt-8 divide-y divide-gray-200 dark:divide-gray-800">
-              {t.faqs.map((f, i) => (
-                <FAQ key={i} q={f.q} a={f.a} />
-              ))}
-            </div>
+
+            <FAQSearch
+              items={FAQ_ITEMS}
+              className="mt-8"
+              lang={lang}
+              dir={dir as "ltr" | "rtl"}
+              placeholder={lang === "ar" ? "ابحث في الأسئلة…" : "Search FAQs…"}
+              i18n={{
+                results: (n) =>
+                  lang === "ar"
+                    ? `${n} نتيجة`
+                    : `${n} result${n !== 1 ? "s" : ""}`,
+                noResults: lang === "ar" ? "لا توجد نتائج" : "No results",
+                searchAriaLabel:
+                  lang === "ar" ? "ابحث في الأسئلة" : "Search FAQs",
+              }}
+            />
+
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON) }}
+            />
           </div>
         </section>
 
-        {/* Pricing / CTA */}
+        {/* ===================== PRICING ===================== */}
         <section id="pricing" className="py-16">
-          <div className="mx-auto max-w-6xl px-6 text-center">
-            <h2 className="text-3xl font-bold sm:text-4xl">{t.pricingTitle}</h2>
-            <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
-              {t.plans.map((p, i) => (
-                <div
-                  key={i}
-                  className={`rounded-2xl border p-6 text-left shadow-sm transition hover:shadow-md dark:border-gray-800 ${
-                    (p as any).featured
-                      ? "border-indigo-500/40 ring-1 ring-indigo-500/30"
-                      : "border-gray-200 dark:border-gray-800"
-                  } bg-white dark:bg-gray-900`}
-                >
-                  <div className="flex items-baseline justify-between">
-                    <h3 className="text-xl font-semibold">{p.name}</h3>
-                    <span className="text-2xl font-bold">{p.price}</span>
-                  </div>
-                  <ul className="mt-4 space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                    {p.perks.map((perk, idx) => (
-                      <li key={idx} className="flex items-center gap-2">
-                        <span aria-hidden>✅</span>
-                        <span>{perk}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href={i === 0 ? "/register" : "/pro"}
-                    className="mt-6 inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                  >
-                    {p.cta}
-                  </Link>
-                </div>
-              ))}
-            </div>
+          <div className="mx-auto max-w-7xl px-6">
+            <h2 className="text-center text-3xl font-bold sm:text-4xl">
+              {t.pricingTitle}
+            </h2>
+            <PricingToggle
+              plans={PRICING_PLANS}
+              percentDiscount={25}
+              currency="USD"
+              className="mt-10"
+            />
           </div>
         </section>
 
-        {/* Blog / Resources */}
+        {/* ===================== BLOG ===================== */}
         <section id="blog" className="bg-gray-50 py-16 dark:bg-gray-900/40">
-          <div className="mx-auto max-w-6xl px-6">
-            <h2 className="text-center text-3ل font-bold sm:text-4xl">
+          <div className="mx-auto max-w-7xl px-6">
+            <h2 className="text-center text-3xl font-bold sm:text-4xl">
               {t.blogTitle}
             </h2>
             <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -613,13 +752,13 @@ export default function Home() {
                   </div>
                   <h3 className="mt-2 text-lg font-semibold">{b.title}</h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    {b.minutes} min read
+                    {b.minutes} {t.units.minRead}
                   </p>
                   <Link
                     href="#"
                     className="mt-4 inline-block text-sm font-medium text-indigo-600 hover:underline"
                   >
-                    Read →
+                    {t.units.read}
                   </Link>
                 </article>
               ))}
@@ -627,9 +766,9 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Footer */}
+        {/* ===================== FOOTER ===================== */}
         <footer className="border-t border-gray-200 bg-white py-10 text-sm dark:border-gray-800 dark:bg-gray-950">
-          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 md:flex-row">
+          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 md:flex-row">
             <div className="text-gray-600 dark:text-gray-300">
               {t.footer.rights(new Date().getFullYear())}
             </div>
@@ -645,37 +784,173 @@ export default function Home() {
   );
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
+/* ===================== UI Helpers ===================== */
+function Stat({
+  icon,
+  value,
+  label,
+}: {
+  icon?: ReactNode;
+  value: ReactNode;
+  label: string;
+}) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <div className="text-xl font-bold">{value}</div>
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <div className="flex items-center gap-2">
+        {icon ? (
+          <span className="text-gray-600 dark:text-gray-300">{icon}</span>
+        ) : null}
+        <div className="text-xl font-bold">{value}</div>
+      </div>
       <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
         {label}
       </div>
     </div>
   );
 }
+/* ====== Dashboard (Pro) ====== */
+function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
+  const [range, setRange] = useState<"7d" | "14d" | "30d">("7d");
 
-function FAQ({ q, a }: { q: string; a: string }) {
-  const [open, setOpen] = useState(false);
+  // بيانات بسيطة بدون مكتبات
+  const DATA: Record<"7d" | "14d" | "30d", number[]> = {
+    "7d": [55, 80, 62, 95, 70, 85, 60],
+    "14d": [40, 55, 62, 75, 68, 80, 60, 72, 78, 84, 66, 70, 77, 81],
+    "30d": Array.from({ length: 30 }, (_, i) => 42 + Math.round(50 * Math.abs(Math.sin(i / 3.8)))),
+  };
+
+  const copy = lang === "ar"
+    ? {
+        title: "عرض لوحة التحكم",
+        habit: "إكمال العادات",
+        range: { "7d": "7 أيام", "14d": "14 يوم", "30d": "30 يوم" },
+        morning: "تأمل الصباح",
+        evening: "تأمل المساء",
+        sampleMorning: "رح أركز اليوم على العمل العميق 3 ساعات وأمشي 10 دقايق.",
+        sampleEvening: "حققت 2/3 عادات. الطاقة نزلت الساعة 3م؛ تمدّد بسيط ساعد كثير.",
+        completion: "نسبة الإكمال",
+        streak: "أفضل سلسلة",
+        dayUnit: "يوم",
+      }
+    : {
+        title: "Dashboard preview",
+        habit: "Habit completion",
+        range: { "7d": "7 days", "14d": "14 days", "30d": "30 days" },
+        morning: "Morning reflection",
+        evening: "Evening reflection",
+        sampleMorning: "Today I will focus on deep work for 3h and take a 10-minute walk.",
+        sampleEvening: "I hit 2/3 habits. Energy dipped at 3pm; a short stretch helped a lot.",
+        completion: "Completion",
+        streak: "Best streak",
+        dayUnit: "days",
+      };
+
+  const data = DATA[range];
+  const completionAvg = Math.round(data.reduce((a, b) => a + b, 0) / data.length);
+  const bestStreak = 18; // مثال
+
   return (
-    <div className="py-4">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between text-left font-medium focus:outline-none"
-        aria-expanded={open}
-      >
-        <span>{q}</span>
-        <span className="text-xl">{open ? "−" : "+"}</span>
-      </button>
-      <div
-        className={`grid transition-[grid-template-rows] duration-300 ${
-          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
-      >
-        <p className="overflow-hidden text-sm text-gray-600 dark:text-gray-300">
-          {a}
-        </p>
+    <section className="mx-auto max-w-7xl px-6 pb-16">
+      <div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/80 shadow-2xl shadow-indigo-500/10 backdrop-blur-sm dark:border-gray-800 dark:bg-gray-900/80">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3 border-b border-gray-200/80 px-5 py-3 dark:border-gray-800">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {copy.title}
+          </h3>
+
+          {/* Segmented control */}
+          <div className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-1 text-xs dark:border-gray-700 dark:bg-gray-950">
+            {(["7d","14d","30d"] as const).map((k) => (
+              <button
+                key={k}
+                onClick={() => setRange(k)}
+                className={
+                  range === k
+                    ? "rounded-lg bg-indigo-600 px-2.5 py-1 text-white"
+                    : "rounded-lg px-2.5 py-1 text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
+                }
+              >
+                {copy.range[k]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2">
+          {/* Analytics card */}
+          <div className="rounded-2xl border border-gray-200 bg-gradient-to-b from-gray-50 to-white p-5 dark:border-gray-800 dark:from-gray-900 dark:to-gray-950">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                {copy.habit} • {copy.range[range]}
+              </p>
+              <div className="flex items-center gap-2">
+                <Chip label={`${copy.completion}: ${completionAvg}%`} />
+                <Chip label={`${copy.streak}: ${bestStreak} ${copy.dayUnit}`} />
+              </div>
+            </div>
+
+            <BarChart data={data} />
+          </div>
+
+          {/* Reflections */}
+          <div className="grid gap-4">
+            <ReflectionCard title={copy.morning} text={copy.sampleMorning} />
+            <ReflectionCard title={copy.evening} text={copy.sampleEvening} />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ====== Sub components ====== */
+function Chip({ label }: { label: string }) {
+  return (
+    <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+      {label}
+    </span>
+  );
+}
+
+function ReflectionCard({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+      <p className="text-xs font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+        {title}
+      </p>
+      <p className="mt-2 text-sm text-gray-700 dark:text-gray-200">{text}</p>
+    </div>
+  );
+}
+
+function BarChart({ data }: { data: number[] }) {
+  const max = Math.max(100, ...data);
+  return (
+    <div className="relative h-48 rounded-xl bg-white p-3 dark:bg-gray-950">
+      {/* gridlines */}
+      <div className="pointer-events-none absolute inset-3">
+        {[25, 50, 75].map((p) => (
+          <div
+            key={p}
+            className="absolute inset-x-0 h-px bg-gray-200 dark:bg-gray-800"
+            style={{ top: `${p}%` }}
+          />
+        ))}
+      </div>
+      <div className="relative z-10 flex h-full items-end gap-2">
+        {data.map((v, i) => {
+          const h = Math.round((v / max) * 100);
+          return (
+            <div key={i} className="flex-1">
+              <div
+                style={{ height: `${h}%` }}
+                title={`${v}%`}
+                className="rounded-md bg-[linear-gradient(to_top,#4f46e5,#06b6d4)] shadow-sm"
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

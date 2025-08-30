@@ -18,3 +18,147 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* ========== Utilities ========== */
+@layer utilities {
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient 8s ease infinite;
+  }
+  .magnetic-will-move {
+    will-change: transform;
+  }
+  .glass {
+    @apply bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg;
+  }
+  .ring-breath {
+    animation: breath 6s ease-in-out infinite;
+  }
+}
+
+/* ========== Keyframes ========== */
+@keyframes gradient {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+@keyframes breath {
+  0%,
+  100% {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}
+
+/* ========== Helpers ========== */
+.edge-fade {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 8%,
+    black 92%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 8%,
+    black 92%,
+    transparent
+  );
+}
+.visually-hidden {
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px);
+  white-space: nowrap;
+}
+details.faq {
+  @apply glass rounded-xl p-4 open:shadow-xl;
+}
+details.faq > summary {
+  @apply cursor-pointer font-medium list-none;
+}
+details.faq > summary::-webkit-details-marker {
+  display: none;
+}
+.phone-shadow {
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.12));
+}
+.theme-smooth {
+  transition: background-color 0.3s ease, color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* ========== Marquee (Testimonials) ========== */
+.marquee {
+  overflow: hidden;
+  position: relative;
+  isolation: isolate; /* يمنع التداخل */
+}
+.marquee-inner {
+  display: inline-flex;
+  gap: 24px;
+  padding-inline: 12px; /* يمنع التماس عند اللوب */
+  white-space: nowrap;
+  will-change: transform;
+  animation: marquee var(--marquee-dur, 28s) linear infinite;
+}
+.marquee:hover .marquee-inner {
+  animation-play-state: paused;
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee figure {
+  white-space: normal;
+  flex: 0 0 auto;
+  line-height: 1.6;
+}
+
+/* Arabic RTL */
+.marquee[data-dir="rtl"] .marquee-inner {
+  animation-name: marquee-rtl;
+  flex-direction: row-reverse;
+}
+@keyframes marquee-rtl {
+  to {
+    transform: translateX(50%);
+  }
+}
+.marquee[data-dir="rtl"] figure {
+  direction: rtl;
+  text-align: right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-inner {
+    animation: none;
+    transform: none;
+  }
+}
+
+/* ========== Card style لعزل الخلفية ========== */
+.card {
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(8px);
+}
+.dark .card {
+  background-color: rgba(17, 24, 39, 0.92); /* gray-900/92 */
+  border-color: rgba(255, 255, 255, 0.08);
+}
