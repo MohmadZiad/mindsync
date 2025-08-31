@@ -1,26 +1,35 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { entriesService } from "@/services/entries";
 import { Card } from "./card";
+import { useI18n } from "@/components/i18n";
 
 export default function AiReflectionControls() {
+  const { t, lang } = useI18n(); // ⬅️ خذ اللغة والنصوص
   const [days, setDays] = useState<number>(1);
-  const [locale, setLocale] = useState<"ar" | "en">("ar");
-  const [text, setText] = useState<string>(""); // نترك النص الحالي
+  const [locale, setLocale] = useState<"ar" | "en">(lang); // default = لغة التطبيق
+  const [text, setText] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  // لو المستخدم غيّر لغة التطبيق من الهيدر، خليه ينعكس هنا كـ default
+  useEffect(() => {
+    setLocale(lang);
+  }, [lang]);
 
   async function run() {
     try {
       setLoading(true);
       setErr(null);
       const res = await entriesService.aiReflection({ days, locale });
-      setText(res.summary); // ✅ نعرض الناتج تحت الأزرار
+      setText(res.summary);
     } catch (e: any) {
       const msg =
-        e?.data?.error || e?.data?.message || e?.message || "فشل التوليد";
+        e?.data?.error ||
+        e?.data?.message ||
+        e?.message ||
+        (lang === "ar" ? "فشل التوليد" : "Generation failed");
       setErr(msg);
-      // لا تمسح النص الموجود؛ حتى لو ظهر 429 يظل الملخص السابق ظاهر
       console.error("AI reflection error:", e);
     } finally {
       setLoading(false);
@@ -28,10 +37,10 @@ export default function AiReflectionControls() {
   }
 
   return (
-    <Card title="AI Reflection (خيارات سريعة)">
+    <Card title={t.aiReflection}>
       <div className="flex flex-col sm:flex-row gap-2 items-center">
         <label className="text-sm">
-          الأيام
+          {t.days}
           <input
             type="number"
             min={1}
@@ -43,13 +52,13 @@ export default function AiReflectionControls() {
         </label>
 
         <label className="text-sm">
-          اللغة
+          {t.language}
           <select
             value={locale}
             onChange={(e) => setLocale(e.target.value as "ar" | "en")}
             className="ml-2 px-2 py-1 border rounded"
           >
-            <option value="ar">عربي</option>
+            <option value="ar">العربية</option>
             <option value="en">English</option>
           </select>
         </label>
@@ -59,7 +68,7 @@ export default function AiReflectionControls() {
           onClick={run}
           disabled={loading}
         >
-          {loading ? "جاري..." : "توليد"}
+          {loading ? (lang === "ar" ? "جاري..." : "Working…") : t.generate}
         </button>
       </div>
 

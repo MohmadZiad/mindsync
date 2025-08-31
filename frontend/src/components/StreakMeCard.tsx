@@ -9,12 +9,10 @@ type Habit = { id: string; name: string };
 export default function StreakMeCard() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [habitId, setHabitId] = useState<string | null>(null);
-
   const [s, setS] = useState<Streak | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // 1) fetch habits and select the first one automatically
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -33,7 +31,6 @@ export default function StreakMeCard() {
     };
   }, []);
 
-  // 2) fetch streak for selected habit
   useEffect(() => {
     if (!habitId) return;
     let alive = true;
@@ -55,9 +52,9 @@ export default function StreakMeCard() {
   }, [habitId]);
 
   return (
-    <Card title="Streak الشخصي">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-sm text-gray-600">العادة</span>
+    <Card
+      title="Streak الشخصي"
+      right={
         <select
           className="border rounded px-2 py-1 text-sm"
           value={habitId ?? ""}
@@ -69,21 +66,22 @@ export default function StreakMeCard() {
             </option>
           ))}
         </select>
-      </div>
-
+      }
+    >
       {loading ? (
-        <div>جاري...</div>
+        <div className="animate-pulse space-y-2">
+          <div className="h-6 w-1/3 rounded bg-gray-200 dark:bg-gray-800" />
+          <div className="h-4 w-1/4 rounded bg-gray-200 dark:bg-gray-800" />
+        </div>
       ) : err ? (
-        <div className="text-red-600">{err}</div>
-      ) : s ? (
+        <div className="text-red-600 text-sm">{err}</div>
+      ) : (
         <div className="text-2xl font-bold">
-          🔥 {s.current ?? 0} يوم متواصل
-          <div className="text-sm text-gray-500">
-            أطول سلسلة: {s.longest ?? 0} يوم
+          🔥 {Intl.NumberFormat().format(s?.current ?? 0)} يوم متواصل
+          <div className="text-sm text-gray-500 mt-1">
+            أطول سلسلة: {Intl.NumberFormat().format(s?.longest ?? 0)} يوم
           </div>
         </div>
-      ) : (
-        <div className="text-2xl font-bold">🔥 0 يوم متواصل</div>
       )}
     </Card>
   );

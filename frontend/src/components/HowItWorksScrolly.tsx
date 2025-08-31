@@ -22,16 +22,17 @@ export default function HowItWorksScrolly({
   const [active, setActive] = useState(0);
   const refs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // observe sections to set active index
+  // observe sections to set active index (تحسين العتبات)
   useEffect(() => {
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
+          if (!e.isIntersecting) return;
           const idx = Number((e.target as HTMLElement).dataset.index);
-          if (e.isIntersecting) setActive(idx);
+          setActive((prev) => (Number.isFinite(idx) ? idx : prev));
         });
       },
-      { threshold: 0.6 }
+      { rootMargin: "0px 0px -25% 0px", threshold: 0.35 }
     );
     refs.current.forEach((el) => el && io.observe(el));
     return () => io.disconnect();
@@ -52,7 +53,7 @@ export default function HowItWorksScrolly({
               {activeStep.desc}
             </p>
 
-            <div className="mt-auto flex gap-1">
+            <div className="mt-auto flex gap-1" aria-hidden="true">
               {steps.map((_, i) => (
                 <span
                   key={i}
@@ -74,10 +75,10 @@ export default function HowItWorksScrolly({
           <div
             key={i}
             data-index={i}
-            ref={(el: HTMLDivElement | null) => {
+            ref={(el) => {
               refs.current[i] = el;
             }}
-            className={`rounded-2xl border p-6 transition theme-smooth ${
+            className={`rounded-2xl border p-6 transition ${
               i === active
                 ? "border-indigo-500 shadow-lg"
                 : "border-slate-200 dark:border-slate-700"

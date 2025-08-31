@@ -257,7 +257,8 @@ function QuickToggles({
   setLang: (l: "en" | "ar") => void;
   mounted: boolean;
   theme?: string;
-  setTheme: (t: "light" | "dark") => void;
+  // ✅ خفّضنا التايب حتى يقبل 'system' كمان
+  setTheme: (t: string) => void;
   labels: { themeLight: string; themeDark: string; lang: string };
 }) {
   return (
@@ -309,7 +310,11 @@ function UserChip({
   return (
     <div className="relative">
       <button
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls="userchip-menu"
         onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
         className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-2.5 py-1 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
       >
         <div className="grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-white">
@@ -323,6 +328,7 @@ function UserChip({
 
       {open && (
         <div
+          id="userchip-menu"
           role="menu"
           onMouseLeave={() => setOpen(false)}
           className={cx(
@@ -333,6 +339,8 @@ function UserChip({
         >
           <Link
             href="/dashboard"
+            role="menuitem"
+            onClick={() => setOpen(false)}
             className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             <Route size={16} />
@@ -340,13 +348,19 @@ function UserChip({
           </Link>
           <Link
             href="/account"
+            role="menuitem"
+            onClick={() => setOpen(false)}
             className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             <User2 size={16} />
             {t.nav.account}
           </Link>
           <button
-            onClick={onLogout}
+            role="menuitem"
+            onClick={() => {
+              setOpen(false); // ✅ سكّر المينيو قبل اللوغ آوت
+              onLogout();
+            }}
             className="mt-0.5 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
           >
             <LogOut size={16} />
@@ -1056,9 +1070,13 @@ function ReflectionCard({ title, text }: { title: string; text: string }) {
 function BarChart({ data }: { data: number[] }) {
   const max = Math.max(100, ...data);
   return (
-    <div className="relative h-48 rounded-xl bg-white p-3 dark:bg-gray-950">
+    <div
+      className="relative h-48 rounded-xl bg-white p-3 dark:bg-gray-950"
+      role="img"
+      aria-label="Completion bars over selected period"
+    >
       {/* gridlines */}
-      <div className="pointer-events-none absolute inset-3">
+      <div aria-hidden className="pointer-events-none absolute inset-3">
         {[25, 50, 75].map((p) => (
           <div
             key={p}
@@ -1071,7 +1089,7 @@ function BarChart({ data }: { data: number[] }) {
         {data.map((v, i) => {
           const h = Math.round((v / max) * 100);
           return (
-            <div key={i} className="flex-1">
+            <div key={i} className="flex-1" aria-hidden="true">
               <div
                 style={{ height: `${h}%` }}
                 title={`${v}%`}

@@ -1,7 +1,7 @@
-// src/components/StepTabs.tsx
 "use client";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useI18n } from "@/components/i18n"; // ⬅️ المصدر الموحّد للّغة
 
 export type Step = {
   id: string;
@@ -14,80 +14,181 @@ export type Step = {
 export default function StepTabs({ steps }: { steps: Step[] }) {
   const router = useRouter();
   const params = useSearchParams();
+  const { t } = useI18n(); // ⬅️ نصوص Prev/Next من نفس المصدر
 
-  const currentId = params.get("step") || steps[0].id;
-  const index = Math.max(
+  /* ===== URL <-> State sync ===== */
+  const urlId = params.get("step") || steps[0]?.id || "";
+  const urlIndex = Math.max(
     0,
-    steps.findIndex((s) => s.id === currentId)
+    steps.findIndex((s) => s.id === urlId)
   );
+  const [index, setIndex] = useState(urlIndex);
+  useEffect(() => setIndex(urlIndex), [urlIndex]);
+
   const current = steps[index] ?? steps[0];
+  const canGoNext = useMemo(
+    () => steps[index]?.ready !== false,
+    [steps, index]
+  );
 
-  const canGoNext = useMemo(() => {
-    const step = steps[index];
-    return step?.ready !== false;
-  }, [steps, index]);
-
-  const goTo = (id: string) => {
+  const goUrl = (id: string) => {
     const q = new URLSearchParams(params.toString());
     q.set("step", id);
     router.replace(`?${q.toString()}`);
   };
+  useEffect(() => {
+    const id = steps[index]?.id;
+    if (id) goUrl(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
 
-  const goPrev = () => index > 0 && goTo(steps[index - 1].id);
+  /* ===== Direction (للسوايب فقط) ===== */
+  const dir =
+    typeof document !== "undefined"
+      ? document.documentElement.getAttribute("dir") || "ltr"
+      : "ltr";
+  const isRTL = dir === "rtl";
+
+  const goPrev = () => index > 0 && setIndex(index - 1);
   const goNext = () =>
-    index < steps.length - 1 && canGoNext && goTo(steps[index + 1].id);
+    index < steps.length - 1 && canGoNext && setIndex(index + 1);
+
+  /* ===== Swipe (موبايل) ===== */
+  const startX = useRef<number | null>(null);
+  const lastX = useRef<number | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    startX.current = e.touches[0].clientX;
+    lastX.current = startX.current;
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    lastX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = () => {
+    if (startX.current == null || lastX.current == null) return;
+    const dx = lastX.current - startX.current;
+    const threshold = 60;
+    if (Math.abs(dx) > threshold) {
+      const leftSwipe = dx < 0;
+      const wantNext = isRTL ? !leftSwipe : leftSwipe;
+      wantNext ? goNext() : goPrev();
+    }
+    startX.current = lastX.current = null;
+  };
+
+  /* ===== Animated indicator + auto scroll ===== */
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const [indicator, setIndicator] = useState({ width: 0, left: 0 });
+  useEffect(() => {
+    const el = tabRefs.current[index];
+    const wrap = el?.closest(".tabs-wrap") as HTMLElement | null;
+    if (!el || !wrap) return;
+    const r = el.getBoundingClientRect();
+    const wr = wrap.getBoundingClientRect();
+    setIndicator({
+      width: r.width,
+      left: r.left - wr.left + wrap.scrollLeft,
+    });
+    el.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [index, steps.length]);
 
   return (
     <div className="w-full">
-      <ol className="flex flex-wrap items-center gap-2 mb-4">
-        {steps.map((s, i) => {
-          const isActive = i === index;
-          const isDone = i < index;
-          return (
-            <li key={s.id} className="flex items-center gap-2">
-              <button
-                onClick={() => goTo(s.id)}
-                className={`flex items-center gap-2 rounded-md border px-3 py-1 text-sm
-                  ${isActive ? "bg-white" : "bg-gray-50 hover:bg-white"}
-                  ${isDone ? "opacity-80" : ""}`}
-              >
-                <span
-                  className={`inline-flex h-5 w-5 items-center justify-center rounded-full border text-xs ${
-                    isActive ? "font-semibold" : ""
+      {/* Tab list */}
+      <div className="relative">
+        <ol className="tabs-wrap relative flex gap-2 overflow-x-auto scrollbar-none edge-fade py-1">
+          {steps.map((s, i) => {
+            const isActive = i === index;
+            const disabled =
+              i > index + 1 || (i > index && steps[index]?.ready === false);
+            return (
+              <li key={s.id} className="shrink-0">
+                <button
+                  ref={(el) => (tabRefs.current[i] = el)}
+                  onClick={() => setIndex(i)}
+                  role="tab"
+                  aria-selected={isActive}
+                  disabled={disabled}
+                  className={`touch px-3 py-1.5 rounded-full border text-sm theme-smooth
+                    ${
+                      isActive
+                        ? "bg-indigo-600 text-white border-indigo-600"
+                        : "bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200"
+                    } ${
+                    disabled
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:bg-gray-50 dark:hover:bg-gray-800"
                   }`}
                 >
-                  {i + 1}
-                </span>
-                <span
-                  className={`${isActive ? "font-semibold" : "text-gray-600"}`}
-                >
                   {s.title}
-                </span>
-              </button>
-              {i < steps.length - 1 && <span className="text-gray-400">—</span>}
-            </li>
-          );
-        })}
-      </ol>
+                </button>
+              </li>
+            );
+          })}
+          <span
+            className="pointer-events-none absolute bottom-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 transition-[width,transform] duration-300"
+            style={{
+              width: indicator.width,
+              transform: `translateX(${indicator.left}px)`,
+            }}
+          />
+        </ol>
+      </div>
 
-      <div className="rounded-md border bg-white p-4">{current.content}</div>
+      {/* Content (with slide/fade) */}
+      <div
+        className="mt-3 rounded-2xl border bg-white dark:bg-gray-900 p-4 shadow-sm theme-smooth overflow-hidden"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        role="tabpanel"
+        aria-labelledby={`tab-${current?.id}`}
+      >
+        <SlideFade key={current?.id} rtl={isRTL}>
+          {current?.content}
+        </SlideFade>
+      </div>
 
+      {/* Prev / Next */}
       <div className="mt-4 flex items-center justify-between">
         <button
           onClick={goPrev}
           disabled={index === 0}
-          className="rounded-md border px-3 py-1 text-sm disabled:opacity-50"
+          className="btn btn--ghost touch disabled:opacity-50"
         >
-          السابق
+          {t.prev}
         </button>
         <button
           onClick={goNext}
           disabled={index === steps.length - 1 || !canGoNext}
-          className="rounded-md border px-3 py-1 text-sm disabled:opacity-50"
+          className="btn btn--primary touch disabled:opacity-50"
         >
-          التالي
+          {t.next}
         </button>
       </div>
+    </div>
+  );
+}
+
+function SlideFade({
+  children,
+  rtl,
+}: {
+  children: React.ReactNode;
+  rtl?: boolean;
+}) {
+  return (
+    <div
+      className="will-change-transform"
+      style={{
+        animation: `slidefade .25s ease`,
+        ["--slide-x" as any]: rtl ? "-16px" : "16px",
+      }}
+    >
+      {children}
     </div>
   );
 }

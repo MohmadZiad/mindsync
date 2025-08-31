@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { entriesService, type WeeklyGroupedResp } from "@/services/entries";
-import { Card } from "./card"; // انتبه C كبيرة
+import { Card } from "./card";
 
 export default function WeeklyGrouped() {
   const [data, setData] = useState<WeeklyGroupedResp | null>(null);
@@ -48,6 +48,9 @@ export default function WeeklyGrouped() {
       </Card>
     );
 
+  const locale =
+    typeof navigator !== "undefined" ? navigator.language : "en-US";
+
   return (
     <Card title="إدخالات هذا الأسبوع حسب العادات">
       <div className="grid md:grid-cols-2 gap-4">
@@ -76,7 +79,9 @@ export default function WeeklyGrouped() {
                     ) : null}
                     <div className="text-[11px] text-zinc-500">
                       {e.createdAt
-                        ? new Date(e.createdAt).toLocaleString()
+                        ? new Date(e.createdAt).toLocaleString(locale, {
+                            hour12: false,
+                          })
                         : ""}
                     </div>
                   </div>

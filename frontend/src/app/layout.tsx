@@ -2,7 +2,8 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Providers from "./Providers";
 import { Toaster } from "react-hot-toast";
-import AuthBootstrap from "@/components/AuthBootstrap"; // 👈 جديد
+import AuthBootstrap from "@/components/AuthBootstrap";
+import { I18nProvider } from "@/components/i18n";
 
 export const metadata: Metadata = {
   title: "MindSync",
@@ -28,13 +29,16 @@ export const metadata: Metadata = {
 };
 
 function DirLangScript() {
-  // يضبط lang/dir قبل الـ hydration لتفادي الـ layout shift
+  // يقرر اللغة قبل الـ hydration (ويحفظها إذا مش محفوظة)
   const code = `
     try {
-      var l = localStorage.getItem('ms_lang') || 'en';
+      var stored = localStorage.getItem('ms_lang');
+      var guess = (navigator.language || '').toLowerCase().startsWith('ar') ? 'ar' : 'en';
+      var l = stored || guess || 'ar';
       var d = (l === 'ar') ? 'rtl' : 'ltr';
       document.documentElement.lang = (l === 'ar') ? 'ar' : 'en';
-      document.documentElement.dir = d;
+      document.documentElement.dir  = d;
+      if (!stored) localStorage.setItem('ms_lang', l);
     } catch (e) {}
   `;
   return <script dangerouslySetInnerHTML={{ __html: code }} />;
@@ -46,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html suppressHydrationWarning>
       <head>
         <DirLangScript />
         <link
@@ -54,15 +58,15 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin=""
         />
-        {/* لو بتستعمل خط خارجي */}
-        {/* <link rel="preload" href="/bg-loop.mp4" as="video" /> */}
       </head>
       <body className="bg-white dark:bg-gray-950">
-        <Providers>
-          <AuthBootstrap /> 
-          {children}
-          <Toaster position="top-center" reverseOrder={false} />
-        </Providers>
+        <I18nProvider>
+          <Providers>
+            <AuthBootstrap />
+            {children}
+            <Toaster position="top-center" reverseOrder={false} />
+          </Providers>
+        </I18nProvider>
       </body>
     </html>
   );

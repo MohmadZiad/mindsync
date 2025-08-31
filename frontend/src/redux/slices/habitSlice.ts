@@ -1,6 +1,14 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
-export type Habit = { id: string; name: string; createdAt: string };
+export type Habit = {
+  id: string;
+  name: string;
+  createdAt: string;
+  // MS:add — خصائص إضافية تيجي من الفورم
+  frequency?: "daily" | "weekly";
+  description?: string | null;
+  icon?: string | null;
+};
 
 type State = {
   items: Habit[];
@@ -10,7 +18,9 @@ type State = {
 
 const initialState: State = { items: [], loading: false, error: null };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000/api";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000/api";
+
 async function api<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { "Content-Type": "application/json" },
@@ -23,21 +33,38 @@ async function api<T>(path: string, opts: RequestInit = {}): Promise<T> {
 }
 
 // GET /api/habits
-export const fetchHabits = createAsyncThunk<Habit[]>("habits/list", async () => {
-  return api<Habit[]>("/habits", { method: "GET" });
-});
+export const fetchHabits = createAsyncThunk<Habit[]>(
+  "habits/list",
+  async () => {
+    return api<Habit[]>("/habits", { method: "GET" });
+  }
+);
 
-// POST /api/habits { name }
-export const addHabit = createAsyncThunk<Habit, { name: string }>(
+// POST /api/habits { name, frequency?, description?, icon? }
+type AddHabitPayload = {
+  name: string;
+  frequency?: "daily" | "weekly";
+  description?: string | null;
+  icon?: string | null;
+};
+export const addHabit = createAsyncThunk<Habit, AddHabitPayload>(
   "habits/add",
-  async ({ name }) => api<Habit>("/habits", { method: "POST", body: JSON.stringify({ name }) })
+  async (payload) =>
+    api<Habit>("/habits", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    })
 );
 
 // PUT /api/habits/:id { name }
-export const updateHabit = createAsyncThunk<Habit, { id: string; name: string }>(
-  "habits/update",
-  async ({ id, name }) =>
-    api<Habit>(`/habits/${id}`, { method: "PUT", body: JSON.stringify({ name }) })
+export const updateHabit = createAsyncThunk<
+  Habit,
+  { id: string; name: string }
+>("habits/update", async ({ id, name }) =>
+  api<Habit>(`/habits/${id}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  })
 );
 
 // DELETE /api/habits/:id
@@ -55,12 +82,23 @@ const slice = createSlice({
   reducers: {},
   extraReducers: (b) => {
     // list
-    b.addCase(fetchHabits.pending, (s) => { s.loading = true; s.error = null; });
-    b.addCase(fetchHabits.fulfilled, (s, a) => { s.loading = false; s.items = a.payload; });
-    b.addCase(fetchHabits.rejected, (s, a) => { s.loading = false; s.error = a.error.message || "Failed to load habits"; });
+    b.addCase(fetchHabits.pending, (s) => {
+      s.loading = true;
+      s.error = null;
+    });
+    b.addCase(fetchHabits.fulfilled, (s, a) => {
+      s.loading = false;
+      s.items = a.payload;
+    });
+    b.addCase(fetchHabits.rejected, (s, a) => {
+      s.loading = false;
+      s.error = a.error.message || "Failed to load habits";
+    });
 
     // add
-    b.addCase(addHabit.fulfilled, (s, a) => { s.items.unshift(a.payload); });
+    b.addCase(addHabit.fulfilled, (s, a) => {
+      s.items.unshift(a.payload);
+    });
 
     // update
     b.addCase(updateHabit.fulfilled, (s, a) => {
