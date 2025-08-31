@@ -8,6 +8,7 @@ import {
   deleteHabit,
 } from "../controllers/habit";
 import { getHabitStreak } from "../controllers/streaks";
+import { checkinHabit } from "../controllers/streaks";
 // Habit Routes – all routes are protected (require login)
 
 const router = express.Router();
@@ -25,5 +26,8 @@ router.delete("/:id", deleteHabit);
 
 //get Streak!
 router.get("/:id/streak", getHabitStreak);
+
+// Check-in لليوم
+router.post("/:id/checkin", checkinHabit);
 
 export default router;

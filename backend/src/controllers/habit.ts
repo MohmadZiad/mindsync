@@ -1,66 +1,128 @@
-    import { Request, Response } from "express";
-    import { prisma } from "../config/db";
+import { Request, Response } from "express";
+import { prisma } from "../config/db";
 
-    //  Get all habits for authenticated user
-    export const getHabits = async (req: Request, res: Response) => {
-    try {
-        const habits = await prisma.habit.findMany({
-        where: { userId: req.user!.id },
-        orderBy: { createdAt: "desc" },
-        });
-        res.status(200).json(habits);
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error });
-    }
+// GET /api/habits
+export const getHabits = async (req: Request, res: Response) => {
+  try {
+    const habits = await prisma.habit.findMany({
+      where: { userId: req.user!.id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        icon: true,
+        color: true,
+        frequency: true,
+        createdAt: true,
+      },
+    });
+    return res.status(200).json(habits);
+  } catch (err: any) {
+    return res
+      .status(500)
+      .json({ message: "Server Error", error: err?.message });
+  }
+};
+
+// POST /api/habits
+export const createHabit = async (req: Request, res: Response) => {
+  try {
+    const { name, description, icon, color, frequency } = req.body as {
+      name: string;
+      description?: string;
+      icon?: string | null;
+      color?: string | null;
+      frequency?: "daily" | "weekly";
     };
 
-    //  Create new habit
-    export const createHabit = async (req: Request, res: Response) => {
-    const { name, description, icon, color } = req.body;
-    try {
-        const habit = await prisma.habit.create({
-        data: {
-            name,
-            description,
-            icon,
-            color,
-            userId: req.user!.id,
-        },
-        });
-        res.status(201).json(habit);
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error });
+    if (!name?.trim()) {
+      return res.status(400).json({ message: "name is required" });
     }
-    };
 
-    //  Update habit
-    export const updateHabit = async (req: Request, res: Response) => {
+    const habit = await prisma.habit.create({
+      data: {
+        name: name.trim(),
+        description: description ?? null,
+        icon: icon ?? null,
+        color: color ?? null,
+        frequency: (frequency as any) ?? "daily",
+        userId: req.user!.id,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        icon: true,
+        color: true,
+        frequency: true,
+        createdAt: true,
+      },
+    });
+
+    return res.status(201).json(habit);
+  } catch (err: any) {
+    return res
+      .status(500)
+      .json({ message: "Server Error", error: err?.message });
+  }
+};
+
+// PUT /api/habits/:id
+export const updateHabit = async (req: Request, res: Response) => {
+  try {
     const { id } = req.params;
-    const { name, description, icon, color, isArchived } = req.body;
-    try {
-        const habit = await prisma.habit.update({
-        where: { id },
-        data: {
-            name,
-            description,
-            icon,
-            color,
-            isArchived,
-        },
-        });
-        res.status(200).json(habit);
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error });
-    }
-    };
 
-    //  Delete habit
-    export const deleteHabit = async (req: Request, res: Response) => {
-    const { id } = req.params;
-    try {
-        await prisma.habit.delete({ where: { id } });
-        res.status(204).end();
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error });
+    const existing = await prisma.habit.findUnique({ where: { id } });
+    if (!existing || existing.userId !== req.user!.id) {
+      return res.status(404).json({ message: "Habit not found" });
     }
-    };
+
+    const { name, description, icon, color, frequency } = req.body;
+
+    const updated = await prisma.habit.update({
+      where: { id },
+      data: {
+        ...(name !== undefined ? { name } : {}),
+        ...(description !== undefined ? { description } : {}),
+        ...(icon !== undefined ? { icon } : {}),
+        ...(color !== undefined ? { color } : {}),
+        ...(frequency !== undefined ? { frequency } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        icon: true,
+        color: true,
+        frequency: true,
+        createdAt: true,
+      },
+    });
+
+    return res.status(200).json(updated);
+  } catch (err: any) {
+    return res
+      .status(500)
+      .json({ message: "Server Error", error: err?.message });
+  }
+};
+
+// DELETE /api/habits/:id
+export const deleteHabit = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const existing = await prisma.habit.findUnique({ where: { id } });
+    if (!existing || existing.userId !== req.user!.id) {
+      return res.status(404).json({ message: "Habit not found" });
+    }
+
+    await prisma.habit.delete({ where: { id } }); // cascade will clean entries
+    return res.status(204).send();
+  } catch (err: any) {
+    return res
+      .status(500)
+      .json({ message: "Server Error", error: err?.message });
+  }
+};

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation"; // 👈 أضفنا useSearchParams
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { loginThunk, meThunk, clearError } from "@/redux/slices/authSlice";
 
@@ -17,13 +17,9 @@ const STR = {
     hide: "Hide",
     submit: "Login",
     loading: "Logging in…",
-    or: "or",
-    withGoogle: "Continue with Google",
     noAccount: "No account?",
     createOne: "Create one",
-    success: "Signed in successfully ✅",
-    youAre: "User",
-    goHome: "Go to homepage",
+    redirecting: "Redirecting…",
   },
   ar: {
     title: "تسجيل الدخول",
@@ -34,52 +30,38 @@ const STR = {
     hide: "إخفاء",
     submit: "تسجيل الدخول",
     loading: "جاري تسجيل الدخول…",
-    or: "أو",
-    withGoogle: "المتابعة عبر Google",
     noAccount: "ما عندك حساب؟",
     createOne: "أنشئ حسابًا",
-    success: "تم تسجيل الدخول بنجاح ✅",
-    youAre: "المستخدم",
-    goHome: "الانتقال للرئيسية",
+    redirecting: "جاري التحويل…",
   },
 } as const;
 
 export default function LoginPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const search = useSearchParams(); // 👈
-  const next = search.get("next") || "/dashboard"; // 👈
+  const search = useSearchParams();
+  const next = search.get("next") || "/dashboard";
   const { user, loading, error } = useAppSelector((s) => s.auth);
 
-  // i18n (نقرأ اللغة المختارة من الهوم)
   const [lang, setLang] = useState<Lang>("en");
   useEffect(() => {
-    const l =
-      (typeof window !== "undefined"
-        ? (localStorage.getItem("ms_lang") as Lang | null)
-        : null) || "en";
-    setLang(l);
+    setLang((localStorage.getItem("ms_lang") as Lang) || "en");
   }, []);
   const t = useMemo(() => STR[lang], [lang]);
   const dir = lang === "ar" ? "rtl" : "ltr";
 
-  // حقول
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
 
-  // لو المستخدم أصلاً لوج إن
   useEffect(() => {
     dispatch(meThunk());
   }, [dispatch]);
 
   useEffect(() => {
-    if (user) {
-      router.replace(next); // 👈 بدّلنا /#dashboard إلى next
-    }
+    if (user) router.replace(next);
   }, [user, router, next]);
 
-  // تنظيف رسالة الخطأ عند تغيير المدخلات
   useEffect(() => {
     return () => {
       dispatch(clearError());
@@ -90,10 +72,17 @@ export default function LoginPage() {
     e.preventDefault();
     await dispatch(clearError());
     const action = await dispatch(loginThunk({ email, password }));
-    // إن تمّت
     if (action?.meta?.requestStatus === "fulfilled") {
-      router.replace(next); // 👈 بدّلنا /#dashboard إلى next
+      router.replace(next);
     }
+  }
+
+  if (user) {
+    return (
+      <main dir={dir} className="min-h-[60vh] grid place-items-center">
+        <div className="text-sm text-zinc-500">{t.redirecting}</div>
+      </main>
+    );
   }
 
   return (
@@ -107,84 +96,70 @@ export default function LoginPage() {
           {t.welcome}
         </p>
 
-        {!user ? (
-          <form onSubmit={onSubmit} className="mt-6 space-y-4" noValidate>
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium">{t.email}</span>
+        <form onSubmit={onSubmit} className="mt-6 space-y-4" noValidate>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium">{t.email}</span>
+            <input
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              aria-invalid={!!error}
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium">{t.password}</span>
+            <div className="flex items-stretch gap-2">
               <input
                 className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800"
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type={showPw ? "text" : "password"}
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
-                aria-invalid={!!error}
               />
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium">
-                {t.password}
-              </span>
-              <div className="flex items-stretch gap-2">
-                <input
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800"
-                  type={showPw ? "text" : "password"}
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw((s) => !s)}
-                  className="shrink-0 rounded-lg border border-gray-300 px-3 text-xs font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
-                >
-                  {showPw ? t.hide : t.show}
-                </button>
-              </div>
-            </label>
-
-            {error && (
-              <div
-                aria-live="polite"
-                className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-900/30"
+              <button
+                type="button"
+                onClick={() => setShowPw((s) => !s)}
+                className="shrink-0 rounded-lg border border-gray-300 px-3 text-xs font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
               >
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-indigo-700 disabled:opacity-60"
-            >
-              {loading ? t.loading : t.submit}
-            </button>
-
-            <div className="text-center text-xs text-gray-600 dark:text-gray-400">
-              {t.noAccount}{" "}
-              <a className="text-indigo-600 hover:underline" href="/register">
-                {t.createOne}
-              </a>
+                {showPw ? t.hide : t.show}
+              </button>
             </div>
-          </form>
-        ) : (
-          <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-4 text-sm dark:border-green-900/40 dark:bg-green-900/20">
-            <p className="font-medium">{t.success}</p>
-            <p className="text-gray-700 dark:text-gray-300 mt-1">
-              {t.youAre}: {user.email}
-            </p>
-            <a
-              className="mt-2 inline-block text-indigo-600 hover:underline"
-              href="/"
+          </label>
+
+          {error && (
+            <div
+              aria-live="polite"
+              className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-900/30"
             >
-              {t.goHome}
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-indigo-700 disabled:opacity-60"
+          >
+            {loading ? t.loading : t.submit}
+          </button>
+
+          <div className="text-center text-xs text-gray-600 dark:text-gray-400">
+            {t.noAccount}{" "}
+            <a
+              className="text-indigo-600 hover:underline"
+              href={`/register?next=${encodeURIComponent(next)}`}
+            >
+              {t.createOne}
             </a>
           </div>
-        )}
+        </form>
       </div>
     </main>
   );

@@ -11,12 +11,11 @@ router.post("/logout", (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
     sameSite: "lax",
-    secure: true,
+    secure: process.env.NODE_ENV === "production", // <-- هيك يتسق مع login
     path: "/",
   });
   res.status(200).json({ success: true });
 });
-
 router.get("/me", protect, (req, res) => {
   res.status(200).json({ user: req.user });
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { registerThunk, clearError, meThunk } from "@/redux/slices/authSlice";
 
@@ -21,9 +21,7 @@ const STR = {
     withGoogle: "Continue with Google",
     haveAccount: "Already have an account?",
     login: "Login",
-    success: "Account created & signed in ✅",
-    youAre: "User",
-    goHome: "Go to homepage",
+    redirecting: "Redirecting…",
   },
   ar: {
     title: "إنشاء حساب",
@@ -38,24 +36,21 @@ const STR = {
     withGoogle: "المتابعة عبر Google",
     haveAccount: "عندك حساب؟",
     login: "تسجيل الدخول",
-    success: "تم إنشاء الحساب وتسجيل الدخول ✅",
-    youAre: "المستخدم",
-    goHome: "الانتقال للرئيسية",
+    redirecting: "جاري التحويل…",
   },
 } as const;
 
 export default function RegisterPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const search = useSearchParams();
+  const next = search.get("next") || "/dashboard";
+
   const { user, loading, error } = useAppSelector((s) => s.auth);
 
   const [lang, setLang] = useState<Lang>("en");
   useEffect(() => {
-    const l =
-      (typeof window !== "undefined"
-        ? (localStorage.getItem("ms_lang") as Lang | null)
-        : null) || "en";
-    setLang(l);
+    setLang((localStorage.getItem("ms_lang") as Lang) || "en");
   }, []);
   const t = useMemo(() => STR[lang], [lang]);
   const dir = lang === "ar" ? "rtl" : "ltr";
@@ -64,15 +59,31 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
 
-  const googleUrl = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_URL;
+  // OAuth URL (اختياري)
+  const baseGoogleUrl = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_URL || "";
+  const googleHref = useMemo(() => {
+    if (!baseGoogleUrl) return "";
+    try {
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const url = new URL(baseGoogleUrl);
+      // أضف redirect_uri=/auth/callback لو مش موجود
+      if (!url.searchParams.has("redirect_uri")) {
+        url.searchParams.set("redirect_uri", `${origin}/auth/callback`);
+      }
+      return url.toString();
+    } catch {
+      return baseGoogleUrl;
+    }
+  }, [baseGoogleUrl]);
 
   useEffect(() => {
     dispatch(meThunk());
   }, [dispatch]);
 
   useEffect(() => {
-    if (user) router.push("/#dashboard");
-  }, [user, router]);
+    if (user) router.replace(next);
+  }, [user, router, next]);
 
   useEffect(() => {
     return () => {
@@ -85,8 +96,16 @@ export default function RegisterPage() {
     await dispatch(clearError());
     const action = await dispatch(registerThunk({ email, password }));
     if (action?.meta?.requestStatus === "fulfilled") {
-      router.push("/#dashboard");
+      router.replace(next);
     }
+  }
+
+  if (user) {
+    return (
+      <main dir={dir} className="min-h-[60vh] grid place-items-center">
+        <div className="text-sm text-zinc-500">{t.redirecting}</div>
+      </main>
+    );
   }
 
   return (
@@ -100,99 +119,84 @@ export default function RegisterPage() {
           {t.subtitle}
         </p>
 
-        {!user ? (
-          <form onSubmit={onSubmit} className="mt-6 space-y-4" noValidate>
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium">{t.email}</span>
+        <form onSubmit={onSubmit} className="mt-6 space-y-4" noValidate>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium">{t.email}</span>
+            <input
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium">{t.password}</span>
+            <div className="flex items-stretch gap-2">
               <input
                 className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800"
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type={showPw ? "text" : "password"}
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
               />
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium">
-                {t.password}
-              </span>
-              <div className="flex items-stretch gap-2">
-                <input
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800"
-                  type={showPw ? "text" : "password"}
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw((s) => !s)}
-                  className="shrink-0 rounded-lg border border-gray-300 px-3 text-xs font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
-                >
-                  {showPw ? t.hide : t.show}
-                </button>
-              </div>
-            </label>
-
-            {error && (
-              <div
-                aria-live="polite"
-                className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-900/30"
+              <button
+                type="button"
+                onClick={() => setShowPw((s) => !s)}
+                className="shrink-0 rounded-lg border border-gray-300 px-3 text-xs font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
               >
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-indigo-700 disabled:opacity-60"
-            >
-              {loading ? t.loading : t.submit}
-            </button>
-
-            {googleUrl && (
-              <>
-                <div className="text-center text-[11px] uppercase tracking-wider text-gray-500">
-                  {" "}
-                  {t.or}{" "}
-                </div>
-                <a
-                  className="block w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-center text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
-                  href={googleUrl}
-                  rel="noopener noreferrer"
-                >
-                  {t.withGoogle}
-                </a>
-              </>
-            )}
-
-            <div className="text-center text-xs text-gray-600 dark:text-gray-400">
-              {t.haveAccount}{" "}
-              <a className="text-indigo-600 hover:underline" href="/login">
-                {t.login}
-              </a>
+                {showPw ? t.hide : t.show}
+              </button>
             </div>
-          </form>
-        ) : (
-          <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-4 text-sm dark:border-green-900/40 dark:bg-green-900/20">
-            <p className="font-medium">{t.success}</p>
-            <p className="text-gray-700 dark:text-gray-300 mt-1">
-              {t.youAre}: {user.email}
-            </p>
-            <a
-              className="mt-2 inline-block text-indigo-600 hover:underline"
-              href="/#dashboard"
+          </label>
+
+          {error && (
+            <div
+              aria-live="polite"
+              className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-900/30"
             >
-              {t.goHome}
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-indigo-700 disabled:opacity-60"
+          >
+            {loading ? t.loading : t.submit}
+          </button>
+
+          {googleHref && (
+            <>
+              <div className="text-center text-[11px] uppercase tracking-wider text-gray-500 mt-2">
+                {t.or}
+              </div>
+              <a
+                className="block w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-center text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+                href={googleHref}
+                rel="noopener noreferrer"
+              >
+                {t.withGoogle}
+              </a>
+            </>
+          )}
+
+          <div className="text-center text-xs text-gray-600 dark:text-gray-400">
+            {t.haveAccount}{" "}
+            <a
+              className="text-indigo-600 hover:underline"
+              href={`/login?next=${encodeURIComponent(next)}`}
+            >
+              {t.login}
             </a>
           </div>
-        )}
+        </form>
       </div>
     </main>
   );

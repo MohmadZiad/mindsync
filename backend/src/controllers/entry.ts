@@ -77,17 +77,32 @@ export const updateEntry = async (req: Request, res: Response) => {
 };
 
 //delete entry
+// delete entry (fixed)
 export const deleteEntry = async (req: Request, res: Response) => {
-  const { id } = req.params;
   try {
-    const entry = prisma.entry.delete({
-      where: { id },
-    });
-    res.status(204).json(entry);
-  } catch (error) {
-    res.status(500).json({ message: "Server Error ", error });
+    const id = req.params.id as string;
+
+    // اختياري بس مهم أمنيًا: تأكد إنه السجل للمستخدم الحالي
+    const found = await prisma.entry.findUnique({ where: { id } });
+    if (!found || found.userId !== req.user!.id) {
+      return res.status(404).json({ message: "Entry not found" });
+    }
+
+    // احذف وانتظر انتهاء العملية
+    await prisma.entry.delete({ where: { id } });
+
+    // 204 بدون body
+    return res.status(204).send();
+  } catch (err: any) {
+    // لو سجل غير موجود (P2025) رجّع 404 بدل 500
+    if (err?.code === "P2025") {
+      return res.status(404).json({ message: "Entry not found" });
+    }
+    console.error("DELETE /api/entries/:id", err);
+    return res.status(500).json({ message: "Server Error", error: err?.message });
   }
 };
+
 
 //Get weekly summary
 
