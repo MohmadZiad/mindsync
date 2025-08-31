@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { entriesService } from "@/services/entries";
 import { Card } from "./card";
-import { useI18n } from "@/components/i18n";
+import { useI18n } from "@/components/ui/i18n";
 
 export default function AiReflectionControls() {
   const { t, lang } = useI18n(); // ⬅️ خذ اللغة والنصوص

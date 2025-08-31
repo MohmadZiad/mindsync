@@ -29,6 +29,14 @@ import HabitFormExtra from "@/components/HabitFormExtra";
 import { Card } from "@/components/card";
 import { toast } from "react-hot-toast";
 
+/* === NEW: flows === */
+import FabMenu from "@/components/flows/FabMenu";
+import CommandPalette from "@/components/flows/CommandPalette";
+import QuickAddHabitPopover from "@/components/flows/QuickAddHabitPopover";
+import AddHabitSheet from "@/components/flows/AddHabitSheet";
+import QuickLogPopover from "@/components/flows/QuickLogPopover";
+import EntrySheet from "@/components/flows/EntrySheet";
+
 /* ===================== i18n ===================== */
 type Lang = "en" | "ar";
 const T = {
@@ -222,19 +230,6 @@ function BottomNav({
   );
 }
 
-function Fab({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="fixed bottom-20 right-5 z-40 rounded-full px-5 py-3 shadow-xl bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring"
-      aria-label={label}
-      title={label}
-    >
-      ＋
-    </button>
-  );
-}
-
 /* ===================== Page ===================== */
 export default function DashboardPage() {
   const dispatch = useAppDispatch();
@@ -255,7 +250,7 @@ export default function DashboardPage() {
     setLang(l);
   }, []);
 
-  // ✅ حدّث localStorage + <html lang/dir> + نبّه الكومبوننتات
+  // ✅ sync <html> lang/dir + localStorage + broadcast
   useEffect(() => {
     if (typeof window !== "undefined") localStorage.setItem("ms_lang", lang);
     if (typeof document !== "undefined") {
@@ -263,7 +258,6 @@ export default function DashboardPage() {
       document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
     }
     try {
-      // حتى داخل نفس التبويب تسمع StepTabs للتغيير
       window.dispatchEvent(new Event("storage"));
     } catch {}
   }, [lang]);
@@ -306,7 +300,7 @@ export default function DashboardPage() {
 
   const [streaks, setStreaks] = useState<Record<string, Streak>>({});
 
-  // Quick Log UI
+  // Quick Log UI (القديم)
   const [qlog, setQlog] = useState<{
     habitId: string;
     note: string;
@@ -317,6 +311,12 @@ export default function DashboardPage() {
     done: true,
   });
   const [showQuickLog, setShowQuickLog] = useState(false);
+
+  /* ---- NEW: flows visibility ---- */
+  const [openQuickHabit, setOpenQuickHabit] = useState(false);
+  const [openProHabit, setOpenProHabit] = useState(false);
+  const [openQuickLogPop, setOpenQuickLogPop] = useState(false);
+  const [openEntrySheet, setOpenEntrySheet] = useState(false);
 
   /* ---- auth gate & initial fetch ---- */
   useEffect(() => {
@@ -665,31 +665,37 @@ export default function DashboardPage() {
         <StepTabs steps={steps} />
       </div>
 
-      {/* FAB Quick Log */}
-      <Fab label={t.quickLog} onClick={() => setShowQuickLog(true)} />
-
-      {/* Bottom Navigation */}
-      <BottomNav
-        items={[
-          { id: "intro", label: t.home, icon: "🏠" },
-          { id: "habits", label: t.habitsTab, icon: "✅" },
-          { id: "entries", label: t.ai, icon: "😍" },
-          { id: "reports", label: t.reports, icon: "📊" },
-        ]}
-        onSelect={(id) => {
-          const labels = [
-            T.en.steps[id as keyof typeof T.en.steps],
-            T.ar.steps[id as keyof typeof T.ar.steps],
-          ];
-          const btn = Array.from(
-            document.querySelectorAll("button,[role='tab']")
-          ).find((b: any) => labels.includes((b.textContent || "").trim()));
-          (btn as HTMLButtonElement | undefined)?.click();
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }}
+      {/* === NEW: Floating menu & palette === */}
+      <FabMenu
+        onQuickHabit={() => setOpenQuickHabit(true)}
+        onProHabit={() => setOpenProHabit(true)}
+        onQuickLog={() => setOpenQuickLogPop(true)}
+        onProEntry={() => setOpenEntrySheet(true)}
+      />
+      <CommandPalette
+        onQuickHabit={() => setOpenQuickHabit(true)}
+        onProHabit={() => setOpenProHabit(true)}
+        onQuickLog={() => setOpenQuickLogPop(true)}
+        onProEntry={() => setOpenEntrySheet(true)}
       />
 
-      {/* Quick Log Sheet */}
+      {/* === NEW: popovers/sheets === */}
+      <QuickAddHabitPopover
+        open={openQuickHabit}
+        onOpenChange={setOpenQuickHabit}
+        onAdvanced={() => {
+          setOpenQuickHabit(false);
+          setOpenProHabit(true);
+        }}
+      />
+      <AddHabitSheet open={openProHabit} onOpenChange={setOpenProHabit} />
+      <QuickLogPopover
+        open={openQuickLogPop}
+        onOpenChange={setOpenQuickLogPop}
+      />
+      <EntrySheet open={openEntrySheet} onOpenChange={setOpenEntrySheet} />
+
+      {/* Quick Log Sheet (القديم) */}
       {showQuickLog && (
         <div className="fixed inset-0 z-50">
           <div
@@ -841,12 +847,6 @@ function HabitsStep(props: {
             value={newHabit}
             onChange={(e) => setNewHabit(e.target.value)}
           />
-          <button
-            className="px-3 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700"
-            onClick={onAddHabit}
-          >
-            {i18n.add}
-          </button>
         </div>
         <HabitFormExtra value={newHabitExtra} onChange={setNewHabitExtra} />
       </div>
