@@ -1,7 +1,15 @@
 "use client";
-import React from "react";
+import * as React from "react";
+import { cn } from "./ui/cn";
 
-type Variant = "solid" | "glass";
+type Variant = "glass" | "solid" | "soft";
+
+interface CardProps extends React.HTMLAttributes<HTMLElement> {
+  title?: React.ReactNode;
+  right?: React.ReactNode;
+  footer?: React.ReactNode;
+  variant?: Variant;
+}
 
 export function Card({
   title,
@@ -9,34 +17,41 @@ export function Card({
   right,
   footer,
   variant = "glass",
-}: {
-  title?: string;
-  children: React.ReactNode;
-  right?: React.ReactNode;
-  footer?: React.ReactNode;
-  variant?: Variant;
-}) {
-  const cn =
+  className,
+  ...props
+}: CardProps) {
+  // اختر الكلاس حسب الـ variant
+  const variantClass =
     variant === "glass"
-      ? "glass rounded-2xl p-4"
-      : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm";
+      ? "glass rounded-2xl"
+      : variant === "soft"
+      ? "cardish-2"
+      : "cardish"; // solid
+
   return (
-    <section className={`w-full ${cn}`}>
+    <section
+      className={cn("w-full p-4 theme-smooth", variantClass, className)}
+      {...props}
+    >
       {(title || right) && (
-        <div className="flex items-center justify-between mb-3">
+        <div className="mb-3 flex items-center justify-between">
           {title ? (
-            <h3 className="text-base font-semibold">{title}</h3>
+            typeof title === "string" ? (
+              <h3 className="text-base font-semibold">{title}</h3>
+            ) : (
+              title
+            )
           ) : (
             <span />
           )}
           {right ?? null}
         </div>
       )}
+
       <div>{children}</div>
+
       {footer ? (
-        <div className="mt-3 pt-3 border-t border-white/20 dark:border-white/10">
-          {footer}
-        </div>
+        <div className="mt-3 pt-3 border-t border-base">{footer}</div>
       ) : null}
     </section>
   );

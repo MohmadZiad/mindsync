@@ -18,10 +18,11 @@ import {
   User2,
 } from "lucide-react";
 
-// Redux (لإظهار حالة المستخدم وتبديل زر الدخول/الداشبورد)
+// Redux (user/auth state for header buttons)
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { meThunk, logoutThunk } from "@/redux/slices/authSlice";
 
+// UI components
 import MagneticCTA from "@/components/MagneticCTA";
 import Counter from "@/components/Counter";
 import BreathingRing from "@/components/BreathingRing";
@@ -30,7 +31,17 @@ import FAQSearch, { getFaqJsonLd, type FaqItem } from "@/components/FAQ";
 import PricingToggle from "@/components/PricingToggle";
 import HowItWorksScrolly from "@/components/HowItWorksScrolly";
 
-/* ===================== i18n strings ===================== */
+// ✅ BEST PRACTICE: use the unified i18n provider for global language state
+import { useI18n } from "@/components/ui/i18n";
+
+/* ===================== marketing i18n strings (local) =====================
+   BEST PRACTICE NOTE:
+   - We keep these marketing strings local to this page for now.
+   - The app-wide i18n provider (useI18n) is used ONLY to read/set the current
+     language and to control <html dir/lang>. This removes duplicated language
+     state logic from the page and centralizes persistence (localStorage) + dir.
+   - If you want, you can later migrate these keys into the global DICT.
+*/
 const STRINGS = {
   en: {
     app: "MindSync",
@@ -244,7 +255,10 @@ function truncateEmail(email?: string) {
   return `${short}@${domain}`;
 }
 
-/* ===== Quick toggles for guests (no settings menu) ===== */
+/* ===== Quick toggles (Language + Theme in Navbar only) =====
+   BEST PRACTICE: single language switch in the top bar. We don't duplicate
+   language controls inside inner cards/components.
+*/
 function QuickToggles({
   lang,
   setLang,
@@ -257,13 +271,12 @@ function QuickToggles({
   setLang: (l: "en" | "ar") => void;
   mounted: boolean;
   theme?: string;
-  // ✅ خفّضنا التايب حتى يقبل 'system' كمان
-  setTheme: (t: string) => void;
+  setTheme: (t: string) => void; // accept "system" as well if needed
   labels: { themeLight: string; themeDark: string; lang: string };
 }) {
   return (
     <div className="hidden items-center gap-2 md:flex">
-      {/* تبديل اللغة */}
+      {/* Language toggle (uses global i18n provider) */}
       <button
         aria-label="Toggle language"
         onClick={() => setLang(lang === "en" ? "ar" : "en")}
@@ -272,7 +285,7 @@ function QuickToggles({
         🌐 {labels.lang}
       </button>
 
-      {/* تبديل الوضع (نهاري/ليلي) */}
+      {/* Theme toggle */}
       {mounted && (
         <button
           aria-label="Toggle theme"
@@ -294,18 +307,19 @@ function QuickToggles({
   );
 }
 
-/* ===== User chip (اسم/إيميل + قائمة) ===== */
+/* ===== User chip (email + menu) =====
+   BEST PRACTICE: receive translated labels via props (no hidden globals).
+*/
 function UserChip({
   email,
-  lang,
+  labels,
   onLogout,
 }: {
   email?: string;
-  lang: "en" | "ar";
+  labels: { dashboard: string; account: string; logout: string };
   onLogout: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const t = STRINGS[lang];
 
   return (
     <div className="relative">
@@ -344,7 +358,7 @@ function UserChip({
             className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             <Route size={16} />
-            {t.nav.dashboard}
+            {labels.dashboard}
           </Link>
           <Link
             href="/account"
@@ -353,18 +367,18 @@ function UserChip({
             className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             <User2 size={16} />
-            {t.nav.account}
+            {labels.account}
           </Link>
           <button
             role="menuitem"
             onClick={() => {
-              setOpen(false); // ✅ سكّر المينيو قبل اللوغ آوت
+              setOpen(false); // close the menu before logout action
               onLogout();
             }}
             className="mt-0.5 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
           >
             <LogOut size={16} />
-            {t.nav.logout}
+            {labels.logout}
           </button>
         </div>
       )}
@@ -378,46 +392,37 @@ export default function Home() {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((s) => s.auth);
 
-  // تحقق المستخدم (كوكي) عند تحميل الصفحة
+  // ✅ BEST PRACTICE: use global language from i18n provider (no local state)
+  const { lang, setLang } = useI18n();
+  const M = STRINGS[lang]; // page-local marketing strings for current lang
+
+  // Verify user session on mount
   useEffect(() => {
     dispatch(meThunk());
   }, [dispatch]);
 
-  // language
-  const [lang, setLang] = useState<"en" | "ar">("en");
-  useEffect(() => {
-    const lng =
-      typeof window !== "undefined"
-        ? (localStorage.getItem("ms_lang") as "en" | "ar" | null)
-        : null;
-    if (lng) setLang(lng);
-  }, []);
-  useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem("ms_lang", lang);
-  }, [lang]);
-
+  // Mounted flag (for theme toggle hydration correctness)
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const t = useMemo(() => STRINGS[lang], [lang]);
-  const dir = lang === "ar" ? "rtl" : "ltr";
+  const dir = lang === "ar" ? "rtl" : "ltr"; // optional: <html dir> is set by provider too
 
-  // derived
+  // Derived FAQ content
   const FAQ_ITEMS: FaqItem[] = useMemo(
-    () => t.faqs.map((f, i) => ({ q: f.q, a: f.a, id: `faq-${i + 1}` })),
-    [t]
+    () => M.faqs.map((f, i) => ({ q: f.q, a: f.a, id: `faq-${i + 1}` })),
+    [M]
   );
   const FAQ_JSON = useMemo(() => getFaqJsonLd(FAQ_ITEMS), [FAQ_ITEMS]);
 
   const STEPS = useMemo(
     () => [
       {
-        title: t.steps[0]?.title || "Create your account",
+        title: M.steps[0]?.title || "Create your account",
         desc: lang === "ar" ? "سجّل وحدد هدفك." : "Sign up and set your goal.",
         emoji: "🧭",
       },
       {
-        title: t.steps[1]?.title || "Add your habits",
+        title: M.steps[1]?.title || "Add your habits",
         desc:
           lang === "ar"
             ? "اختر عادات الصباح/المساء."
@@ -425,7 +430,7 @@ export default function Home() {
         emoji: "📋",
       },
       {
-        title: t.steps[2]?.title || "Track & reflect daily",
+        title: M.steps[2]?.title || "Track & reflect daily",
         desc:
           lang === "ar"
             ? "علّم العادات واكتب تأمّل قصير."
@@ -433,7 +438,7 @@ export default function Home() {
         emoji: "🧠",
       },
     ],
-    [t, lang]
+    [M, lang]
   );
 
   const PRICING_PLANS = useMemo(
@@ -483,7 +488,7 @@ export default function Home() {
 
   return (
     <main dir={dir}>
-      {/* Skip link */}
+      {/* Accessibility: skip to main content */}
       <a
         href="#content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:rounded-lg focus:bg-indigo-600 focus:px-3 focus:py-2 focus:text-white"
@@ -507,7 +512,7 @@ export default function Home() {
                 priority
               />
               <span className="text-base font-semibold tracking-[-0.01em]">
-                {t.app}
+                {M.app}
               </span>
             </div>
 
@@ -516,43 +521,43 @@ export default function Home() {
                 href="#features"
                 className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
               >
-                {t.nav.features}
+                {M.nav.features}
               </a>
               <a
                 href="#how"
                 className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
               >
-                {t.nav.how}
+                {M.nav.how}
               </a>
               <a
                 href="#pricing"
                 className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
               >
-                {t.nav.pricing}
+                {M.nav.pricing}
               </a>
               <a
                 href="#blog"
                 className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
               >
-                {t.nav.blog}
+                {M.nav.blog}
               </a>
             </div>
 
             <div className="flex items-center gap-3">
-              {/* إذا ضيف: أزرار دخول/تسجيل — إذا مسجّل: رابط داشبورد + تشيب المستخدم */}
+              {/* Auth-aware buttons */}
               {!user ? (
                 <>
                   <Link
                     href="/login"
                     className="hidden text-sm text-gray-700 hover:text-gray-900 md:inline-block dark:text-gray-300 dark:hover:text-white"
                   >
-                    {t.nav.login}
+                    {M.nav.login}
                   </Link>
                   <MagneticCTA
                     href="/register"
                     className="hidden md:inline-flex"
                   >
-                    {t.nav.getStarted}
+                    {M.nav.getStarted}
                   </MagneticCTA>
                 </>
               ) : (
@@ -561,11 +566,15 @@ export default function Home() {
                     href="/dashboard"
                     className="hidden rounded-full border border-gray-300 px-3 py-1 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 md:inline-block"
                   >
-                    {t.nav.dashboard}
+                    {M.nav.dashboard}
                   </Link>
                   <UserChip
                     email={user.email}
-                    lang={lang}
+                    labels={{
+                      dashboard: M.nav.dashboard,
+                      account: M.nav.account,
+                      logout: M.nav.logout,
+                    }}
                     onLogout={() => dispatch(logoutThunk())}
                   />
                 </>
@@ -578,9 +587,9 @@ export default function Home() {
                 theme={theme}
                 setTheme={setTheme}
                 labels={{
-                  themeLight: t.toggles.theme.light,
-                  themeDark: t.toggles.theme.dark,
-                  lang: t.toggles.lang,
+                  themeLight: M.toggles.theme.light,
+                  themeDark: M.toggles.theme.dark,
+                  lang: M.toggles.lang,
                 }}
               />
             </div>
@@ -589,7 +598,7 @@ export default function Home() {
 
         {/* ===================== HERO ===================== */}
         <section className="relative overflow-hidden">
-          {/* Background glow (smoother gradient + mask) */}
+          {/* Decorative background glow */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 -z-10"
@@ -607,7 +616,7 @@ export default function Home() {
             id="content"
             className="mx-auto grid max-w-7xl items-center gap-12 px-6 pt-14 pb-24 md:grid-cols-2 md:pt-20 md:pb-28"
           >
-            {/* Left */}
+            {/* Left copy */}
             <div className="text-center md:text-left">
               <motion.h1
                 initial={{ opacity: 0, y: 18 }}
@@ -620,26 +629,26 @@ export default function Home() {
                   "drop-shadow-[0_1px_0_rgba(0,0,0,0.25)]"
                 )}
               >
-                {t.hero.title}
+                {M.hero.title}
               </motion.h1>
 
               <p className="mx-auto mt-4 max-w-[62ch] text-[1.05rem] leading-[1.7] text-gray-700 dark:text-gray-300 md:mx-0">
-                {t.hero.subtitle}
+                {M.hero.subtitle}
               </p>
 
               <div className="mt-8 flex flex-wrap justify-center gap-4 md:justify-start">
                 {user ? (
                   <MagneticCTA href="/dashboard">
-                    {t.nav.openDashboard}
+                    {M.nav.openDashboard}
                   </MagneticCTA>
                 ) : (
-                  <MagneticCTA href="/register">{t.hero.cta}</MagneticCTA>
+                  <MagneticCTA href="/register">{M.hero.cta}</MagneticCTA>
                 )}
                 <Link
                   href="/demo"
                   className="rounded-2xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
                 >
-                  {t.hero.secondary}
+                  {M.hero.secondary}
                 </Link>
               </div>
 
@@ -648,27 +657,27 @@ export default function Home() {
                 <Stat
                   icon={<Users size={18} />}
                   value={`${formatCompact(120000, lang)}+`}
-                  label={t.stats.users}
+                  label={M.stats.users}
                 />
                 <Stat
                   icon={<LineChart size={18} />}
                   value={`${formatCompact(3200000, lang)}+`}
-                  label={t.stats.habits}
+                  label={M.stats.habits}
                 />
                 <Stat
                   icon={<Flame size={18} />}
                   value={
                     <>
                       <Counter to={18} />{" "}
-                      <span className="text-sm opacity-70">{t.units.days}</span>
+                      <span className="text-sm opacity-70">{M.units.days}</span>
                     </>
                   }
-                  label={t.stats.streak}
+                  label={M.stats.streak}
                 />
               </div>
             </div>
 
-            {/* Right */}
+            {/* Right visual */}
             <div className="relative flex items-center justify-center md:justify-end">
               <div className="relative">
                 <BreathingRing size={320} variant="soft" />
@@ -707,10 +716,10 @@ export default function Home() {
         <section id="features" className="bg-gray-50 py-16 dark:bg-gray-900/40">
           <div className="mx-auto max-w-7xl px-6 text-center">
             <h2 className="text-3xl font-bold sm:text-4xl">
-              {t.featuresTitle}
+              {M.featuresTitle}
             </h2>
             <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
-              {t.features.map((f, idx) => (
+              {M.features.map((f, idx) => (
                 <motion.div
                   key={idx}
                   initial={{ opacity: 0, y: 20 }}
@@ -734,7 +743,7 @@ export default function Home() {
         <section id="how" className="py-16">
           <div className="mx-auto max-w-7xl px-6">
             <h2 className="text-center text-3xl font-bold sm:text-4xl">
-              {t.howTitle}
+              {M.howTitle}
             </h2>
             <HowItWorksScrolly steps={STEPS} className="mt-10" />
           </div>
@@ -787,7 +796,7 @@ export default function Home() {
         <section className="py-16">
           <div className="mx-auto max-w-5xl px-6 text-center">
             <h2 className="text-3xl font-bold sm:text-4xl">
-              {t.testimonialsTitle}
+              {M.testimonialsTitle}
             </h2>
             <div className="mt-10">
               <TestimonialMarquee
@@ -825,7 +834,7 @@ export default function Home() {
         <section className="bg-gray-50 py-16 dark:bg-gray-900/40">
           <div className="mx-auto max-w-4xl px-6">
             <h2 className="text-center text-3xl font-bold sm:text-4xl">
-              {t.faqsTitle}
+              {M.faqsTitle}
             </h2>
 
             <FAQSearch
@@ -856,7 +865,7 @@ export default function Home() {
         <section id="pricing" className="py-16">
           <div className="mx-auto max-w-7xl px-6">
             <h2 className="text-center text-3xl font-bold sm:text-4xl">
-              {t.pricingTitle}
+              {M.pricingTitle}
             </h2>
             <PricingToggle
               plans={PRICING_PLANS}
@@ -871,10 +880,10 @@ export default function Home() {
         <section id="blog" className="bg-gray-50 py-16 dark:bg-gray-900/40">
           <div className="mx-auto max-w-7xl px-6">
             <h2 className="text-center text-3xl font-bold sm:text-4xl">
-              {t.blogTitle}
+              {M.blogTitle}
             </h2>
             <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
-              {t.blog.map((b, i) => (
+              {M.blog.map((b, i) => (
                 <article
                   key={i}
                   className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
@@ -884,13 +893,13 @@ export default function Home() {
                   </div>
                   <h3 className="mt-2 text-lg font-semibold">{b.title}</h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    {b.minutes} {t.units.minRead}
+                    {b.minutes} {M.units.minRead}
                   </p>
                   <Link
                     href="#"
                     className="mt-4 inline-block text-sm font-medium text-indigo-600 hover:underline"
                   >
-                    {t.units.read}
+                    {M.units.read}
                   </Link>
                 </article>
               ))}
@@ -902,12 +911,12 @@ export default function Home() {
         <footer className="border-t border-gray-200 bg-white py-10 text-sm dark:border-gray-800 dark:bg-gray-950">
           <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 md:flex-row">
             <div className="text-gray-600 dark:text-gray-300">
-              {t.footer.rights(new Date().getFullYear())}
+              {M.footer.rights(new Date().getFullYear())}
             </div>
             <div className="flex items-center gap-5 text-gray-600 dark:text-gray-300">
-              <Link href="#">{t.footer.privacy}</Link>
-              <Link href="#">{t.footer.contact}</Link>
-              <Link href="#">{t.footer.careers}</Link>
+              <Link href="#">{M.footer.privacy}</Link>
+              <Link href="#">{M.footer.contact}</Link>
+              <Link href="#">{M.footer.careers}</Link>
             </div>
           </div>
         </footer>
@@ -941,11 +950,13 @@ function Stat({
   );
 }
 
-/* ====== Dashboard (Pro) ====== */
+/* ====== Dashboard (Pro) preview card ======
+   BEST PRACTICE: small, self-contained preview. Real dashboard lives elsewhere.
+*/
 function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
   const [range, setRange] = useState<"7d" | "14d" | "30d">("7d");
 
-  // بيانات بسيطة بدون مكتبات
+  // lightweight mock data (no chart libs needed)
   const DATA: Record<"7d" | "14d" | "30d", number[]> = {
     "7d": [55, 80, 62, 95, 70, 85, 60],
     "14d": [40, 55, 62, 75, 68, 80, 60, 72, 78, 84, 66, 70, 77, 81],
@@ -990,7 +1001,7 @@ function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
   const completionAvg = Math.round(
     data.reduce((a, b) => a + b, 0) / data.length
   );
-  const bestStreak = 18; // مثال
+  const bestStreak = 18; // example
 
   return (
     <section className="mx-auto max-w-7xl px-6 pb-16">
@@ -1003,17 +1014,17 @@ function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
 
           {/* Segmented control */}
           <div className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-1 text-xs dark:border-gray-700 dark:bg-gray-950">
-            {(["7d", "14d", "30d"] as const).map((k) => (
+            {["7d", "14d", "30d"].map((k) => (
               <button
                 key={k}
-                onClick={() => setRange(k)}
+                onClick={() => setRange(k as "7d" | "14d" | "30d")}
                 className={
-                  range === k
+                  range === (k as "7d" | "14d" | "30d")
                     ? "rounded-lg bg-indigo-600 px-2.5 py-1 text-white"
                     : "rounded-lg px-2.5 py-1 text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
                 }
               >
-                {copy.range[k]}
+                {copy.range[k as keyof typeof copy.range]}
               </button>
             ))}
           </div>

@@ -10,8 +10,66 @@ import React, {
 
 export type Lang = "ar" | "en";
 
-/** قاموس النصوص */
-export const DICT = {
+type Dict = {
+  prev: string;
+  next: string;
+  aiReflection: string;
+  days: string;
+  language: string;
+  generate: string;
+  overview: string;
+  habits: string;
+  entries: string;
+  reports: string;
+  flows: {
+    addHabitTitle: string;
+    quickAddHabit: string;
+    habitName: string;
+    description: string;
+    emoji: string;
+    category: string;
+    frequency: string;
+    daily: string;
+    weekly: string;
+    perWeek: string;
+    daysOfWeek: string;
+    monthly: string;
+    timePref: string;
+    targetType: string;
+    binary: string;
+    quantified: string;
+    amount: string;
+    unit: string;
+    times: string;
+    minutes: string;
+    pages: string;
+    reminders: string;
+    review: string;
+    create: string;
+    cancel: string;
+    save: string;
+    addEntryTitle: string;
+    addEntry: string;
+    pickHabit: string;
+    done: string;
+    partial: string;
+    skipped: string;
+    note: string;
+    quantity: string;
+    saveLog: string;
+    fabAddHabit: string;
+    fabAddHabitPro: string;
+    fabQuickLog: string;
+    fabFullEntry: string;
+    created: string;
+    advanced: string;
+    logged: string;
+    search: string;
+  };
+  errors: { required: string; min1: string };
+};
+
+export const DICT: Record<Lang, Dict> = {
   en: {
     prev: "Previous",
     next: "Next",
@@ -128,13 +186,13 @@ export const DICT = {
     },
     errors: { required: "حقل مطلوب", min1: "الحد الأدنى 1" },
   },
-} as const;
+};
 
 type Ctx = {
   lang: Lang;
   setLang: (l: Lang) => void;
   toggleLang: () => void;
-  t: (typeof DICT)["en"];
+  t: Dict; 
 };
 
 function detectLang(): Lang {
@@ -162,7 +220,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     typeof window === "undefined" ? "en" : detectLang()
   );
 
-  // طبّق/lang/dir على <html> وخزّن الاختيار
+  // طبّق lang/dir على <html> وخزّن الاختيار
   useEffect(() => {
     try {
       localStorage.setItem("ms_lang", lang);
@@ -173,7 +231,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     }
   }, [lang]);
 
-  // مزامنة مع تبويبات ثانية
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key === "ms_lang" && (e.newValue === "ar" || e.newValue === "en")) {

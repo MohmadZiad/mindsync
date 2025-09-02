@@ -2,9 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+/* -------------------------------------------------------
+   Base Theme Variables (Light / Dark)
+   - We keep your structure but set a Purple/White identity
+   ------------------------------------------------------- */
+
 :root {
+  /* System background/foreground used by base() */
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Unified app layers (light) */
+  --bg-0: #f6f7fb; /* page background */
+  --bg-1: #ffffff; /* surface 1 */
+  --bg-2: #f2f4f8; /* surface 2 */
+  --bg-3: #e6e9f2; /* surface 3 */
+
+  --ink-1: #0f172a; /* main text */
+  --ink-2: #475569; /* secondary text */
+  --line: #e5e7eb; /* borders */
+
+  /* Brand — Purple (light) */
+  --brand: #6d5ef1; /* main purple */
+  --brand-ink: #0f172a; /* dark text on light bg */
+  --brand-ink-2: #475569; /* muted text */
+  --brand-bg: #ffffff; /* card/bg */
+  --brand-card: #ffffff; /* cards */
+  --brand-accent: #8b7bff; /* lighter purple accent */
+
+  /* Status */
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --err: #ef4444;
+
+  /* Radii & shadow */
+  --radius: 14px;
+  --shadow: 0 6px 22px rgba(2, 6, 23, 0.08);
+
+  /* Legacy tokens (kept for compatibility with Tailwind config) */
+  --brand-foreground: 255 255 255; /* used by hsl(var(--brand-foreground)) if needed */
+  --brand-muted: 109 94 241 / 0.12;
+
+  --surface: 0 0% 100%;
+  --surface-foreground: 222 47% 11%;
+  --surface-2: 220 23% 97%;
+  --surface-3: 225 22% 93%;
+
+  --border: 220 13% 91%;
+  --ring: 245 84% 67%;
+
+  --success: 142 72% 45%;
+  --warn: 38 92% 50%;
+  --danger: 0 84% 60%;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -14,12 +63,41 @@
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
+/* Explicit dark theme class (you already use .dark) */
+:root.dark {
+  --bg-0: #0b1020; /* page background (dark) */
+  --bg-1: #111827; /* surface 1 */
+  --bg-2: #0f172a; /* surface 2 */
+  --bg-3: #1f2937; /* surface 3 */
+
+  --ink-1: #e5e7eb; /* main text dark */
+  --ink-2: #94a3b8; /* secondary text dark */
+  --line: #273244; /* clearer borders dark */
+
+  /* Purple tuned for dark surfaces */
+  --brand: #8b7bff;
+  --brand-accent: #b1a7ff;
+
+  /* Legacy surfaces (kept) */
+  --surface: 215 28% 17%;
+  --surface-foreground: 210 40% 98%;
+  --surface-2: 215 28% 12%;
+  --surface-3: 215 28% 22%;
+
+  --border: 215 28% 30%;
+  --ring: 255 92% 76%;
 }
 
-/* ========== Utilities ========== */
+/* Base apply */
+body {
+  background: var(--bg-0);
+  color: var(--ink-1);
+}
+
+/* -------------------------------------------------------
+   Utilities (kept) + Minor polish for purple theme
+   ------------------------------------------------------- */
+
 @layer utilities {
   .animate-gradient {
     background-size: 200% 200%;
@@ -34,9 +112,52 @@ body {
   .ring-breath {
     animation: breath 6s ease-in-out infinite;
   }
+
+  /* New helpers mapped to the new palette */
+  .bg-page {
+    background-color: var(--bg-0);
+  }
+  .bg-card {
+    background-color: var(--bg-1);
+  }
+  .text-muted {
+    color: var(--ink-2);
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-2xl border transition active:scale-[.98];
+  }
+  .btn--primary {
+    background: var(--brand);
+    color: white;
+    border: none;
+    box-shadow: var(--shadow);
+  }
+  .btn--ghost {
+    @apply border-gray-300 bg-white dark:bg-gray-900;
+  }
+  .touch {
+    min-height: 44px;
+    min-width: 44px;
+  } /* comfortable tapping */
+
+  .cardish {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .cardish-2 {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .border-base {
+    border-color: var(--line) !important;
+  }
 }
 
-/* ========== Keyframes ========== */
+/* Keyframes (kept) */
 @keyframes gradient {
   0%,
   100% {
@@ -58,7 +179,7 @@ body {
   }
 }
 
-/* ========== Helpers ========== */
+/* Helpers (kept) */
 .edge-fade {
   -webkit-mask-image: linear-gradient(
     to right,
@@ -100,16 +221,16 @@ details.faq > summary::-webkit-details-marker {
     border-color 0.3s ease;
 }
 
-/* ========== Marquee (Testimonials) ========== */
+/* Marquee (kept) */
 .marquee {
   overflow: hidden;
   position: relative;
-  isolation: isolate; /* يمنع التداخل */
+  isolation: isolate;
 }
 .marquee-inner {
   display: inline-flex;
   gap: 24px;
-  padding-inline: 12px; /* يمنع التماس عند اللوب */
+  padding-inline: 12px;
   white-space: nowrap;
   will-change: transform;
   animation: marquee var(--marquee-dur, 28s) linear infinite;
@@ -117,20 +238,18 @@ details.faq > summary::-webkit-details-marker {
 .marquee:hover .marquee-inner {
   animation-play-state: paused;
 }
-
 @keyframes marquee {
   to {
     transform: translateX(-50%);
   }
 }
-
 .marquee figure {
   white-space: normal;
   flex: 0 0 auto;
   line-height: 1.6;
 }
 
-/* Arabic RTL */
+/* RTL support (kept) */
 .marquee[data-dir="rtl"] .marquee-inner {
   animation-name: marquee-rtl;
   flex-direction: row-reverse;
@@ -145,6 +264,7 @@ details.faq > summary::-webkit-details-marker {
   text-align: right;
 }
 
+/* Reduced motion (kept) */
 @media (prefers-reduced-motion: reduce) {
   .marquee-inner {
     animation: none;
@@ -152,87 +272,56 @@ details.faq > summary::-webkit-details-marker {
   }
 }
 
-/* ========== Card style لعزل الخلفية ========== */
-.card {
-  background-color: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  backdrop-filter: blur(8px);
-}
-.dark .card {
-  background-color: rgba(17, 24, 39, 0.92); /* gray-900/92 */
-  border-color: rgba(255, 255, 255, 0.08);
-}
-:root{
-  --brand:#5B8DEF;       /* الأساسي */
-  --brand-ink:#0D1B2A;   /* نص غامق */
-  --brand-ink-2:#475569; /* نص ثانوي */
-  --brand-bg:#F8FAFC;    /* خلفية فاتحة */
-  --brand-card:#FFFFFF;  /* بطاقات */
-  --brand-accent:#22C55E;/* ثانوي */
-  --radius:14px;         /* زوايا موحدة */
-  --shadow:0 6px 20px rgba(2,6,23,.08);
+/* Legacy tokens kept for compatibility */
+:root {
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
 }
 
-html[dir="rtl"] .dir-flip { transform: scaleX(-1); } /* لقلب الأيقونات تلقائيًا مع RTL */
+html[dir="rtl"] .dir-flip {
+  transform: scaleX(-1);
+} /* Auto flip icons in RTL */
 
-.btn { @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-2xl border transition active:scale-[.98]; }
-.btn--primary { background:var(--brand); color:white; border-color:transparent; box-shadow:var(--shadow); }
-.btn--ghost   { @apply border-gray-300 bg-white dark:bg-gray-900; }
-.touch        { min-height:44px; min-width:44px; } /* لمس مريح للموبايل */
+/* Mobile polish (kept) */
+html,
+body,
+#__next {
+  height: 100%;
+}
+button {
+  -webkit-tap-highlight-color: transparent;
+}
 
-.cardish{ background:var(--brand-card); border-radius:var(--radius); box-shadow:var(--shadow); }
-/* ===== Mobile polish ===== */
-html, body, #__next { height: 100%; }
-button { -webkit-tap-highlight-color: transparent; }
-
-/* Safe areas helpers */
+/* Safe areas helpers (kept) */
 :root {
   --sat: env(safe-area-inset-top);
   --sab: env(safe-area-inset-bottom);
 }
-.safe-pt { padding-top: var(--sat); }
-.safe-pb { padding-bottom: calc(12px + var(--sab)); }
+.safe-pt {
+  padding-top: var(--sat);
+}
+.safe-pb {
+  padding-bottom: calc(12px + var(--sab));
+}
 
-/* Hide horizontal scrollbar for tab list */
-.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
-.scrollbar-none::-webkit-scrollbar { display: none; }
+/* Hide horizontal scrollbar for tab list (kept) */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
 
-/* Slide/Fade animation used in StepTabs */
+/* Slide/Fade animation used in StepTabs (kept) */
 @keyframes slidefade {
-  from { transform: translateX(var(--slide-x, 16px)); opacity: 0; }
-  to   { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(var(--slide-x, 16px));
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
-:root{
-  /* Light */
-  --bg-0:#F6F7FB;      /* خلفية عامة */
-  --bg-1:#FFFFFF;      /* Surface 1 */
-  --bg-2:#F2F4F8;      /* Surface 2 */
-  --bg-3:#E6E9F2;      /* Surface 3 */
-  --ink-1:#0F172A;     /* نص أساسي */
-  --ink-2:#475569;     /* نص ثانوي */
-  --line:#E5E7EB;      /* حدود */
-
-  --brand:#6D5EF1;     /* بنفسجي واضح */
-  --ok:#22C55E; --warn:#F59E0B; --err:#EF4444;
-
-  --radius:14px; --shadow:0 6px 22px rgba(2,6,23,.08);
-}
-
-:root.dark{
-  /* Dark */
-  --bg-0:#0B1020;      /* خلفية عامة */
-  --bg-1:#111827;      /* Surface 1 */
-  --bg-2:#0F172A;      /* Surface 2 */
-  --bg-3:#1F2937;      /* Surface 3 */
-  --ink-1:#E5E7EB;     /* نص أساسي */
-  --ink-2:#94A3B8;     /* نص ثانوي */
-  --line:#273244;      /* حدود أوضح */
-  --brand:#8B7BFF;     /* أفتح شوي للداكن */
-}
-
-body{ background:var(--bg-0); color:var(--ink-1); }
-.cardish{ background:var(--bg-1); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
-.cardish-2{ background:var(--bg-2); border:1px solid var(--line); border-radius:var(--radius); }
-.border-base{ border-color:var(--line) !important; }
-.text-subtle{ color:var(--ink-2); }
-.btn--primary{ background:var(--brand); color:white; border:none; box-shadow:var(--shadow); }

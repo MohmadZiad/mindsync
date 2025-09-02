@@ -19,9 +19,14 @@ export function getFaqJsonLd(items: FaqItem[]) {
   };
 }
 
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function Highlight({ text, q }: { text: string; q: string }) {
   if (!q) return <>{text}</>;
-  const parts = text.split(new RegExp(`(${q})`, "ig"));
+  const safe = escapeRegExp(q);
+  const parts = text.split(new RegExp(`(${safe})`, "ig"));
   return (
     <>
       {parts.map((p, i) =>
