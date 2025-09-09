@@ -29,7 +29,7 @@ import HabitFormExtra from "@/components/HabitFormExtra";
 import { Card } from "@/components/card";
 import { toast } from "react-hot-toast";
 
-/* === NEW: flows === */
+/* flows (unchanged logic) */
 import FabMenu from "@/components/flows/FabMenu";
 import CommandPalette from "@/components/flows/CommandPalette";
 import QuickAddHabitPopover from "@/components/flows/QuickAddHabitPopover";
@@ -37,8 +37,18 @@ import AddHabitSheet from "@/components/flows/AddHabitSheet";
 import QuickLogPopover from "@/components/flows/QuickLogPopover";
 import EntrySheet from "@/components/flows/EntrySheet";
 
+/* creative notes modal */
+import NoteModal, { type NotePayload } from "@/components/NoteModal";
+
+/* reports widgets */
+import ProgressLine from "@/components/reports/ProgressLine";
+import EntriesHeatmap from "@/components/reports/EntriesHeatmap";
+import NotesWordCloud from "@/components/reports/NotesWordCloud";
+import ExportPdfButton from "@/components/reports/ExportPdfButton";
+import { groupEntriesDaily, wordsFromNotes } from "@/lib/reporting";
+
 /* ===================== i18n ===================== */
-type Lang = "en" | "ar";
+export type Lang = "en" | "ar";
 const T = {
   en: {
     dash: "Dashboard",
@@ -102,6 +112,14 @@ const T = {
     habitsTab: "Habits",
     ai: "Entries",
     reports: "Reports",
+
+    noteBtn: "Note ✍️",
+
+    reportTitles: {
+      line: "Daily Entries",
+      heat: "Heatmap (last 6 months)",
+      cloud: "Notes Word Cloud",
+    },
   },
   ar: {
     dash: "لوحة التحكم",
@@ -165,6 +183,14 @@ const T = {
     habitsTab: "العادات",
     ai: "ادخالات",
     reports: "تقارير",
+
+    noteBtn: "ملاحظة ✍️",
+
+    reportTitles: {
+      line: "الإدخالات اليومية",
+      heat: "خريطة النشاط (آخر ٦ أشهر)",
+      cloud: "سحابة كلمات الملاحظات",
+    },
   },
 } as const;
 
@@ -204,32 +230,6 @@ function ProgressRing({
   );
 }
 
-function BottomNav({
-  items,
-  onSelect,
-}: {
-  items: { id: string; label: string; icon: string }[];
-  onSelect: (id: string) => void;
-}) {
-  return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/80 dark:bg-gray-950/80 backdrop-blur border-t">
-      <ul className="max-w-3xl mx-auto grid grid-cols-4">
-        {items.map((it) => (
-          <li key={it.id}>
-            <button
-              onClick={() => onSelect(it.id)}
-              className="w-full py-2.5 text-sm flex flex-col items-center gap-1 hover:bg-gray-50 dark:hover:bg-gray-900"
-            >
-              <span className="text-lg">{it.icon}</span>
-              <span>{it.label}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
-
 /* ===================== Page ===================== */
 export default function DashboardPage() {
   const dispatch = useAppDispatch();
@@ -240,7 +240,7 @@ export default function DashboardPage() {
   const entries = useAppSelector((s) => s.entries.items);
   const currentHabitId = useAppSelector((s) => s.entries.currentHabitId);
 
-  // language
+  // language state
   const [lang, setLang] = useState<Lang>("en");
   useEffect(() => {
     const l =
@@ -250,7 +250,7 @@ export default function DashboardPage() {
     setLang(l);
   }, []);
 
-  // ✅ sync <html> lang/dir + localStorage + broadcast
+  // sync <html> lang/dir + localStorage + broadcast
   useEffect(() => {
     if (typeof window !== "undefined") localStorage.setItem("ms_lang", lang);
     if (typeof document !== "undefined") {
@@ -266,7 +266,7 @@ export default function DashboardPage() {
   const dir = lang === "ar" ? "rtl" : "ltr";
   const locale = lang === "ar" ? "ar-EG" : "en-US";
 
-  // theme (light/dark)
+  // theme
   const [dark, setDark] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return (
@@ -300,19 +300,15 @@ export default function DashboardPage() {
 
   const [streaks, setStreaks] = useState<Record<string, Streak>>({});
 
-  // Quick Log UI (القديم)
+  // legacy quick log
   const [qlog, setQlog] = useState<{
     habitId: string;
     note: string;
     done: boolean;
-  }>({
-    habitId: "",
-    note: "",
-    done: true,
-  });
+  }>({ habitId: "", note: "", done: true });
   const [showQuickLog, setShowQuickLog] = useState(false);
 
-  /* ---- NEW: flows visibility ---- */
+  /* ---- flows visibility ---- */
   const [openQuickHabit, setOpenQuickHabit] = useState(false);
   const [openProHabit, setOpenProHabit] = useState(false);
   const [openQuickLogPop, setOpenQuickLogPop] = useState(false);
@@ -434,6 +430,7 @@ export default function DashboardPage() {
       title: t.steps.habits,
       content: (
         <HabitsStep
+          lang={lang}
           i18n={{
             habitNamePh: t.habitNamePh,
             add: t.add,
@@ -513,6 +510,7 @@ export default function DashboardPage() {
       title: t.steps.entries,
       content: (
         <EntriesStep
+          lang={lang}
           i18n={{
             chooseHabit: t.chooseHabit,
             mood: t.mood,
@@ -574,7 +572,7 @@ export default function DashboardPage() {
     {
       id: "reports",
       title: t.steps.reports,
-      content: <ReportsStep />,
+      content: <ReportsStep lang={lang} />,
       ready: true,
     },
   ];
@@ -582,64 +580,67 @@ export default function DashboardPage() {
   return (
     <main
       dir={dir}
-      className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-white dark:from-gray-900 dark:via-gray-950 dark:to-gray-950 pb-28"
+      className="min-h-screen bg-[var(--bg-0)] text-[var(--ink-1)] pb-28"
     >
       {/* Header */}
-      <header className="mx-auto max-w-5xl px-3 py-6 flex items-center justify-between gap-4">
-        <div>
-          <div className="text-xs uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-            {t.dash}
+      <header className="sticky top-0 z-40 border-b border-[var(--line)] backdrop-blur bg-[var(--bg-0)]/75">
+        <div className="container flex items-center justify-between py-3">
+          <div>
+            <div className="text-xs uppercase tracking-wider text-indigo-500">
+              {t.dash}
+            </div>
+            <h1 className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-indigo-500 to-fuchsia-600 bg-clip-text text-transparent">
+              {t.helloTime(emailName, hour)}
+            </h1>
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-indigo-600 to-fuchsia-600 bg-clip-text text-transparent">
-            {t.helloTime(emailName, hour)}
-          </h1>
-        </div>
 
-        <div className="flex items-center gap-2">
-          {/* language */}
-          <select
-            className="px-3 py-1.5 rounded-xl border bg-white/70 dark:bg-gray-950/70"
-            value={lang}
-            onChange={(e) => setLang(e.target.value as Lang)}
-            aria-label={t.lang}
-            title={t.lang}
-          >
-            <option value="en">English</option>
-            <option value="ar">العربية</option>
-          </select>
-          {/* theme */}
-          <button
-            onClick={() => setDark((v) => !v)}
-            className="px-3 py-1.5 rounded-xl border bg-white/70 dark:bg-gray-950/70"
-            title={t.theme}
-            aria-label={t.theme}
-          >
-            {dark ? `🌙 ${t.dark}` : `☀️ ${t.light}`}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* language */}
+            <select
+              className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
+              value={lang}
+              onChange={(e) => setLang(e.target.value as Lang)}
+              aria-label={t.lang}
+              title={t.lang}
+            >
+              <option value="en">English</option>
+              <option value="ar">العربية</option>
+            </select>
 
-          <button
-            className="px-3 py-1.5 rounded-xl border bg-white/70 dark:bg-gray-950/70"
-            onClick={() => goToHabitsTab()}
-          >
-            {t.addHabit}
-          </button>
-          <button
-            className="px-3 py-1.5 rounded-xl border bg-white/70 dark:bg-gray-950/70"
-            onClick={() => setShowQuickLog(true)}
-          >
-            {t.quickLog}
-          </button>
-          <button
-            className="px-3 py-1.5 rounded-xl border bg-white/70 dark:bg-gray-950/70"
-            onClick={() => dispatch(logoutThunk())}
-          >
-            {t.logout}
-          </button>
+            {/* theme */}
+            <button
+              onClick={() => setDark((v) => !v)}
+              className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
+              title={t.theme}
+              aria-label={t.theme}
+            >
+              {dark ? `🌙 ${t.dark}` : `☀️ ${t.light}`}
+            </button>
+
+            <button
+              className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
+              onClick={() => goToHabitsTab()}
+            >
+              {t.addHabit}
+            </button>
+            <button
+              className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
+              onClick={() => setShowQuickLog(true)}
+            >
+              {t.quickLog}
+            </button>
+            <button
+              className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
+              onClick={() => dispatch(logoutThunk())}
+            >
+              {t.logout}
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Mini Stats */}
-      <section className="mx-auto max-w-5xl px-3 pb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+      <section className="container py-4 grid grid-cols-1 md:grid-cols-3 gap-3">
         <StatCard
           title={t.activeHabits}
           value={habits.length}
@@ -661,11 +662,11 @@ export default function DashboardPage() {
       </section>
 
       {/* Steps */}
-      <div className="mx-auto max-w-5xl px-3 pb-8">
+      <div className="container pb-8">
         <StepTabs steps={steps} />
       </div>
 
-      {/* === NEW: Floating menu & palette === */}
+      {/* Floating actions */}
       <FabMenu
         onQuickHabit={() => setOpenQuickHabit(true)}
         onProHabit={() => setOpenProHabit(true)}
@@ -679,7 +680,7 @@ export default function DashboardPage() {
         onProEntry={() => setOpenEntrySheet(true)}
       />
 
-      {/* === NEW: popovers/sheets === */}
+      {/* popovers/sheets */}
       <QuickAddHabitPopover
         open={openQuickHabit}
         onOpenChange={setOpenQuickHabit}
@@ -695,14 +696,14 @@ export default function DashboardPage() {
       />
       <EntrySheet open={openEntrySheet} onOpenChange={setOpenEntrySheet} />
 
-      {/* Quick Log Sheet (القديم) */}
+      {/* Legacy Quick Log bottom sheet */}
       {showQuickLog && (
         <div className="fixed inset-0 z-50">
           <div
             className="absolute inset-0 bg-black/30"
             onClick={() => setShowQuickLog(false)}
           />
-          <section className="absolute bottom-0 inset-x-0 bg-white dark:bg-gray-950 rounded-t-2xl p-4 shadow-2xl">
+          <section className="absolute bottom-0 inset-x-0 bg-[var(--bg-0)] rounded-t-2xl p-4 shadow-2xl border border-[var(--line)]">
             <div className="mx-auto max-w-3xl space-y-3">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold">{t.qlogTitle}</div>
@@ -715,7 +716,7 @@ export default function DashboardPage() {
               </div>
               <div className="grid md:grid-cols-4 gap-2">
                 <select
-                  className="border p-2 rounded"
+                  className="border p-2 rounded bg-[var(--bg-1)]"
                   value={qlog.habitId}
                   onChange={(e) =>
                     setQlog((q) => ({ ...q, habitId: e.target.value }))
@@ -731,16 +732,16 @@ export default function DashboardPage() {
 
                 <div className="flex items-center gap-2">
                   <button
-                    className={`px-3 py-2 border rounded ${
-                      qlog.done ? "bg-gray-200 dark:bg-gray-800" : ""
+                    className={`px-3 py-2 border rounded bg-[var(--bg-1)] ${
+                      qlog.done ? "ring-2 ring-indigo-400" : ""
                     }`}
                     onClick={() => setQlog((q) => ({ ...q, done: true }))}
                   >
                     {t.qlogDone}
                   </button>
                   <button
-                    className={`px-3 py-2 border rounded ${
-                      !qlog.done ? "bg-gray-200 dark:bg-gray-800" : ""
+                    className={`px-3 py-2 border rounded bg-[var(--bg-1)] ${
+                      !qlog.done ? "ring-2 ring-indigo-400" : ""
                     }`}
                     onClick={() => setQlog((q) => ({ ...q, done: false }))}
                   >
@@ -749,7 +750,7 @@ export default function DashboardPage() {
                 </div>
 
                 <input
-                  className="border p-2 rounded md:col-span-2"
+                  className="border p-2 rounded md:col-span-2 bg-[var(--bg-1)]"
                   placeholder={t.qlogNotePh}
                   value={qlog.note}
                   onChange={(e) =>
@@ -779,9 +780,7 @@ function IntroStep({ copy }: { copy: string }) {
   return (
     <div className="grid md:grid-cols-3 gap-4">
       <Card title="MindSync">
-        <p className="text-sm text-gray-700 dark:text-gray-300 leading-6">
-          {copy}
-        </p>
+        <p className="text-sm text-[var(--ink-1)]/90 leading-6">{copy}</p>
       </Card>
       <StreakMeCard />
       <div className="md:col-span-2">
@@ -792,6 +791,7 @@ function IntroStep({ copy }: { copy: string }) {
 }
 
 function HabitsStep(props: {
+  lang?: Lang;
   i18n: {
     habitNamePh: string;
     add: string;
@@ -819,6 +819,7 @@ function HabitsStep(props: {
   onDelete: (id: string) => Promise<void>;
 }) {
   const {
+    lang,
     i18n,
     habits,
     currentHabitId,
@@ -839,16 +840,26 @@ function HabitsStep(props: {
   return (
     <div className="space-y-4">
       {/* Add Habit */}
-      <div className="space-y-2 border p-3 rounded-2xl bg-white/60 dark:bg-gray-950/60 backdrop-blur">
+      <div className="space-y-2 border border-[var(--line)] p-3 rounded-2xl bg-[var(--bg-1)]">
         <div className="flex gap-2">
           <input
-            className="border p-2 rounded flex-1"
+            className="border p-2 rounded flex-1 bg-[var(--bg-0)]"
             placeholder={i18n.habitNamePh}
             value={newHabit}
             onChange={(e) => setNewHabit(e.target.value)}
           />
+          <button
+            className="px-3 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700"
+            onClick={onAddHabit}
+          >
+            {i18n.add}
+          </button>
         </div>
-        <HabitFormExtra value={newHabitExtra} onChange={setNewHabitExtra} />
+        <HabitFormExtra
+          value={newHabitExtra}
+          onChange={setNewHabitExtra}
+          lang={lang}
+        />
       </div>
 
       {/* Habit list */}
@@ -858,12 +869,12 @@ function HabitsStep(props: {
           return (
             <li
               key={h.id}
-              className="border rounded-2xl p-3 bg-white/70 dark:bg-gray-950/70 backdrop-blur"
+              className="border border-[var(--line)] rounded-2xl p-3 bg-[var(--bg-1)]"
             >
               {editHabit && editHabit.id === h.id ? (
                 <div className="flex gap-2 w-full">
                   <input
-                    className="border p-2 rounded flex-1"
+                    className="border p-2 rounded flex-1 bg-[var(--bg-0)]"
                     value={editHabit.name}
                     onChange={(e) =>
                       setEditHabit({ id: h.id, name: e.target.value })
@@ -889,6 +900,7 @@ function HabitsStep(props: {
                       currentHabitId === h.id ? "font-semibold underline" : ""
                     }`}
                     onClick={() => onSelectHabit(h.id)}
+                    title={h.name}
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-xl">{h.icon ?? "📌"}</span>
@@ -904,6 +916,7 @@ function HabitsStep(props: {
                     <button
                       className="text-sm px-2 py-1 rounded bg-green-600 text-white"
                       onClick={() => onCheckin(h.id)}
+                      title={i18n.todayDone}
                     >
                       {i18n.todayDone}
                     </button>
@@ -931,6 +944,7 @@ function HabitsStep(props: {
 }
 
 function EntriesStep(props: {
+  lang?: Lang;
   i18n: {
     chooseHabit: string;
     mood: string;
@@ -952,6 +966,7 @@ function EntriesStep(props: {
   onClearFilter: () => Promise<void>;
 }) {
   const {
+    lang,
     i18n,
     locale,
     habits,
@@ -965,11 +980,13 @@ function EntriesStep(props: {
     onClearFilter,
   } = props;
 
+  const [noteOpen, setNoteOpen] = useState(false);
+
   return (
     <div className="space-y-4">
       <div className="grid md:grid-cols-4 gap-2">
         <select
-          className="border p-2 rounded"
+          className="border p-2 rounded bg-[var(--bg-1)]"
           value={entryForm.habitId}
           onChange={(e) =>
             setEntryForm({ ...entryForm, habitId: e.target.value })
@@ -984,7 +1001,7 @@ function EntriesStep(props: {
         </select>
 
         <select
-          className="border p-2 rounded"
+          className="border p-2 rounded bg-[var(--bg-1)]"
           aria-label={i18n.mood}
           value={entryForm.mood}
           onChange={(e) => setEntryForm({ ...entryForm, mood: e.target.value })}
@@ -998,14 +1015,18 @@ function EntriesStep(props: {
           <option value="🎉">🎉</option>
         </select>
 
-        <input
-          className="border p-2 rounded"
-          placeholder={i18n.reflectionPh}
-          value={entryForm.reflection}
-          onChange={(e) =>
-            setEntryForm({ ...entryForm, reflection: e.target.value })
-          }
-        />
+        <button
+          type="button"
+          className="border p-2 rounded bg-[var(--bg-1)] text-left"
+          onClick={() => setNoteOpen(true)}
+          title={i18n.reflectionPh}
+        >
+          {entryForm.reflection
+            ? entryForm.reflection.slice(0, 40) + "…"
+            : lang === "ar"
+            ? T.ar.noteBtn
+            : T.en.noteBtn}
+        </button>
 
         <button
           className="px-3 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700"
@@ -1015,23 +1036,32 @@ function EntriesStep(props: {
         </button>
       </div>
 
-      <ul className="space-y-2">
+      {noteOpen && (
+        <NoteModal
+          lang={lang}
+          defaultText={entryForm.reflection || ""}
+          onCancel={() => setNoteOpen(false)}
+          onSave={(payload: NotePayload) => {
+            setEntryForm({ ...entryForm, reflection: payload.text });
+            setNoteOpen(false);
+          }}
+        />
+      )}
+
+      <ul className="divide-y divide-[var(--line)] border border-[var(--line)] rounded-2xl overflow-hidden">
         {entries.map((e) => (
-          <li
-            key={e.id}
-            className="border p-3 rounded-2xl bg-white/70 dark:bg-gray-950/70"
-          >
+          <li key={e.id} className="p-3 bg-[var(--bg-1)]">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-sm">
                   <span className="font-medium">{e.mood}</span>
-                  <span className="text-gray-500">
+                  <span className="opacity-70">
                     {" "}
                     — {new Date(e.createdAt).toLocaleString(locale)}
                   </span>
                 </div>
                 {e.reflection && (
-                  <div className="text-xs text-gray-700 dark:text-gray-300">
+                  <div className="text-xs text-[var(--ink-1)]/90">
                     {e.reflection}
                   </div>
                 )}
@@ -1064,11 +1094,39 @@ function EntriesStep(props: {
   );
 }
 
-function ReportsStep() {
+function ReportsStep({ lang = "en" as Lang }) {
+  const entries = useAppSelector((s) => s.entries.items);
+  const t = T[lang];
+
+  const line = useMemo(() => groupEntriesDaily(entries), [entries]);
+
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - 180);
+  const heatValues = line; // {date,count}
+
+  const words = useMemo(() => wordsFromNotes(entries), [entries]);
+
   return (
     <div className="grid gap-4">
-      <WeeklyGrouped />
-      <MonthlySummary />
+      <div className="flex justify-end">
+        <ExportPdfButton targetId="report-root" />
+      </div>
+
+      <div id="report-root" className="grid gap-4">
+        <ProgressLine data={line} title={t.reportTitles.line} />
+        <EntriesHeatmap
+          values={heatValues}
+          startDate={start}
+          endDate={end}
+          title={t.reportTitles.heat}
+        />
+        <NotesWordCloud words={words} title={t.reportTitles.cloud} />
+
+        {/* keep existing report blocks */}
+        <WeeklyGrouped />
+        <MonthlySummary />
+      </div>
     </div>
   );
 }
@@ -1086,10 +1144,10 @@ function StatCard({
   emoji: string;
 }) {
   return (
-    <div className="flex items-center gap-4 border rounded-2xl p-4 bg-white/70 dark:bg-gray-950/70 backdrop-blur">
+    <div className="flex items-center gap-4 border border-[var(--line)] rounded-2xl p-4 bg-[var(--bg-1)]">
       <ProgressRing value={pct} />
       <div>
-        <div className="text-xs uppercase tracking-wider text-gray-500">
+        <div className="text-xs uppercase tracking-wider opacity-70">
           {title}
         </div>
         <div className="text-3xl font-extrabold">{value}</div>

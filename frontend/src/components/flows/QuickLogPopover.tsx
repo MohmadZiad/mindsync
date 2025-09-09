@@ -1,10 +1,10 @@
-// src/components/flows/QuickLogPopover.tsx
 "use client";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/components/ui/i18n";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { addEntry, fetchEntries } from "@/redux/slices/entrySlice";
 import toast from "react-hot-toast";
+import NoteModal, { type NotePayload } from "@/components/NoteModal";
 
 export default function QuickLogPopover({
   open,
@@ -20,8 +20,17 @@ export default function QuickLogPopover({
   const habits = useAppSelector((s) => s.habits.items);
   const [habitId, setHabitId] = useState("");
   const [state, setState] = useState<"done" | "partial" | "skipped">("done");
+
+  // === NEW: NoteModal instead of inline input ===
+  const [openNote, setOpenNote] = useState(false);
   const [note, setNote] = useState("");
   const [qty, setQty] = useState<number | "">("");
+
+  // local preview for images/drawings
+  const [attachments, setAttachments] = useState<{
+    imageDataUrl?: string | null;
+    drawingDataUrl?: string | null;
+  }>({});
 
   useEffect(() => {
     if (!open) {
@@ -29,6 +38,8 @@ export default function QuickLogPopover({
       setState("done");
       setNote("");
       setQty("");
+      setOpenNote(false);
+      setAttachments({});
     }
   }, [open]);
 
@@ -56,7 +67,7 @@ export default function QuickLogPopover({
         onMouseDown={() => onOpenChange(false)}
       />
       <div
-        className="relative z-[95] w-[min(92vw,600px)] rounded-2xl bg-white dark:bg-gray-950 border shadow-xl p-4"
+        className="relative z-[95] w-[min(92vw,600px)] rounded-2xl bg-[var(--bg-0)] border border-[var(--line)] shadow-xl p-4"
         role="dialog"
         aria-modal="true"
         onMouseDown={(e) => e.stopPropagation()}
@@ -65,10 +76,11 @@ export default function QuickLogPopover({
         <div className="text-lg font-semibold mb-3">{F.fabQuickLog}</div>
 
         <div className="grid gap-3">
+          {/* Habit */}
           <label className="text-sm">
             {F.pickHabit}
             <select
-              className="mt-1 w-full border rounded px-2 py-2"
+              className="mt-1 w-full border rounded px-2 py-2 bg-[var(--bg-0)]"
               value={habitId}
               onChange={(e) => setHabitId(e.target.value)}
             >
@@ -81,12 +93,13 @@ export default function QuickLogPopover({
             </select>
           </label>
 
+          {/* State */}
           <div className="flex flex-wrap gap-2">
             {(["done", "partial", "skipped"] as const).map((k) => (
               <button
                 key={k}
-                className={`px-3 py-2 border rounded ${
-                  state === k ? "bg-gray-200 dark:bg-gray-800" : ""
+                className={`px-3 py-2 border rounded bg-[var(--bg-1)] ${
+                  state === k ? "ring-2 ring-indigo-400" : ""
                 }`}
                 onClick={() => setState(k)}
               >
@@ -99,21 +112,31 @@ export default function QuickLogPopover({
             ))}
           </div>
 
+          {/* Note trigger + quantity */}
           <div className="grid sm:grid-cols-2 gap-2">
-            <label className="text-sm">
-              {F.note}
-              <input
-                className="mt-1 w-full border rounded px-2 py-2"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder={lang === "ar" ? "سطر واحد" : "One line"}
-              />
-            </label>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="rounded border px-3 py-2 bg-[var(--bg-1)]"
+                onClick={() => setOpenNote(true)}
+              >
+                {F.note}
+              </button>
+              <div className="text-xs opacity-80 truncate flex-1">
+                {note
+                  ? note.length > 60
+                    ? note.slice(0, 57) + "…"
+                    : note
+                  : lang === "ar"
+                  ? "سطر واحد — ملاحظة ✍️"
+                  : "One line — Note ✍️"}
+              </div>
+            </div>
 
             <label className="text-sm">
               {F.quantity}
               <input
-                className="mt-1 w-full border rounded px-2 py-2"
+                className="mt-1 w-full border rounded px-2 py-2 bg-[var(--bg-0)]"
                 type="number"
                 min={0}
                 value={qty}
@@ -123,11 +146,31 @@ export default function QuickLogPopover({
               />
             </label>
           </div>
+
+          {/* attachments tiny preview */}
+          {(attachments.imageDataUrl || attachments.drawingDataUrl) && (
+            <div className="flex gap-2">
+              {attachments.imageDataUrl && (
+                <img
+                  src={attachments.imageDataUrl}
+                  alt="img"
+                  className="h-14 w-14 rounded-lg border object-cover"
+                />
+              )}
+              {attachments.drawingDataUrl && (
+                <img
+                  src={attachments.drawingDataUrl}
+                  alt="drawing"
+                  className="h-14 w-14 rounded-lg border object-cover"
+                />
+              )}
+            </div>
+          )}
         </div>
 
         <div className="mt-4 flex gap-2 justify-end">
           <button
-            className="px-3 py-2 border rounded"
+            className="px-3 py-2 border rounded bg-[var(--bg-1)]"
             onClick={() => onOpenChange(false)}
           >
             {F.cancel}
@@ -141,6 +184,23 @@ export default function QuickLogPopover({
           </button>
         </div>
       </div>
+
+      {/* Note Modal */}
+      {openNote && (
+        <NoteModal
+          lang={lang as any}
+          defaultText={note}
+          onCancel={() => setOpenNote(false)}
+          onSave={(p: NotePayload) => {
+            setNote(p.text || "");
+            setAttachments({
+              imageDataUrl: p.imageDataUrl || null,
+              drawingDataUrl: p.drawingDataUrl || null,
+            });
+            setOpenNote(false);
+          }}
+        />
+      )}
     </div>
   );
 }
