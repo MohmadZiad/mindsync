@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { registerThunk, clearError, meThunk } from "@/redux/slices/authSlice";
@@ -50,7 +51,7 @@ export default function RegisterPage() {
 
   const [lang, setLang] = useState<Lang>("en");
   useEffect(() => {
-    setLang((localStorage.getItem("ms_lang") as Lang) || "en");
+    setLang((localStorage.getItem("ms_lang") as Lang) || "en"); // hydrate lang
   }, []);
   const t = useMemo(() => STR[lang], [lang]);
   const dir = lang === "ar" ? "rtl" : "ltr";
@@ -59,7 +60,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
 
-  // OAuth URL (اختياري)
+  // OAuth URL (optional)
   const baseGoogleUrl = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_URL || "";
   const googleHref = useMemo(() => {
     if (!baseGoogleUrl) return "";
@@ -67,24 +68,35 @@ export default function RegisterPage() {
       const origin =
         typeof window !== "undefined" ? window.location.origin : "";
       const url = new URL(baseGoogleUrl);
-      // أضف redirect_uri=/auth/callback لو مش موجود
       if (!url.searchParams.has("redirect_uri")) {
-        url.searchParams.set("redirect_uri", `${origin}/auth/callback`);
+        url.searchParams.set("redirect_uri", `${origin}/auth/callback`); // ensure callback
       }
       return url.toString();
     } catch {
-      return baseGoogleUrl;
+      return baseGoogleUrl; // fallback
     }
   }, [baseGoogleUrl]);
 
+  // Prefetch likely routes
   useEffect(() => {
-    dispatch(meThunk());
-  }, [dispatch]);
+    router.prefetch("/login"); // prefetch alt route
+    if (next) router.prefetch(next); // prefetch post-register
+  }, [router, next]);
 
+  // Avoid duplicate me() in StrictMode
+  const checkedRef = useRef(false);
+  useEffect(() => {
+    if (user || checkedRef.current) return;
+    checkedRef.current = true;
+    dispatch(meThunk()); // check if already signed in
+  }, [dispatch, user]);
+
+  // Fast redirect if user exists
   useEffect(() => {
     if (user) router.replace(next);
   }, [user, router, next]);
 
+  // Clear error on unmount
   useEffect(() => {
     return () => {
       dispatch(clearError());
@@ -93,10 +105,12 @@ export default function RegisterPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await dispatch(clearError());
+    // Client guard: avoid empty submit
+    if (!email.trim() || !password.trim()) return;
+    dispatch(clearError());
     const action = await dispatch(registerThunk({ email, password }));
     if (action?.meta?.requestStatus === "fulfilled") {
-      router.replace(next);
+      router.replace(next); // to dashboard (or next)
     }
   }
 
@@ -119,7 +133,8 @@ export default function RegisterPage() {
           {t.subtitle}
         </p>
 
-        <form onSubmit={onSubmit} className="mt-6 space-y-4" noValidate>
+        {/* Remove noValidate → let browser validate */}
+        <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <label className="block">
             <span className="mb-1 block text-sm font-medium">{t.email}</span>
             <input
@@ -189,12 +204,13 @@ export default function RegisterPage() {
 
           <div className="text-center text-xs text-gray-600 dark:text-gray-400">
             {t.haveAccount}{" "}
-            <a
+            <Link
               className="text-indigo-600 hover:underline"
               href={`/login?next=${encodeURIComponent(next)}`}
+              prefetch
             >
               {t.login}
-            </a>
+            </Link>
           </div>
         </form>
       </div>

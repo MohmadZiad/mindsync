@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { loginThunk, meThunk, clearError } from "@/redux/slices/authSlice";
@@ -45,7 +46,7 @@ export default function LoginPage() {
 
   const [lang, setLang] = useState<Lang>("en");
   useEffect(() => {
-    setLang((localStorage.getItem("ms_lang") as Lang) || "en");
+    setLang((localStorage.getItem("ms_lang") as Lang) || "en"); // hydrate lang
   }, []);
   const t = useMemo(() => STR[lang], [lang]);
   const dir = lang === "ar" ? "rtl" : "ltr";
@@ -54,14 +55,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
 
+  // Prefetch likely routes
   useEffect(() => {
-    dispatch(meThunk());
-  }, [dispatch]);
+    router.prefetch("/register"); // prefetch alt route
+    if (next) router.prefetch(next); // prefetch post-login
+  }, [router, next]);
 
+  // Avoid duplicate me() in StrictMode
+  const checkedRef = useRef(false);
+  useEffect(() => {
+    if (user || checkedRef.current) return; // already known
+    checkedRef.current = true;
+    dispatch(meThunk()); // cheap session check
+  }, [dispatch, user]);
+
+  // Fast redirect if user exists
   useEffect(() => {
     if (user) router.replace(next);
   }, [user, router, next]);
 
+  // Clear error on unmount
   useEffect(() => {
     return () => {
       dispatch(clearError());
@@ -70,10 +83,12 @@ export default function LoginPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await dispatch(clearError());
+    // Client guard: avoid empty submit
+    if (!email.trim() || !password.trim()) return;
+    dispatch(clearError()); // no await → no UI stall
     const action = await dispatch(loginThunk({ email, password }));
     if (action?.meta?.requestStatus === "fulfilled") {
-      router.replace(next);
+      router.replace(next); // move to next
     }
   }
 
@@ -96,7 +111,8 @@ export default function LoginPage() {
           {t.welcome}
         </p>
 
-        <form onSubmit={onSubmit} className="mt-6 space-y-4" noValidate>
+        {/* Remove noValidate → let browser validate */}
+        <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <label className="block">
             <span className="mb-1 block text-sm font-medium">{t.email}</span>
             <input
@@ -152,12 +168,13 @@ export default function LoginPage() {
 
           <div className="text-center text-xs text-gray-600 dark:text-gray-400">
             {t.noAccount}{" "}
-            <a
+            <Link
               className="text-indigo-600 hover:underline"
               href={`/register?next=${encodeURIComponent(next)}`}
+              prefetch
             >
               {t.createOne}
-            </a>
+            </Link>
           </div>
         </form>
       </div>

@@ -47,6 +47,12 @@ import NotesWordCloud from "@/components/reports/NotesWordCloud";
 import ExportPdfButton from "@/components/reports/ExportPdfButton";
 import { groupEntriesDaily, wordsFromNotes } from "@/lib/reporting";
 
+/* addons (new, non-breaking) */
+import OnboardingCoach from "@/components/addons/OnboardingCoach";
+import DailyPromptWidget from "@/components/addons/DailyPromptWidget";
+import InsightsPanel from "@/components/addons/InsightsPanel";
+import ConfettiSuccess from "@/components/addons/ConfettiSuccess";
+
 /* ===================== i18n ===================== */
 export type Lang = "en" | "ar";
 const T = {
@@ -114,6 +120,11 @@ const T = {
     reports: "Reports",
 
     noteBtn: "Note ✍️",
+
+    aiGenerate: "Generate with AI",
+    aiModalTitle: "Smart Summary",
+    aiModalSub: "Create quick, beautiful summaries for your entries.",
+    aiClose: "Close",
 
     reportTitles: {
       line: "Daily Entries",
@@ -186,6 +197,11 @@ const T = {
 
     noteBtn: "ملاحظة ✍️",
 
+    aiGenerate: "توليد بالذكاء",
+    aiModalTitle: "ملخص ذكي",
+    aiModalSub: "أنشئ ملخصات سريعة وأنيقة لإدخالاتك.",
+    aiClose: "إغلاق",
+
     reportTitles: {
       line: "الإدخالات اليومية",
       heat: "خريطة النشاط (آخر ٦ أشهر)",
@@ -221,12 +237,77 @@ function ProgressRing({
         cy={size / 2}
         r={r}
         strokeWidth={stroke}
-        className="fill-none stroke-current text-indigo-500"
+        className="fill-none stroke-current text-indigo-500 dark:text-indigo-400"
         strokeDasharray={`${dash} ${c - dash}`}
         strokeLinecap="round"
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
       />
     </svg>
+  );
+}
+
+/* ========= PrettyModal (NEW) ========= */
+function PrettyModal({
+  open,
+  onClose,
+  title,
+  subtitle,
+  children,
+  lang = "en",
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  lang?: Lang;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50">
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        dir={lang === "ar" ? "rtl" : "ltr"}
+        className="absolute inset-0 flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="relative w-full max-w-2xl rounded-2xl border border-white/20 dark:border-white/10 bg-gradient-to-br from-white to-violet-50 dark:from-slate-900 dark:to-indigo-950 shadow-2xl">
+          {/* decorative blobs */}
+          <div className="pointer-events-none absolute -top-16 -end-16 h-40 w-40 rounded-full bg-indigo-400/30 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-12 -start-12 h-36 w-36 rounded-full bg-fuchsia-400/30 blur-3xl" />
+
+          <div className="relative p-5 md:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-fuchsia-600 bg-clip-text text-transparent">
+                  {title}
+                </h3>
+                {subtitle && (
+                  <p className="mt-1 text-sm text-[var(--text-3)]">
+                    {subtitle}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={onClose}
+                className="btn btn--ghost touch rounded-xl"
+                aria-label="Close"
+                title="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4">{children}</div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -307,6 +388,9 @@ export default function DashboardPage() {
     done: boolean;
   }>({ habitId: "", note: "", done: true });
   const [showQuickLog, setShowQuickLog] = useState(false);
+
+  /* ---- NEW: AI Modal ---- */
+  const [openAiModal, setOpenAiModal] = useState(false);
 
   /* ---- flows visibility ---- */
   const [openQuickHabit, setOpenQuickHabit] = useState(false);
@@ -422,7 +506,15 @@ export default function DashboardPage() {
     {
       id: "intro",
       title: t.steps.intro,
-      content: <IntroStep copy={t.introCopy} />,
+      content: (
+        <IntroStep
+          copy={t.introCopy}
+          lang={lang}
+          entries={entries}
+          habits={habits}
+          onOpenAi={() => setOpenAiModal(true)}
+        />
+      ),
       ready: true,
     },
     {
@@ -543,6 +635,9 @@ export default function DashboardPage() {
               setStreaks((prev) => ({ ...prev, [entryForm.habitId]: s }));
             } catch {}
             setEntryForm((f) => ({ ...f, reflection: "" }));
+            try {
+              window.dispatchEvent(new CustomEvent("ms:entry-added"));
+            } catch {}
           }}
           onEditEntry={async (e) => {
             const newText =
@@ -580,8 +675,11 @@ export default function DashboardPage() {
   return (
     <main
       dir={dir}
-      className="min-h-screen bg-[var(--bg-0)] text-[var(--ink-1)] pb-28"
+      className="min-h-screen bg-[var(--bg-0)] text-[var(--ink-1)] pb-28 theme-smooth"
     >
+      {/* global micro-interaction listener */}
+      <ConfettiSuccess />
+
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-[var(--line)] backdrop-blur bg-[var(--bg-0)]/75">
         <div className="container flex items-center justify-between py-3">
@@ -638,6 +736,24 @@ export default function DashboardPage() {
           </div>
         </div>
       </header>
+
+      {/* Top helpers: onboarding + daily prompt + insights */}
+      <section className="container mt-4 space-y-4">
+        <OnboardingCoach
+          hasHabits={hasHabits}
+          hasEntries={entries.length > 0}
+          lang={lang}
+        />
+        <DailyPromptWidget
+          lang={lang}
+          onStart={() => setOpenQuickLogPop(true)}
+        />
+        <InsightsPanel
+          entries={entries as any}
+          habits={habits as any}
+          lang={lang}
+        />
+      </section>
 
       {/* Mini Stats */}
       <section className="container py-4 grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -771,20 +887,78 @@ export default function DashboardPage() {
           </section>
         </div>
       )}
+
+      {/* AI Modal (NEW) */}
+      <PrettyModal
+        open={openAiModal}
+        onClose={() => setOpenAiModal(false)}
+        title={t.aiModalTitle}
+        subtitle={t.aiModalSub}
+        lang={lang}
+      >
+        {/* أعرض نفس الكومبوننت القديم داخل مودال بشكل أجمل — بدون كسر أي لوجك */}
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--bg-1)] p-3 md:p-4 shadow-sm">
+          <AiReflectionControls />
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={() => setOpenAiModal(false)}
+            className="btn-secondary"
+          >
+            {t.aiClose}
+          </button>
+        </div>
+      </PrettyModal>
     </main>
   );
 }
 
 /* ===================== Steps ===================== */
-function IntroStep({ copy }: { copy: string }) {
+function IntroStep({
+  copy,
+  lang,
+  entries,
+  habits,
+  onOpenAi,
+}: {
+  copy: string;
+  lang: Lang;
+  entries: any[];
+  habits: any[];
+  onOpenAi: () => void;
+}) {
+  const isAr = lang === "ar";
+  const t = T[lang];
+
   return (
     <div className="grid md:grid-cols-3 gap-4">
-      <Card title="MindSync">
+      <Card title="MindSync" className="cardish">
         <p className="text-sm text-[var(--ink-1)]/90 leading-6">{copy}</p>
+
+        {/* CTA: Generate with AI — يفتح المودال الجديد */}
+        <div className="mt-4">
+          <button
+            className="btn-primary rounded-2xl"
+            onClick={onOpenAi}
+            title={t.aiGenerate}
+          >
+            ✨ {t.aiGenerate}
+          </button>
+        </div>
       </Card>
+
       <StreakMeCard />
-      <div className="md:col-span-2">
-        <AiReflectionControls />
+
+      <div className="md:col-span-2 space-y-4">
+        {/* صندوق AI القديم ما تغير لوجيكه، بس تغليف وديزاين أفضل */}
+        <Card
+          title={isAr ? "انعكاس ذكي" : "AI Reflection"}
+          className="cardish-2"
+        >
+          <div className="rounded-xl border border-[var(--line)] bg-[var(--bg-1)] p-3">
+            <AiReflectionControls />
+          </div>
+        </Card>
       </div>
     </div>
   );
@@ -840,18 +1014,15 @@ function HabitsStep(props: {
   return (
     <div className="space-y-4">
       {/* Add Habit */}
-      <div className="space-y-2 border border-[var(--line)] p-3 rounded-2xl bg-[var(--bg-1)]">
+      <div className="space-y-2 border border-[var(--line)] p-3 rounded-2xl bg-[var(--bg-1)] shadow-sm">
         <div className="flex gap-2">
           <input
-            className="border p-2 rounded flex-1 bg-[var(--bg-0)]"
+            className="input flex-1"
             placeholder={i18n.habitNamePh}
             value={newHabit}
             onChange={(e) => setNewHabit(e.target.value)}
           />
-          <button
-            className="px-3 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700"
-            onClick={onAddHabit}
-          >
+          <button className="btn-primary" onClick={onAddHabit}>
             {i18n.add}
           </button>
         </div>
@@ -869,25 +1040,25 @@ function HabitsStep(props: {
           return (
             <li
               key={h.id}
-              className="border border-[var(--line)] rounded-2xl p-3 bg-[var(--bg-1)]"
+              className="border border-[var(--line)] rounded-2xl p-3 bg-[var(--bg-1)] shadow-sm"
             >
               {editHabit && editHabit.id === h.id ? (
                 <div className="flex gap-2 w-full">
                   <input
-                    className="border p-2 rounded flex-1 bg-[var(--bg-0)]"
+                    className="input flex-1"
                     value={editHabit.name}
                     onChange={(e) =>
                       setEditHabit({ id: h.id, name: e.target.value })
                     }
                   />
                   <button
-                    className="px-3 py-1 rounded bg-indigo-600 text-white"
+                    className="btn-primary"
                     onClick={() => onEditSave(h.id, editHabit.name)}
                   >
                     {i18n.save}
                   </button>
                   <button
-                    className="px-3 py-1 border rounded"
+                    className="btn-secondary"
                     onClick={() => setEditHabit(null)}
                   >
                     {i18n.cancel}
@@ -986,7 +1157,7 @@ function EntriesStep(props: {
     <div className="space-y-4">
       <div className="grid md:grid-cols-4 gap-2">
         <select
-          className="border p-2 rounded bg-[var(--bg-1)]"
+          className="input"
           value={entryForm.habitId}
           onChange={(e) =>
             setEntryForm({ ...entryForm, habitId: e.target.value })
@@ -1001,7 +1172,7 @@ function EntriesStep(props: {
         </select>
 
         <select
-          className="border p-2 rounded bg-[var(--bg-1)]"
+          className="input"
           aria-label={i18n.mood}
           value={entryForm.mood}
           onChange={(e) => setEntryForm({ ...entryForm, mood: e.target.value })}
@@ -1017,7 +1188,7 @@ function EntriesStep(props: {
 
         <button
           type="button"
-          className="border p-2 rounded bg-[var(--bg-1)] text-left"
+          className="btn-secondary text-left"
           onClick={() => setNoteOpen(true)}
           title={i18n.reflectionPh}
         >
@@ -1028,10 +1199,7 @@ function EntriesStep(props: {
             : T.en.noteBtn}
         </button>
 
-        <button
-          className="px-3 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700"
-          onClick={onAddEntry}
-        >
+        <button className="btn-primary" onClick={onAddEntry}>
           {i18n.addEntry}
         </button>
       </div>
@@ -1086,7 +1254,7 @@ function EntriesStep(props: {
       </ul>
 
       {currentHabitId && (
-        <button className="px-3 py-1 border rounded" onClick={onClearFilter}>
+        <button className="btn-secondary" onClick={onClearFilter}>
           {i18n.clearFilter}
         </button>
       )}
@@ -1144,7 +1312,9 @@ function StatCard({
   emoji: string;
 }) {
   return (
-    <div className="flex items-center gap-4 border border-[var(--line)] rounded-2xl p-4 bg-[var(--bg-1)]">
+    <div className="relative overflow-hidden flex items-center gap-4 border border-[var(--line)] rounded-2xl p-4 bg-[var(--bg-1)] shadow-sm">
+      {/* faint gradient halo */}
+      <div className="pointer-events-none absolute -top-10 end-0 h-28 w-28 rounded-full bg-indigo-400/20 blur-2xl" />
       <ProgressRing value={pct} />
       <div>
         <div className="text-xs uppercase tracking-wider opacity-70">

@@ -13,6 +13,7 @@ export default function OAuthCallback() {
   const dispatch = useAppDispatch();
   const { lang } = useI18n();
 
+  // i18n strings
   const L = useMemo(
     () =>
       ((
@@ -48,30 +49,34 @@ export default function OAuthCallback() {
   );
 
   const [phase, setPhase] = useState<Phase>("auth");
-  const redirected = useRef(false);
+  const redirected = useRef(false); // guard: avoid multi-redirects
 
   const go = (path = "/dashboard") => {
-    if (redirected.current) return;
+    if (redirected.current) return; // idempotent
     redirected.current = true;
     router.replace(path);
   };
 
   useEffect(() => {
+    router.prefetch("/dashboard"); // prefetch target route
+  }, [router]);
+
+  useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     (async () => {
       try {
-        await dispatch(meThunk()).unwrap();
+        await dispatch(meThunk()).unwrap(); // verify session
         setPhase("redirect");
       } catch {
-        setPhase("error");
+        setPhase("error"); // show fallback
       } finally {
-        timer = setTimeout(() => go("/dashboard"), 900);
+        timer = setTimeout(() => go("/dashboard"), 900); // gentle auto-redirect
       }
     })();
     return () => {
-      if (timer) clearTimeout(timer);
+      if (timer) clearTimeout(timer); // cleanup timer
     };
-  }, [dispatch]);
+  }, [dispatch]); // safe: runs once (StrictMode double-invoke guarded by ref)
 
   return (
     <main className="min-h-[70vh] grid place-items-center px-4">
@@ -114,14 +119,14 @@ export default function OAuthCallback() {
           {phase === "error" && (
             <button
               onClick={async () => {
-                setPhase("auth");
+                setPhase("auth"); // UI: show checking
                 try {
-                  await dispatch(meThunk()).unwrap();
+                  await dispatch(meThunk()).unwrap(); // retry
                   setPhase("redirect");
                 } catch {
                   setPhase("error");
                 } finally {
-                  setTimeout(() => go("/dashboard"), 800);
+                  setTimeout(() => go("/dashboard"), 800); // graceful fallback
                 }
               }}
               className="inline-flex items-center justify-center rounded-md bg-amber-600 text-white px-4 py-2 text-sm font-medium hover:bg-amber-700"
@@ -210,4 +215,3 @@ function AlertIcon({
     </svg>
   );
 }
-  
