@@ -4,11 +4,25 @@ import { cn } from "./ui/cn";
 
 type Variant = "glass" | "solid" | "soft";
 
-interface CardProps extends React.HTMLAttributes<HTMLElement> {
+/**
+ * ملاحظة: عملنا Omit لـ `title` من خصائص HTML الافتراضيّة
+ * عشان ما تتعارض مع `title?: React.ReactNode` تبعت الكارد.
+ */
+interface CardProps extends Omit<React.HTMLAttributes<HTMLElement>, "title"> {
+  /** عنوان الكارد (string أو أي ReactNode) */
   title?: React.ReactNode;
+  /** محتوى يمين الهيدر (أزرار/أكشن) */
   right?: React.ReactNode;
+  /** فوتر اختياري */
   footer?: React.ReactNode;
+  /** شكل الكارد */
   variant?: Variant;
+  /** جعل الكارد قابل للنقر (ستايل هوفر فقط) */
+  clickable?: boolean;
+  /** اجعل الفوتر ثابت بأسفل الكارد */
+  stickyFooter?: boolean;
+  /** العنصر الأساسي: section/div/article ...الخ */
+  as?: keyof React.JSX.IntrinsicElements;
 }
 
 export function Card({
@@ -18,9 +32,13 @@ export function Card({
   footer,
   variant = "glass",
   className,
+  clickable = false,
+  stickyFooter = false,
+  as = "section",
   ...props
 }: CardProps) {
-  // اختر الكلاس حسب الـ variant
+  const Tag = as as any;
+
   const variantClass =
     variant === "glass"
       ? "glass rounded-2xl"
@@ -29,8 +47,13 @@ export function Card({
       : "cardish"; // solid
 
   return (
-    <section
-      className={cn("w-full p-4 theme-smooth", variantClass, className)}
+    <Tag
+      className={cn(
+        "w-full p-4 theme-smooth",
+        variantClass,
+        clickable && "hover:shadow-xl cursor-pointer",
+        className
+      )}
       {...props}
     >
       {(title || right) && (
@@ -51,8 +74,15 @@ export function Card({
       <div>{children}</div>
 
       {footer ? (
-        <div className="mt-3 pt-3 border-t border-base">{footer}</div>
+        <div
+          className={cn(
+            "mt-3 pt-3 border-t border-base",
+            stickyFooter && "sticky bottom-0 bg-inherit"
+          )}
+        >
+          {footer}
+        </div>
       ) : null}
-    </section>
+    </Tag>
   );
 }

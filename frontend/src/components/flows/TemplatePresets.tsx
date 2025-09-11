@@ -99,7 +99,10 @@ export function HabitTemplates() {
       unit: v.unit || tpl.unit || "times",
     };
     (Object.keys(patch) as Array<keyof typeof patch>).forEach((k) => {
-      setValue(k as any, (patch as any)[k], { shouldDirty: true, shouldTouch: true });
+      setValue(k as any, (patch as any)[k], {
+        shouldDirty: true,
+        shouldTouch: true,
+      });
     });
   }
 
@@ -110,15 +113,15 @@ export function HabitTemplates() {
 
   return (
     <div className="mt-2">
-      <div className="text-xs mb-1 text-gray-500">{L.title}</div>
+      <div className="text-xs mb-1 text-[var(--text-3)]">{L.title}</div>
       <div className="flex flex-wrap gap-2">
         {HABIT_TEMPLATES.map((tpl) => (
           <button
             key={tpl.id}
             type="button"
-            className="rounded-full border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-900"
+            className="chip"
             onClick={() => apply(tpl)}
-            title={F?.templatesApply || L.apply}
+            title={L.apply}
           >
             {tpl.icon} {tpl.name}
           </button>

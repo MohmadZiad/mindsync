@@ -14,7 +14,7 @@ export function EntryTemplates() {
 
   function appendNote(text: string) {
     const base = (watch("note") || "").trim();
-    setValue("note", base ? base + "\n\n" + text : text);
+    setValue("note", base ? base + "\n\n" + text : text, { shouldDirty: true });
   }
 
   function setQty(q: number) {
@@ -33,26 +33,40 @@ export function EntryTemplates() {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-xs text-gray-500">{L.template}:</span>
+      <span className="label">{L.template}:</span>
       <button
         type="button"
-        className="rounded-full border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-900"
+        className="chip"
         onClick={() => appendNote(tplNote)}
       >
         {lang === "ar" ? "مراجعة اليوم" : "Daily review"}
       </button>
 
-      <span className="text-xs text-gray-500 ml-2">{L.mood}:</span>
-      <button type="button" className="rounded-full border px-2 py-1 text-sm" onClick={() => setStatus("done")}>🎉</button>
-      <button type="button" className="rounded-full border px-2 py-1 text-sm" onClick={() => setStatus("partial")}>🙂</button>
-      <button type="button" className="rounded-full border px-2 py-1 text-sm" onClick={() => setStatus("skipped")}>😐</button>
+      <span className="label ml-2">{L.mood}:</span>
+      <button type="button" className="chip" onClick={() => setStatus("done")}>
+        🎉
+      </button>
+      <button
+        type="button"
+        className="chip"
+        onClick={() => setStatus("partial")}
+      >
+        🙂
+      </button>
+      <button
+        type="button"
+        className="chip"
+        onClick={() => setStatus("skipped")}
+      >
+        😐
+      </button>
 
-      <span className="text-xs text-gray-500 ml-2">{L.qty}:</span>
+      <span className="label ml-2">{L.qty}:</span>
       {[5, 10, 20, 30].map((q) => (
         <button
           key={q}
           type="button"
-          className="rounded-full border px-3 py-1 text-sm"
+          className="chip"
           onClick={() => setQty(q)}
         >
           {q}

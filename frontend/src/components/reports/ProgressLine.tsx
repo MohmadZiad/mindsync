@@ -1,11 +1,17 @@
 "use client";
 import {
-  LineChart, Line, Tooltip, XAxis, YAxis,
-  ResponsiveContainer, CartesianGrid
+  LineChart,
+  Line,
+  Tooltip,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  CartesianGrid,
 } from "recharts";
+import React from "react";
 
 export type SeriesPoint = { date: string; count: number };
-type Lang = "en" | "ar";
+export type Lang = "en" | "ar";
 
 const T = {
   en: { title: "Progress" },
@@ -15,15 +21,21 @@ const T = {
 export default function ProgressLine({
   data,
   lang = "en",
+  title,
 }: {
   data: SeriesPoint[];
   lang?: Lang;
+  title?: React.ReactNode; 
 }) {
   const t = T[lang];
+  const heading = title ?? t.title;
 
   return (
-    <div dir={lang === "ar" ? "rtl" : "ltr"} className="border rounded-2xl p-3 bg-[var(--bg-1)]">
-      <div className="mb-2 font-semibold">{t.title}</div>
+    <div
+      dir={lang === "ar" ? "rtl" : "ltr"}
+      className="border rounded-2xl p-3 bg-[var(--bg-1)]"
+    >
+      <div className="mb-2 font-semibold">{heading}</div>
       <div style={{ width: "100%", height: 260 }}>
         <ResponsiveContainer>
           <LineChart data={data}>
@@ -31,7 +43,13 @@ export default function ProgressLine({
             <XAxis dataKey="date" tick={{ fontSize: 12 }} />
             <YAxis allowDecimals={false} />
             <Tooltip />
-            <Line type="monotone" dataKey="count" stroke="currentColor" strokeWidth={3} dot={false} />
+            <Line
+              type="monotone"
+              dataKey="count"
+              stroke="currentColor"
+              strokeWidth={3}
+              dot={false}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>

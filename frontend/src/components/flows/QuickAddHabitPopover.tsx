@@ -1,10 +1,10 @@
-// src/components/flows/QuickAddHabitPopover.tsx
 "use client";
 import { useState } from "react";
 import { useAppDispatch } from "@/redux/hooks";
 import { addHabit, fetchHabits } from "@/redux/slices/habitSlice";
 import { useI18n } from "@/components/ui/i18n";
 import toast from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function QuickAddHabitPopover({
   open,
@@ -63,86 +63,92 @@ export default function QuickAddHabitPopover({
     }
   }
 
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-[90] grid place-items-center" // <- أعلى من أي شيء
-      aria-hidden={!open}
-    >
-      {/* استخدم onMouseDown حتى ما يتصادم مع أحداث داخل الديالوج */}
-      <div
-        className="absolute inset-0 bg-black/30 z-[80]"
-        onMouseDown={() => onOpenChange(false)}
-      />
-      <div
-        className="relative z-[95] w-[min(92vw,560px)] rounded-2xl bg-white dark:bg-gray-950 border shadow-xl p-4"
-        role="dialog"
-        aria-modal="true"
-        // امنع انتشار جميع النقرات للمحتوى الداخلي
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="text-lg font-semibold mb-3">{F.quickAddHabit}</div>
+    <AnimatePresence>
+      {open && (
+        <div
+          className="fixed inset-0 z-[90] grid place-items-center"
+          aria-hidden={!open}
+        >
+          <motion.div
+            className="absolute inset-0 bg-black/30 z-[80]"
+            onMouseDown={() => onOpenChange(false)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          />
+          <motion.div
+            className="relative z-[95] w-[min(92vw,560px)] rounded-2xl bg-[var(--bg-0)] border border-[var(--line)] shadow-xl p-4"
+            role="dialog"
+            aria-modal="true"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+          >
+            <div className="text-lg font-semibold mb-3">{F.quickAddHabit}</div>
 
-        <div className="grid gap-3">
-          <label className="text-sm">
-            {F.habitName}
-            <input
-              className="mt-1 w-full border rounded px-2 py-2"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoFocus
-            />
-          </label>
-          <label className="text-sm">
-            {F.description}
-            <input
-              className="mt-1 w-full border rounded px-2 py-2"
-              value={desc}
-              onChange={(e) => setDesc(e.target.value)}
-            />
-          </label>
+            <div className="grid gap-3">
+              <label className="text-sm">
+                {F.habitName}
+                <input
+                  className="input mt-1"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoFocus
+                />
+              </label>
+              <label className="text-sm">
+                {F.description}
+                <input
+                  className="input mt-1"
+                  value={desc}
+                  onChange={(e) => setDesc(e.target.value)}
+                />
+              </label>
 
-          <div className="flex gap-2 items-center">
-            <label className="text-sm">
-              {F.emoji}
-              <input
-                className="mt-1 w-24 border rounded px-2 py-2 text-center"
-                value={emoji}
-                onChange={(e) => setEmoji(e.target.value)}
-              />
-            </label>
-            <label className="text-sm">
-              {F.frequency}
-              <select
-                className="mt-1 border rounded px-2 py-2"
-                value={freq}
-                onChange={(e) => setFreq(e.target.value as any)}
+              <div className="flex gap-2 items-center">
+                <label className="text-sm">
+                  {F.emoji}
+                  <input
+                    className="input mt-1 w-24 text-center"
+                    value={emoji}
+                    onChange={(e) => setEmoji(e.target.value)}
+                  />
+                </label>
+                <label className="text-sm">
+                  {F.frequency}
+                  <select
+                    className="input mt-1"
+                    value={freq}
+                    onChange={(e) => setFreq(e.target.value as any)}
+                  >
+                    <option value="daily">{F.daily}</option>
+                    <option value="weekly">{F.weekly}</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-4 flex gap-2 justify-end">
+              <button
+                className="btn-secondary"
+                onClick={() => onOpenChange(false)}
               >
-                <option value="daily">{F.daily}</option>
-                <option value="weekly">{F.weekly}</option>
-              </select>
-            </label>
-          </div>
+                {F.cancel}
+              </button>
+              <button
+                className="btn-primary disabled:opacity-50"
+                disabled={!name.trim() || loading}
+                onClick={submit}
+              >
+                {loading ? "…" : F.create}
+              </button>
+            </div>
+          </motion.div>
         </div>
-
-        <div className="mt-4 flex gap-2 justify-end">
-          <button
-            className="px-3 py-2 border rounded"
-            onClick={() => onOpenChange(false)}
-          >
-            {F.cancel}
-          </button>
-          <button
-            className="px-3 py-2 rounded bg-indigo-600 text-white disabled:opacity-50"
-            disabled={!name.trim() || loading}
-            onClick={submit}
-          >
-            {loading ? "…" : F.create}
-          </button>
-        </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 }

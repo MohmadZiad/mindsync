@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export type FaqItem = { q: string; a: string; id?: string };
 
@@ -70,6 +70,7 @@ export default function FAQ({
   dir,
   placeholder,
   i18n,
+  injectJsonLd = false,
 }: {
   items: FaqItem[];
   className?: string;
@@ -77,6 +78,8 @@ export default function FAQ({
   dir?: "ltr" | "rtl";
   placeholder?: string;
   i18n?: Partial<I18n>;
+  /** حقن JSON-LD لمحركات البحث (اختياري) */
+  injectJsonLd?: boolean;
 }) {
   const d: "ltr" | "rtl" = dir ?? (lang === "ar" ? "rtl" : "ltr");
   const strings: I18n = {
@@ -92,6 +95,19 @@ export default function FAQ({
     if (!needle) return items;
     return items.filter((i) => normalize(i.q + " " + i.a).includes(needle));
   }, [items, q]);
+
+  // JSON-LD injection (اختياري)
+  useEffect(() => {
+    if (!injectJsonLd) return;
+    const el = document.createElement("script");
+    el.type = "application/ld+json";
+    el.id = "faq-jsonld";
+    el.text = JSON.stringify(getFaqJsonLd(items));
+    document.head.appendChild(el);
+    return () => {
+      document.getElementById("faq-jsonld")?.remove();
+    };
+  }, [injectJsonLd, items]);
 
   return (
     <section className={className} dir={d}>

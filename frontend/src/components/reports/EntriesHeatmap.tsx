@@ -1,8 +1,9 @@
 "use client";
 import CalendarHeatmap from "react-calendar-heatmap";
 import "react-calendar-heatmap/dist/styles.css";
+import React from "react";
 
-type Lang = "en" | "ar";
+export type Lang = "en" | "ar";
 
 const T = {
   en: { title: "Activity Heatmap" },
@@ -14,27 +15,37 @@ export default function EntriesHeatmap({
   startDate,
   endDate,
   lang = "en",
+  title,
 }: {
   values: { date: string; count: number }[];
   startDate: Date;
   endDate: Date;
   lang?: Lang;
+  title?: React.ReactNode; 
 }) {
   const t = T[lang];
+  const heading = title ?? t.title;
 
   return (
-    <div dir={lang === "ar" ? "rtl" : "ltr"} className="border rounded-2xl p-3 bg-[var(--bg-1)]">
-      <div className="mb-2 font-semibold">{t.title}</div>
+    <div
+      dir={lang === "ar" ? "rtl" : "ltr"}
+      className="border rounded-2xl p-3 bg-[var(--bg-1)]"
+    >
+      <div className="mb-2 font-semibold">{heading}</div>
+
       <CalendarHeatmap
         startDate={startDate}
         endDate={endDate}
         values={values}
         classForValue={(v) =>
-          !v || v.count === 0 ? "color-empty" : `color-github-${Math.min(4, v.count)}`
+          !v || v.count === 0
+            ? "color-empty"
+            : `color-github-${Math.min(4, v.count)}`
         }
         gutterSize={3}
         showWeekdayLabels={true}
       />
+
       <style jsx global>{`
         .color-empty { fill: #e5e7eb; }
         .color-github-1 { fill: #c7d2fe; }

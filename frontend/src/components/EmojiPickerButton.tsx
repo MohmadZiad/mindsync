@@ -8,7 +8,7 @@ type Props = {
 };
 
 type OnEmojiSelectPayload = {
-  emoji: string; 
+  emoji: string;
   name?: string;
   shortcodes?: string;
 };
@@ -31,6 +31,45 @@ export default function EmojiPickerButton({ value, onChange }: Props) {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
+  const listComponents: any = {
+    CategoryHeader: ({
+      category,
+      ...props
+    }: { category: Category } & React.HTMLAttributes<HTMLDivElement>) => (
+      <div
+        className="bg-white px-3 pt-3 pb-1.5 font-medium text-neutral-600 text-xs dark:bg-neutral-900 dark:text-neutral-400"
+        {...props}
+      >
+        {category.label}
+      </div>
+    ),
+
+    Row: ({
+      children,
+      ...props
+    }: {
+      children?: React.ReactNode;
+    } & React.HTMLAttributes<HTMLDivElement>) => (
+      <div className="scroll-my-1.5 px-1.5" {...props}>
+        {children}
+      </div>
+    ),
+
+    Emoji: ({
+      emoji,
+      ...props
+    }: {
+      emoji: { emoji: string };
+    } & React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+      <button
+        className="flex size-8 items-center justify-center rounded-md text-lg data-[active]:bg-neutral-100 dark:data-[active]:bg-neutral-800"
+        {...props}
+      >
+        {emoji.emoji}
+      </button>
+    ),
+  };
+
   return (
     <div className="relative inline-block" ref={ref}>
       <button
@@ -43,7 +82,6 @@ export default function EmojiPickerButton({ value, onChange }: Props) {
 
       {open && (
         <div className="absolute z-50 mt-2">
-          {/* Root بيدير البحث/القائمة */}
           <EmojiPicker.Root
             className="isolate flex h-[340px] w-fit flex-col bg-white dark:bg-neutral-900 rounded-md shadow"
             onEmojiSelect={(payload: OnEmojiSelectPayload) => {
@@ -64,46 +102,7 @@ export default function EmojiPickerButton({ value, onChange }: Props) {
 
               <EmojiPicker.List
                 className="select-none pb-1.5"
-                components={{
-                  CategoryHeader: ({
-                    category,
-                    ...props
-                  }: {
-                    category: Category;
-                  } & React.HTMLAttributes<HTMLDivElement>) => (
-                    <div
-                      className="bg-white px-3 pt-3 pb-1.5 font-medium text-neutral-600 text-xs dark:bg-neutral-900 dark:text-neutral-400"
-                      {...props}
-                    >
-                      {category.label}
-                    </div>
-                  ),
-
-                  Row: ({
-                    children,
-                    ...props
-                  }: {
-                    children?: React.ReactNode;
-                  } & React.HTMLAttributes<HTMLDivElement>) => (
-                    <div className="scroll-my-1.5 px-1.5" {...props}>
-                      {children}
-                    </div>
-                  ),
-
-                  Emoji: ({
-                    emoji,
-                    ...props
-                  }: {
-                    emoji: { emoji: string };
-                  } & React.ButtonHTMLAttributes<HTMLButtonElement>) => (
-                    <button
-                      className="flex size-8 items-center justify-center rounded-md text-lg data-[active]:bg-neutral-100 dark:data-[active]:bg-neutral-800"
-                      {...props}
-                    >
-                      {emoji.emoji}
-                    </button>
-                  ),
-                }}
+                components={listComponents}
               />
             </EmojiPicker.Viewport>
           </EmojiPicker.Root>

@@ -325,3 +325,51 @@ button {
     opacity: 1;
   }
 }
+
+/* ====== Aliases عشان تتوافق المتغيّرات مع الكود ====== */
+:root {
+  /* نص ثانوي وثالث (aliases للـ ink-2 الخ..) */
+  --text-2: var(--ink-2);           /* secondary text */
+  --text-3: #6b7280;                /* muted text (light) */
+}
+:root.dark {
+  --text-3: #9ca3af;                /* muted text (dark) */
+}
+
+/* ====== Components جاهزة ومُوحّدة ====== */
+@layer components {
+  .input {
+    @apply w-full rounded-lg border border-[var(--line)] bg-[var(--bg-1)] px-3 py-2
+           text-[var(--ink-1)] outline-none transition focus:ring-2 focus:ring-indigo-300;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600
+           px-4 py-2 text-white shadow-sm hover:bg-indigo-700
+           focus:outline-none focus:ring-2 focus:ring-indigo-300 active:scale-[.98];
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--line)]
+           bg-[var(--bg-1)] px-3 py-2 text-[var(--ink-1)]
+           hover:bg-[var(--bg-2)]
+           focus:outline-none focus:ring-2 focus:ring-indigo-300 active:scale-[.98];
+  }
+
+  .btn-tertiary {
+    @apply rounded border border-[var(--line)] bg-[var(--bg-2)] px-3 py-2
+           text-[var(--ink-1)];
+  }
+
+  .label { @apply text-xs text-[var(--text-3)]; }
+
+  .chip {
+    @apply rounded-full border border-[var(--line)] bg-[var(--bg-1)]
+           px-3 py-1 text-sm hover:bg-[var(--bg-2)] transition;
+  }
+
+  .menu-card {
+    @apply rounded-xl border border-[var(--line)] bg-[var(--bg-1)]
+           px-4 py-2 shadow hover:bg-[var(--bg-2)] transition;
+  }
+}
