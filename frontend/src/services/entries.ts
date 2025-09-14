@@ -8,13 +8,12 @@ export type Entry = {
   createdAt: string;
 };
 
-// ---------- أنواع الردود العامة ----------
+// ---------- Response Types ----------
 export type TopHabitResp = {
   habit: { id: string; name: string } | null;
   count: number;
 } | null;
 
-// Raw types (كما قد يرجعها الباك، بدون ضمان وجود id أو createdAt)
 type WeeklyGroupedEntryRaw = {
   id?: string;
   _id?: string;
@@ -28,7 +27,6 @@ type WeeklyGroupedRawResp = Array<{
   entries: WeeklyGroupedEntryRaw[];
 }>;
 
-// Normalized types (جاهزة للـUI)
 export type WeeklyGroupedResp = Array<{
   habit: { id: string; name: string };
   entries: Array<{
@@ -39,6 +37,15 @@ export type WeeklyGroupedResp = Array<{
   }>;
 }>;
 
+export type AiReflectionResp = {
+  ok?: boolean;
+  summary: string;
+  days?: number;
+  locale?: "ar" | "en";
+  model?: string;
+};
+
+// ---------- Service ----------
 export const entriesService = {
   // GET /api/entries[?habitId=...]
   list: (habitId?: string) =>
@@ -66,11 +73,11 @@ export const entriesService = {
   // GET /api/entries/top-habit
   topHabit: () => api.get<TopHabitResp>("/entries/top-habit"),
 
-  // GET /api/entries/weekly-grouped  (مع تطبيع id/createdAt)
+  // GET /api/entries/weekly-grouped (normalized)
   weeklyGrouped: async (): Promise<WeeklyGroupedResp> => {
     const raw = await api.get<WeeklyGroupedRawResp>("/entries/weekly-grouped");
 
-    const normalized: WeeklyGroupedResp = raw.map((g) => ({
+    return raw.map((g) => ({
       habit: g.habit,
       entries: g.entries.map((e, idx) => ({
         id: e.id ?? e._id ?? `${g.habit.id}-${idx}`,
@@ -79,8 +86,6 @@ export const entriesService = {
         createdAt: e.createdAt ?? new Date().toISOString(),
       })),
     }));
-
-    return normalized;
   },
 
   // GET /api/entries/summary?from=...&to=...
@@ -91,15 +96,11 @@ export const entriesService = {
       )}&to=${encodeURIComponent(toISO)}`
     ),
 
-
+  // GET /api/entries/ai-reflection
   aiReflection: (opts?: { days?: number; locale?: "ar" | "en" }) => {
-    const days = opts?.days ?? 7;
+    const days = String(opts?.days ?? 7);
     const locale = opts?.locale ?? "ar";
-    const qs = new URLSearchParams({
-      days: String(days),
-      locale, 
-      language: locale, 
-    }).toString();
-    return api.get<{ summary: string }>(`/entries/ai-reflection?${qs}`);
+    const qs = new URLSearchParams({ days, locale }).toString();
+    return api.get<AiReflectionResp>(`/entries/ai-reflection?${qs}`);
   },
 };
