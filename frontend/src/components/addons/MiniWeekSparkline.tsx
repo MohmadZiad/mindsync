@@ -1,20 +1,33 @@
 "use client";
-import { useMemo } from "react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Line,
+} from "recharts";
 
 export default function MiniWeekSparkline({ points }: { points: number[] }) {
-  const max = Math.max(1, ...points);
-  const d = useMemo(() => {
-    const w = 100, h = 24, step = w/(points.length-1);
-    return points.map((v,i) => `${i===0?"M":"L"} ${i*step},${h-(v/max)*h}`).join(" ");
-  }, [points, max]);
+  const data = points.map((count, i) => ({ d: i + 1, count }));
   return (
-    <svg viewBox="0 0 100 24" className="w-28 h-6">
-      <path d={d} fill="none" stroke="url(#g1)" strokeWidth="2" />
-      <defs>
-        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#6D5EF1"/><stop offset="100%" stopColor="#F15ECC"/>
-        </linearGradient>
-      </defs>
-    </svg>
+    <div className="h-[80px]">
+      <ResponsiveContainer>
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} />
+          <XAxis dataKey="d" hide />
+          <YAxis hide />
+          <Tooltip />
+          <Line
+            type="monotone"
+            dataKey="count"
+            dot={false}
+            stroke="#6D5EF1"
+            strokeWidth={2}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

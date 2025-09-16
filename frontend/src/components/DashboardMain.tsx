@@ -1,5 +1,4 @@
-
-'use client';
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -104,6 +103,14 @@ const ConfettiSuccess = dynamic(
   () => import("@/components/addons/ConfettiSuccess"),
   { ssr: false }
 );
+
+// ======= NEW UI pieces =======
+import AnimatedCard from "./ui/AnimatedCard";
+import AnimatedStatCard from "@/components/ui/AnimatedStatCard";
+import ProgressBarToday from "@/components/addons/ProgressBarToday";
+import SmartSearchBar from "./ui/SmartSearchBar";
+import ThemeToggle from "./ui/ThemeToggle";
+import BackgroundPicker from "./ui/BackgroundPicker";
 
 // ===================== i18n =====================
 export type Lang = "en" | "ar";
@@ -416,7 +423,7 @@ export default function DashboardMain() {
   const dir = lang === "ar" ? "rtl" : "ltr";
   const locale = lang === "ar" ? "ar-EG" : "en-US";
 
-  // theme
+  // theme (kept for initial load — ThemeToggle سيضبط النهائي)
   const [dark, setDark] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return (
@@ -525,6 +532,14 @@ export default function DashboardMain() {
     (btn as HTMLButtonElement | undefined)?.click();
   }
 
+  function goToReportsTab() {
+    const labels = [T.en.steps.reports, T.ar.steps.reports];
+    const btn = Array.from(
+      document.querySelectorAll("button,[role='tab']")
+    ).find((b: any) => labels.includes((b.textContent || "").trim()));
+    (btn as HTMLButtonElement | undefined)?.click();
+  }
+
   async function handleQuickLogSave() {
     if (!qlog.habitId) return;
     await dispatch(
@@ -616,11 +631,16 @@ export default function DashboardMain() {
       title: t.steps.intro,
       content: (
         <div className="grid md:grid-cols-3 gap-4">
-          <CollapsibleCard title="MindSync" icon="✨">
-            <p className="text-sm text-[var(--ink-1)]/90 leading-6">
-              {t.introCopy}
-            </p>
-            <div className="mt-4">
+          {/* يمكنك إبقاء CollapsibleCard أو استخدام AnimatedCard — أخليتها AnimatedCard للتجميل */}
+          <AnimatedCard
+            lang={lang}
+            title="MindSync"
+            subtitle={t.introCopy}
+            icon="✨"
+            gradient
+            defaultOpen
+          >
+            <div className="mt-2">
               <button
                 className="btn-primary rounded-2xl"
                 onClick={() => setOpenAiModal(true)}
@@ -629,25 +649,33 @@ export default function DashboardMain() {
                 ✨ {t.aiGenerate}
               </button>
             </div>
-          </CollapsibleCard>
+          </AnimatedCard>
+
           <StreakMeCard />
+
           <div className="md:col-span-2 space-y-4">
-            <CollapsibleCard
+            <AnimatedCard
+              lang={lang}
               title={lang === "ar" ? "انعكاس ذكي" : "AI Reflection"}
               icon="🧠"
+              gradient
+              defaultOpen
             >
               <div className="rounded-xl border border-[var(--line)] bg-[var(--bg-1)] p-3">
                 <AiReflectionControls />
               </div>
-            </CollapsibleCard>
+            </AnimatedCard>
+
             {bestHabit && (
-              <CollapsibleCard
+              <AnimatedCard
+                lang={lang}
                 title={
                   lang === "ar"
                     ? "أفضل عادة هذا الأسبوع"
                     : "Best Habit This Week"
                 }
                 icon="🏆"
+                flip
               >
                 <div className="flex items-center justify-between gap-4">
                   <div className="text-sm">
@@ -672,7 +700,7 @@ export default function DashboardMain() {
                     ))}
                   </div>
                 </div>
-              </CollapsibleCard>
+              </AnimatedCard>
             )}
           </div>
         </div>
@@ -868,14 +896,8 @@ export default function DashboardMain() {
               <option value="en">English</option>
               <option value="ar">العربية</option>
             </select>
-            <button
-              onClick={() => setDark((v) => !v)}
-              className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
-              title={t.theme}
-              aria-label={t.theme}
-            >
-              {dark ? `🌙 ${t.dark}` : `☀️ ${t.light}`}
-            </button>
+
+            {/* Removed the old theme button; ThemeToggle below in toolbar */}
             <button
               className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
               onClick={() => goToHabitsTab()}
@@ -898,6 +920,30 @@ export default function DashboardMain() {
         </div>
       </header>
 
+      {/* Toolbar: search + theme + background */}
+      <section className="container mt-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="flex-1">
+          <SmartSearchBar
+            lang={lang}
+            habits={habits as any}
+            reports={[
+              { id: "line", title: t.reportTitles.line },
+              { id: "heat", title: t.reportTitles.heat },
+              { id: "cloud", title: t.reportTitles.cloud },
+            ]}
+            onPickHabit={(id) => {
+              dispatch(setCurrentHabit(id as any));
+              setEntryForm((f) => ({ ...f, habitId: id }));
+            }}
+            onPickReport={() => goToReportsTab()}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <ThemeToggle lang={lang} />
+          <BackgroundPicker lang={lang} />
+        </div>
+      </section>
+
       {/* Top helpers */}
       <section className="container mt-4 space-y-4">
         <OnboardingCoach
@@ -916,25 +962,34 @@ export default function DashboardMain() {
         />
       </section>
 
-      {/* Mini Stats */}
+      {/* Mini Stats (Animated) */}
       <section className="container py-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <StatCard
+        <AnimatedStatCard
+          lang={lang}
           title={t.activeHabits}
           value={habits.length}
-          pct={Math.min(habits.length * 10, 100)}
-          emoji="🧩"
+          sub="🧩"
         />
-        <StatCard
+        <AnimatedStatCard
+          lang={lang}
           title={t.entriesThisWeek}
           value={entriesThisWeek}
-          pct={Math.min(entriesThisWeek * 10, 100)}
-          emoji="📆"
+          sub="📆"
         />
-        <StatCard
+        <AnimatedStatCard
+          lang={lang}
           title={t.todayCompletion}
           value={entriesToday}
-          pct={Math.min(entriesToday * 25, 100)}
-          emoji="⚡"
+          sub="⚡"
+        />
+      </section>
+
+      {/* Today progress bar */}
+      <section className="container -mt-1 mb-3">
+        <ProgressBarToday
+          done={entriesToday}
+          total={Math.max(habits.length, 1)}
+          label={lang === "ar" ? "إنجاز اليوم" : "Today’s progress"}
         />
       </section>
 
@@ -1402,6 +1457,7 @@ function ReportsStep({ lang = "en" as Lang }) {
   );
 }
 
+// (النسخة القديمة بقيت للاستخدام الداخلي لبعض الأقسام)
 function StatCard({
   title,
   value,

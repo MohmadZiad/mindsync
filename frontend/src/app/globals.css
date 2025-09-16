@@ -35,7 +35,7 @@
   --radius: 14px;
   --shadow: 0 6px 22px rgba(2, 6, 23, 0.08);
 
-  /* Legacy tokens (للتوافق مع أي كود قديم) */
+  /* Legacy tokens (compat) */
   --brand-foreground: 255 255 255;
   --brand-muted: 109 94 241 / 0.12;
 
@@ -51,7 +51,7 @@
   --danger: 0 84% 60%;
 }
 
-/* Dark (auto) */
+/* Dark (auto by media) */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -59,7 +59,7 @@
   }
 }
 
-/* Dark (class) */
+/* Dark (class toggle) */
 :root.dark {
   --bg-0: #0b1020;
   --bg-1: #111827;
@@ -95,16 +95,18 @@ body {
     animation: gradient 8s ease infinite;
   }
   .magnetic-will-move {
+    /* Minor perf hint for micro-interactions */
     will-change: transform;
   }
   .glass {
     @apply bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg;
   }
   .ring-breath {
+    /* Decorative breathing ring */
     animation: breath 6s ease-in-out infinite;
   }
 
-  /* Helpers mapped to palette */
+  /* Palette helpers */
   .bg-page {
     background-color: var(--bg-0);
   }
@@ -195,6 +197,9 @@ body {
   clip: rect(1px, 1px, 1px, 1px);
   white-space: nowrap;
 }
+.details-reset {
+  /* Hide default marker */
+}
 details.faq {
   @apply glass rounded-xl p-4 open:shadow-xl;
 }
@@ -204,6 +209,7 @@ details.faq > summary {
 details.faq > summary::-webkit-details-marker {
   display: none;
 }
+
 .phone-shadow {
   filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.12));
 }
@@ -240,7 +246,7 @@ details.faq > summary::-webkit-details-marker {
   line-height: 1.6;
 }
 
-/* RTL support */
+/* RTL support for marquee */
 .marquee[data-dir="rtl"] .marquee-inner {
   animation-name: marquee-rtl;
   flex-direction: row-reverse;
@@ -318,7 +324,7 @@ button {
   }
 }
 
-/* ===== Aliases للتوافق مع نصوصك ===== */
+/* ===== Aliases (compat for existing tokens) ===== */
 :root {
   --text-2: var(--ink-2);
   --text-3: #6b7280;
@@ -330,21 +336,18 @@ button {
 /* ===================== Components ===================== */
 @layer components {
   .input {
-    @apply w-full rounded-lg border border-[var(--line)] bg-[var(--bg-1)] px-3 py-2
-           text-[var(--ink-1)] outline-none transition focus:ring-2 focus:ring-indigo-300;
+    @apply w-full rounded-lg border border-[var(--line)] bg-[var(--bg-1)] px-3 py-2 text-[var(--ink-1)]
+           outline-none transition focus:ring-2 focus:ring-indigo-300;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600
-           px-4 py-2 text-white shadow-sm hover:bg-indigo-700
-           focus:outline-none focus:ring-2 focus:ring-indigo-300 active:scale-[.98];
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm
+           hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 active:scale-[.98];
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--line)]
-           bg-[var(--bg-1)] px-3 py-2 text-[var(--ink-1)]
-           hover:bg-[var(--bg-2)]
-           focus:outline-none focus:ring-2 focus:ring-indigo-300 active:scale-[.98];
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--bg-1)] px-3 py-2
+           text-[var(--ink-1)] hover:bg-[var(--bg-2)] focus:outline-none focus:ring-2 focus:ring-indigo-300 active:scale-[.98];
   }
 
   .btn-tertiary {
@@ -363,53 +366,122 @@ button {
     @apply rounded-xl border border-[var(--line)] bg-[var(--bg-1)] px-4 py-2 shadow hover:bg-[var(--bg-2)] transition;
   }
 }
+
 /* ===== Dashboard polish pack ===== */
+/* Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap");
+:root {
+  --app-font: Inter, system-ui, -apple-system, Segoe UI, Roboto,
+    "Helvetica Neue", Arial;
+}
+:root[dir="rtl"] {
+  --app-font: "Tajawal", system-ui, -apple-system, Segoe UI, Roboto,
+    "Helvetica Neue", Arial;
+}
+body {
+  font-family: var(--app-font);
+}
 
-/* خط موحد */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap');
-:root { --app-font: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
-:root[dir="rtl"] { --app-font: "Tajawal", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
-body { font-family: var(--app-font); }
-
-/* خلفية متدرجة هادئة */
+/* Soft background gradient for pages */
 .page-gradient {
-  background:
-    radial-gradient(1200px 600px at 100% -20%, rgba(109,94,241,.09), transparent 60%),
-    radial-gradient(900px 500px at -10% -10%, rgba(241,94,204,.08), transparent 55%),
+  background: radial-gradient(
+      1200px 600px at 100% -20%,
+      rgba(109, 94, 241, 0.09),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at -10% -10%,
+      rgba(241, 94, 204, 0.08),
+      transparent 55%
+    ),
     var(--bg-0);
 }
 
-/* ظلال ناعمة + hover للكروت */
-.shadow-soft { box-shadow: 0 8px 28px rgba(2, 6, 23, .08); }
-.card-hover { transition: transform .2s ease, box-shadow .2s ease; }
-.card-hover:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 16px 40px rgba(2,6,23,.12); }
-
-/* أقسام هوائية */
-.section { padding-block: 1.25rem; }
-@media (min-width: 768px){ .section{ padding-block: 1.75rem; } }
-
-/* Tooltip بسيط */
-[data-tip] { position: relative; }
-[data-tip]::after {
-  content: attr(data-tip);
-  position: absolute;
-  inset-inline-start: 50%;
-  transform: translateX(-50%) translateY(-6px);
-  bottom: 100%;
-  white-space: nowrap;
-  background: #111827;
-  color: #fff;
-  font-size: 12px;
-  padding: 6px 8px;
-  border-radius: 8px;
-  opacity: 0; pointer-events: none;
-  transition: opacity .15s ease, transform .15s ease;
+/* Unified soft shadow + card hover */
+.shadow-soft {
+  box-shadow: var(--shadow);
 }
-[data-tip]:hover::after { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+.card-hover {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(2, 6, 23, 0.12);
+}
 
-/* Checkmark pop */
-@keyframes pop { 0%{ transform: scale(.6); opacity:.0 } 70%{ transform: scale(1.1); } 100%{ transform: scale(1); opacity:1 } }
-.checkmark-pop { animation: pop .28s ease-out both; }
+/* Light gradient overlay for cards */
+.animated-card-gradient {
+  background: linear-gradient(180deg, rgba(109, 94, 241, 0.06), transparent 40%),
+    var(--bg-1);
+}
 
-/* وضع التركيز */
-.focus-mode .hide-in-focus { display: none !important; }
+/* Accordion / grid animation */
+.transition-grid {
+  transition: grid-template-rows 0.25s ease;
+}
+
+/* Flip-card 3D toolkit */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.flip-card {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  min-height: 64px;
+}
+.flip-card.is-flipped {
+  transform: rotateY(180deg);
+}
+.flip-face {
+  position: relative;
+  backface-visibility: hidden;
+  border-radius: var(--radius);
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  padding: 12px;
+}
+.flip-back {
+  transform: rotateY(180deg);
+}
+
+/* Background presets controlled by [data-bg] on <html> */
+[data-bg="aurora"] {
+  background: radial-gradient(
+      1200px 500px at 10% 10%,
+      rgba(109, 94, 241, 0.15),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at 90% 20%,
+      rgba(241, 94, 204, 0.12),
+      transparent 60%
+    ),
+    var(--bg-0);
+}
+[data-bg="mesh"] {
+  background: radial-gradient(
+      800px 400px at 20% 80%,
+      rgba(34, 197, 94, 0.12),
+      transparent 60%
+    ),
+    radial-gradient(
+      1000px 600px at 80% 60%,
+      rgba(99, 102, 241, 0.14),
+      transparent 60%
+    ),
+    var(--bg-0);
+}
+[data-bg="plain"] {
+  background: var(--bg-0);
+}
+
+/* Gradient for progress bars */
+.progress-gradient {
+  background-image: linear-gradient(90deg, #6d5ef1, #f15ecc);
+}
+
+/* Focus mode: hide marked elements when data-focus=true on :root */
+:root[data-focus="true"] .hide-in-focus {
+  display: none !important;
+}
