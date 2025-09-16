@@ -2,45 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
-/* -------------------------------------------------------
-   Base Theme Variables (Light / Dark)
-   - We keep your structure but set a Purple/White identity
-   ------------------------------------------------------- */
-
+/* ===================== Base Theme (Light/Dark) ===================== */
 :root {
-  /* System background/foreground used by base() */
+  /* Base */
   --background: #ffffff;
   --foreground: #171717;
 
-  /* Unified app layers (light) */
-  --bg-0: #f6f7fb; /* page background */
+  /* App layers (light) */
+  --bg-0: #f6f7fb; /* page */
   --bg-1: #ffffff; /* surface 1 */
   --bg-2: #f2f4f8; /* surface 2 */
   --bg-3: #e6e9f2; /* surface 3 */
 
-  --ink-1: #0f172a; /* main text */
-  --ink-2: #475569; /* secondary text */
+  --ink-1: #0f172a; /* text */
+  --ink-2: #475569; /* muted */
   --line: #e5e7eb; /* borders */
 
-  /* Brand — Purple (light) */
-  --brand: #6d5ef1; /* main purple */
-  --brand-ink: #0f172a; /* dark text on light bg */
-  --brand-ink-2: #475569; /* muted text */
-  --brand-bg: #ffffff; /* card/bg */
-  --brand-card: #ffffff; /* cards */
-  --brand-accent: #8b7bff; /* lighter purple accent */
+  /* Brand (purple) */
+  --brand: #6d5ef1;
+  --brand-accent: #8b7bff;
+  --brand-ink: #0f172a;
+  --brand-ink-2: #475569;
+  --brand-bg: #ffffff;
+  --brand-card: #ffffff;
 
   /* Status */
   --ok: #22c55e;
   --warn: #f59e0b;
   --err: #ef4444;
 
-  /* Radii & shadow */
+  /* Shape/Shadow */
   --radius: 14px;
   --shadow: 0 6px 22px rgba(2, 6, 23, 0.08);
 
-  /* Legacy tokens (kept for compatibility with Tailwind config) */
-  --brand-foreground: 255 255 255; /* used by hsl(var(--brand-foreground)) if needed */
+  /* Legacy tokens (للتوافق مع أي كود قديم) */
+  --brand-foreground: 255 255 255;
   --brand-muted: 109 94 241 / 0.12;
 
   --surface: 0 0% 100%;
@@ -52,10 +48,10 @@
   --ring: 245 84% 67%;
 
   --success: 142 72% 45%;
-  --warn: 38 92% 50%;
   --danger: 0 84% 60%;
 }
 
+/* Dark (auto) */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -63,22 +59,20 @@
   }
 }
 
-/* Explicit dark theme class (you already use .dark) */
+/* Dark (class) */
 :root.dark {
-  --bg-0: #0b1020; /* page background (dark) */
-  --bg-1: #111827; /* surface 1 */
-  --bg-2: #0f172a; /* surface 2 */
-  --bg-3: #1f2937; /* surface 3 */
+  --bg-0: #0b1020;
+  --bg-1: #111827;
+  --bg-2: #0f172a;
+  --bg-3: #1f2937;
 
-  --ink-1: #e5e7eb; /* main text dark */
-  --ink-2: #94a3b8; /* secondary text dark */
-  --line: #273244; /* clearer borders dark */
+  --ink-1: #e5e7eb;
+  --ink-2: #94a3b8;
+  --line: #273244;
 
-  /* Purple tuned for dark surfaces */
   --brand: #8b7bff;
   --brand-accent: #b1a7ff;
 
-  /* Legacy surfaces (kept) */
   --surface: 215 28% 17%;
   --surface-foreground: 210 40% 98%;
   --surface-2: 215 28% 12%;
@@ -94,10 +88,7 @@ body {
   color: var(--ink-1);
 }
 
-/* -------------------------------------------------------
-   Utilities (kept) + Minor polish for purple theme
-   ------------------------------------------------------- */
-
+/* ===================== Utilities ===================== */
 @layer utilities {
   .animate-gradient {
     background-size: 200% 200%;
@@ -113,7 +104,7 @@ body {
     animation: breath 6s ease-in-out infinite;
   }
 
-  /* New helpers mapped to the new palette */
+  /* Helpers mapped to palette */
   .bg-page {
     background-color: var(--bg-0);
   }
@@ -139,7 +130,7 @@ body {
   .touch {
     min-height: 44px;
     min-width: 44px;
-  } /* comfortable tapping */
+  }
 
   .cardish {
     background: var(--bg-1);
@@ -157,7 +148,7 @@ body {
   }
 }
 
-/* Keyframes (kept) */
+/* Animations */
 @keyframes gradient {
   0%,
   100% {
@@ -179,7 +170,7 @@ body {
   }
 }
 
-/* Helpers (kept) */
+/* Helpers */
 .edge-fade {
   -webkit-mask-image: linear-gradient(
     to right,
@@ -221,7 +212,7 @@ details.faq > summary::-webkit-details-marker {
     border-color 0.3s ease;
 }
 
-/* Marquee (kept) */
+/* Marquee */
 .marquee {
   overflow: hidden;
   position: relative;
@@ -249,7 +240,7 @@ details.faq > summary::-webkit-details-marker {
   line-height: 1.6;
 }
 
-/* RTL support (kept) */
+/* RTL support */
 .marquee[data-dir="rtl"] .marquee-inner {
   animation-name: marquee-rtl;
   flex-direction: row-reverse;
@@ -264,7 +255,7 @@ details.faq > summary::-webkit-details-marker {
   text-align: right;
 }
 
-/* Reduced motion (kept) */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .marquee-inner {
     animation: none;
@@ -272,18 +263,19 @@ details.faq > summary::-webkit-details-marker {
   }
 }
 
-/* Legacy tokens kept for compatibility */
+/* Legacy radius aliases */
 :root {
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-2xl: 20px;
 }
 
+/* RTL icon auto flip */
 html[dir="rtl"] .dir-flip {
   transform: scaleX(-1);
-} /* Auto flip icons in RTL */
+}
 
-/* Mobile polish (kept) */
+/* Mobile polish */
 html,
 body,
 #__next {
@@ -293,7 +285,7 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Safe areas helpers (kept) */
+/* Safe areas */
 :root {
   --sat: env(safe-area-inset-top);
   --sab: env(safe-area-inset-bottom);
@@ -305,7 +297,7 @@ button {
   padding-bottom: calc(12px + var(--sab));
 }
 
-/* Hide horizontal scrollbar for tab list (kept) */
+/* Hide horizontal scrollbar (tabs) */
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -314,7 +306,7 @@ button {
   display: none;
 }
 
-/* Slide/Fade animation used in StepTabs (kept) */
+/* Slide/Fade (StepTabs) */
 @keyframes slidefade {
   from {
     transform: translateX(var(--slide-x, 16px));
@@ -326,17 +318,16 @@ button {
   }
 }
 
-/* ====== Aliases عشان تتوافق المتغيّرات مع الكود ====== */
+/* ===== Aliases للتوافق مع نصوصك ===== */
 :root {
-  /* نص ثانوي وثالث (aliases للـ ink-2 الخ..) */
-  --text-2: var(--ink-2);           /* secondary text */
-  --text-3: #6b7280;                /* muted text (light) */
+  --text-2: var(--ink-2);
+  --text-3: #6b7280;
 }
 :root.dark {
-  --text-3: #9ca3af;                /* muted text (dark) */
+  --text-3: #9ca3af;
 }
 
-/* ====== Components جاهزة ومُوحّدة ====== */
+/* ===================== Components ===================== */
 @layer components {
   .input {
     @apply w-full rounded-lg border border-[var(--line)] bg-[var(--bg-1)] px-3 py-2
@@ -357,19 +348,68 @@ button {
   }
 
   .btn-tertiary {
-    @apply rounded border border-[var(--line)] bg-[var(--bg-2)] px-3 py-2
-           text-[var(--ink-1)];
+    @apply rounded border border-[var(--line)] bg-[var(--bg-2)] px-3 py-2 text-[var(--ink-1)];
   }
 
-  .label { @apply text-xs text-[var(--text-3)]; }
+  .label {
+    @apply text-xs text-[var(--text-3)];
+  }
 
   .chip {
-    @apply rounded-full border border-[var(--line)] bg-[var(--bg-1)]
-           px-3 py-1 text-sm hover:bg-[var(--bg-2)] transition;
+    @apply rounded-full border border-[var(--line)] bg-[var(--bg-1)] px-3 py-1 text-sm hover:bg-[var(--bg-2)] transition;
   }
 
   .menu-card {
-    @apply rounded-xl border border-[var(--line)] bg-[var(--bg-1)]
-           px-4 py-2 shadow hover:bg-[var(--bg-2)] transition;
+    @apply rounded-xl border border-[var(--line)] bg-[var(--bg-1)] px-4 py-2 shadow hover:bg-[var(--bg-2)] transition;
   }
 }
+/* ===== Dashboard polish pack ===== */
+
+/* خط موحد */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap');
+:root { --app-font: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
+:root[dir="rtl"] { --app-font: "Tajawal", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
+body { font-family: var(--app-font); }
+
+/* خلفية متدرجة هادئة */
+.page-gradient {
+  background:
+    radial-gradient(1200px 600px at 100% -20%, rgba(109,94,241,.09), transparent 60%),
+    radial-gradient(900px 500px at -10% -10%, rgba(241,94,204,.08), transparent 55%),
+    var(--bg-0);
+}
+
+/* ظلال ناعمة + hover للكروت */
+.shadow-soft { box-shadow: 0 8px 28px rgba(2, 6, 23, .08); }
+.card-hover { transition: transform .2s ease, box-shadow .2s ease; }
+.card-hover:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 16px 40px rgba(2,6,23,.12); }
+
+/* أقسام هوائية */
+.section { padding-block: 1.25rem; }
+@media (min-width: 768px){ .section{ padding-block: 1.75rem; } }
+
+/* Tooltip بسيط */
+[data-tip] { position: relative; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  inset-inline-start: 50%;
+  transform: translateX(-50%) translateY(-6px);
+  bottom: 100%;
+  white-space: nowrap;
+  background: #111827;
+  color: #fff;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .15s ease, transform .15s ease;
+}
+[data-tip]:hover::after { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+
+/* Checkmark pop */
+@keyframes pop { 0%{ transform: scale(.6); opacity:.0 } 70%{ transform: scale(1.1); } 100%{ transform: scale(1); opacity:1 } }
+.checkmark-pop { animation: pop .28s ease-out both; }
+
+/* وضع التركيز */
+.focus-mode .hide-in-focus { display: none !important; }
