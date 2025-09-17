@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
-// npm i lucide-react
 import {
   Users,
   LineChart,
@@ -18,11 +17,9 @@ import {
   User2,
 } from "lucide-react";
 
-// Redux (user/auth state for header buttons)
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { meThunk, logoutThunk } from "@/redux/slices/authSlice";
 
-// UI components
 import MagneticCTA from "@/components/MagneticCTA";
 import Counter from "@/components/Counter";
 import BreathingRing from "@/components/BreathingRing";
@@ -31,17 +28,10 @@ import FAQSearch, { getFaqJsonLd, type FaqItem } from "@/components/FAQ";
 import PricingToggle from "@/components/PricingToggle";
 import HowItWorksScrolly from "@/components/HowItWorksScrolly";
 
-// ✅ BEST PRACTICE: use the unified i18n provider for global language state
 import { useI18n } from "@/components/ui/i18n";
+import SpotlightBG from "@/components/effects/SpotlightBG";
 
-/* ===================== marketing i18n strings (local) =====================
-   BEST PRACTICE NOTE:
-   - We keep these marketing strings local to this page for now.
-   - The app-wide i18n provider (useI18n) is used ONLY to read/set the current
-     language and to control <html dir/lang>. This removes duplicated language
-     state logic from the page and centralizes persistence (localStorage) + dir.
-   - If you want, you can later migrate these keys into the global DICT.
-*/
+/* ===================== i18n strings (local) ===================== */
 const STRINGS = {
   en: {
     app: "MindSync",
@@ -255,10 +245,7 @@ function truncateEmail(email?: string) {
   return `${short}@${domain}`;
 }
 
-/* ===== Quick toggles (Language + Theme in Navbar only) =====
-   BEST PRACTICE: single language switch in the top bar. We don't duplicate
-   language controls inside inner cards/components.
-*/
+/* ===== Quick toggles (Language + Theme in Navbar only) ===== */
 function QuickToggles({
   lang,
   setLang,
@@ -271,12 +258,11 @@ function QuickToggles({
   setLang: (l: "en" | "ar") => void;
   mounted: boolean;
   theme?: string;
-  setTheme: (t: string) => void; // accept "system" as well if needed
+  setTheme: (t: string) => void;
   labels: { themeLight: string; themeDark: string; lang: string };
 }) {
   return (
     <div className="hidden items-center gap-2 md:flex">
-      {/* Language toggle (uses global i18n provider) */}
       <button
         aria-label="Toggle language"
         onClick={() => setLang(lang === "en" ? "ar" : "en")}
@@ -285,7 +271,6 @@ function QuickToggles({
         🌐 {labels.lang}
       </button>
 
-      {/* Theme toggle */}
       {mounted && (
         <button
           aria-label="Toggle theme"
@@ -307,9 +292,7 @@ function QuickToggles({
   );
 }
 
-/* ===== User chip (email + menu) =====
-   BEST PRACTICE: receive translated labels via props (no hidden globals).
-*/
+/* ===== User chip (email + menu) ===== */
 function UserChip({
   email,
   labels,
@@ -372,7 +355,7 @@ function UserChip({
           <button
             role="menuitem"
             onClick={() => {
-              setOpen(false); // close the menu before logout action
+              setOpen(false);
               onLogout();
             }}
             className="mt-0.5 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
@@ -392,22 +375,18 @@ export default function Home() {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((s) => s.auth);
 
-  // ✅ BEST PRACTICE: use global language from i18n provider (no local state)
   const { lang, setLang } = useI18n();
-  const M = STRINGS[lang]; // page-local marketing strings for current lang
+  const M = STRINGS[lang];
 
-  // Verify user session on mount
   useEffect(() => {
     dispatch(meThunk());
   }, [dispatch]);
 
-  // Mounted flag (for theme toggle hydration correctness)
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const dir = lang === "ar" ? "rtl" : "ltr"; // optional: <html dir> is set by provider too
+  const dir = lang === "ar" ? "rtl" : "ltr";
 
-  // Derived FAQ content
   const FAQ_ITEMS: FaqItem[] = useMemo(
     () => M.faqs.map((f, i) => ({ q: f.q, a: f.a, id: `faq-${i + 1}` })),
     [M]
@@ -487,441 +466,440 @@ export default function Home() {
   );
 
   return (
-    <main dir={dir}>
-      {/* Accessibility: skip to main content */}
-      <a
-        href="#content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:rounded-lg focus:bg-indigo-600 focus:px-3 focus:py-2 focus:text-white"
-      >
-        {lang === "ar" ? "انتقل للمحتوى" : "Skip to content"}
-      </a>
+    <SpotlightBG className="min-h-screen">
+      <main dir={dir}>
+        {/* Accessibility: skip to main content */}
+        <a
+          href="#content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:rounded-lg focus:bg-indigo-600 focus:px-3 focus:py-2 focus:text-white"
+        >
+          {lang === "ar" ? "انتقل للمحتوى" : "Skip to content"}
+        </a>
 
-      <div className="min-h-screen bg-white text-gray-900 transition-colors duration-300 dark:bg-gray-950 dark:text-gray-50">
-        {/* ===================== NAV (sticky, polished) ===================== */}
-        <header className="sticky top-0 z-50 border-b border-transparent bg-white/70 backdrop-blur-xl transition-colors dark:bg-gray-950/70 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-gray-950/60">
-          <nav
-            className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4"
-            aria-label="Primary"
-          >
-            <div className="flex items-center gap-3">
-              <Image
-                src="/logo.jpg"
-                alt="MindSync"
-                width={36}
-                height={36}
-                priority
-              />
-              <span className="text-base font-semibold tracking-[-0.01em]">
-                {M.app}
-              </span>
-            </div>
+        {/* NOTE: removed solid page backgrounds so the global spotlight shows through */}
+        <div className="min-h-screen text-gray-900 transition-colors duration-300 dark:text-gray-50">
+          {/* ===================== NAV ===================== */}
+          <header className="sticky top-0 z-50 border-b border-transparent bg-white/70 backdrop-blur-xl transition-colors dark:bg-gray-950/70 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-gray-950/60">
+            <nav
+              className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4"
+              aria-label="Primary"
+            >
+              <div className="flex items-center gap-3">
+                <Image
+                  src="/logo.jpg"
+                  alt="MindSync"
+                  width={36}
+                  height={36}
+                  priority
+                />
+                <span className="text-base font-semibold tracking-[-0.01em]">
+                  {M.app}
+                </span>
+              </div>
 
-            <div className="hidden items-center gap-6 md:flex">
-              <a
-                href="#features"
-                className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-              >
-                {M.nav.features}
-              </a>
-              <a
-                href="#how"
-                className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-              >
-                {M.nav.how}
-              </a>
-              <a
-                href="#pricing"
-                className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-              >
-                {M.nav.pricing}
-              </a>
-              <a
-                href="#blog"
-                className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-              >
-                {M.nav.blog}
-              </a>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Auth-aware buttons */}
-              {!user ? (
-                <>
-                  <Link
-                    href="/login"
-                    className="hidden text-sm text-gray-700 hover:text-gray-900 md:inline-block dark:text-gray-300 dark:hover:text-white"
-                  >
-                    {M.nav.login}
-                  </Link>
-                  <MagneticCTA
-                    href="/register"
-                    className="hidden md:inline-flex"
-                  >
-                    {M.nav.getStarted}
-                  </MagneticCTA>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/dashboard"
-                    className="hidden rounded-full border border-gray-300 px-3 py-1 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 md:inline-block"
-                  >
-                    {M.nav.dashboard}
-                  </Link>
-                  <UserChip
-                    email={user.email}
-                    labels={{
-                      dashboard: M.nav.dashboard,
-                      account: M.nav.account,
-                      logout: M.nav.logout,
-                    }}
-                    onLogout={() => dispatch(logoutThunk())}
-                  />
-                </>
-              )}
-
-              <QuickToggles
-                lang={lang}
-                setLang={setLang}
-                mounted={mounted}
-                theme={theme}
-                setTheme={setTheme}
-                labels={{
-                  themeLight: M.toggles.theme.light,
-                  themeDark: M.toggles.theme.dark,
-                  lang: M.toggles.lang,
-                }}
-              />
-            </div>
-          </nav>
-        </header>
-
-        {/* ===================== HERO ===================== */}
-        <section className="relative overflow-hidden">
-          {/* Decorative background glow */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 -z-10"
-          >
-            <div
-              className="absolute -top-32 right-[-10%] h-[700px] w-[900px] rounded-full blur-3xl"
-              style={{
-                background:
-                  "radial-gradient(520px 520px at 78% 45%, rgba(147,51,234,0.25) 0%, rgba(147,51,234,0) 65%), radial-gradient(420px 420px at 72% 48%, rgba(59,130,246,0.22) 0%, rgba(59,130,246,0) 60%)",
-              }}
-            />
-          </div>
-
-          <div
-            id="content"
-            className="mx-auto grid max-w-7xl items-center gap-12 px-6 pt-14 pb-24 md:grid-cols-2 md:pt-20 md:pb-28"
-          >
-            {/* Left copy */}
-            <div className="text-center md:text-left">
-              <motion.h1
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55 }}
-                className={cx(
-                  "bg-[linear-gradient(90deg,#6d28d9_0%,#7c3aed_45%,#2563eb_100%)]",
-                  "bg-clip-text text-transparent",
-                  "text-[clamp(2.1rem,5vw,3.25rem)] font-extrabold leading-[1.07] tracking-tight",
-                  "drop-shadow-[0_1px_0_rgba(0,0,0,0.25)]"
-                )}
-              >
-                {M.hero.title}
-              </motion.h1>
-
-              <p className="mx-auto mt-4 max-w-[62ch] text-[1.05rem] leading-[1.7] text-gray-700 dark:text-gray-300 md:mx-0">
-                {M.hero.subtitle}
-              </p>
-
-              <div className="mt-8 flex flex-wrap justify-center gap-4 md:justify-start">
-                {user ? (
-                  <MagneticCTA href="/dashboard">
-                    {M.nav.openDashboard}
-                  </MagneticCTA>
-                ) : (
-                  <MagneticCTA href="/register">{M.hero.cta}</MagneticCTA>
-                )}
-                <Link
-                  href="/demo"
-                  className="rounded-2xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+              <div className="hidden items-center gap-6 md:flex">
+                <a
+                  href="#features"
+                  className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
                 >
-                  {M.hero.secondary}
-                </Link>
+                  {M.nav.features}
+                </a>
+                <a
+                  href="#how"
+                  className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                >
+                  {M.nav.how}
+                </a>
+                <a
+                  href="#pricing"
+                  className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                >
+                  {M.nav.pricing}
+                </a>
+                <a
+                  href="#blog"
+                  className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                >
+                  {M.nav.blog}
+                </a>
               </div>
 
-              {/* Stats */}
-              <div className="mx-auto mt-10 grid max-w-md grid-cols-3 gap-4 md:mx-0">
-                <Stat
-                  icon={<Users size={18} />}
-                  value={`${formatCompact(120000, lang)}+`}
-                  label={M.stats.users}
-                />
-                <Stat
-                  icon={<LineChart size={18} />}
-                  value={`${formatCompact(3200000, lang)}+`}
-                  label={M.stats.habits}
-                />
-                <Stat
-                  icon={<Flame size={18} />}
-                  value={
-                    <>
-                      <Counter to={18} />{" "}
-                      <span className="text-sm opacity-70">{M.units.days}</span>
-                    </>
-                  }
-                  label={M.stats.streak}
+              <div className="flex items-center gap-3">
+                {!user ? (
+                  <>
+                    <Link
+                      href="/login"
+                      className="hidden text-sm text-gray-700 hover:text-gray-900 md:inline-block dark:text-gray-300 dark:hover:text-white"
+                    >
+                      {M.nav.login}
+                    </Link>
+                    <MagneticCTA
+                      href="/register"
+                      className="hidden md:inline-flex"
+                    >
+                      {M.nav.getStarted}
+                    </MagneticCTA>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="hidden rounded-full border border-gray-300 px-3 py-1 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 md:inline-block"
+                    >
+                      {M.nav.dashboard}
+                    </Link>
+                    <UserChip
+                      email={user.email}
+                      labels={{
+                        dashboard: M.nav.dashboard,
+                        account: M.nav.account,
+                        logout: M.nav.logout,
+                      }}
+                      onLogout={() => dispatch(logoutThunk())}
+                    />
+                  </>
+                )}
+
+                <QuickToggles
+                  lang={lang}
+                  setLang={setLang}
+                  mounted={mounted}
+                  theme={theme}
+                  setTheme={setTheme}
+                  labels={{
+                    themeLight: M.toggles.theme.light,
+                    themeDark: M.toggles.theme.dark,
+                    lang: M.toggles.lang,
+                  }}
                 />
               </div>
-            </div>
+            </nav>
+          </header>
 
-            {/* Right visual */}
-            <div className="relative flex items-center justify-center md:justify-end">
-              <div className="relative">
-                <BreathingRing size={320} variant="soft" />
-                <div className="absolute inset-0 grid place-items-center">
-                  <div className="w-[230px] rounded-2xl border border-gray-200 bg-white/85 p-5 shadow-xl backdrop-blur-md dark:border-gray-700 dark:bg-gray-900/85">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">
-                      {lang === "ar" ? "تأمل الصباح" : "Morning reflection"}
-                    </p>
-                    <p className="mt-2 text-sm text-gray-800 dark:text-gray-200">
-                      {lang === "ar"
-                        ? "رح أركز اليوم على العمل العميق 3 ساعات وأمشي 10 دقايق."
-                        : "Today I will focus on deep work for 3h and take a 10-minute walk."}
-                    </p>
+          {/* ===================== HERO ===================== */}
+          <section className="relative overflow-hidden">
+            {/* (Removed the old local gradient block to avoid double glow) */}
+
+            <div
+              id="content"
+              className="mx-auto grid max-w-7xl items-center gap-12 px-6 pt-14 pb-24 md:grid-cols-2 md:pt-20 md:pb-28"
+            >
+              {/* Left copy */}
+              <div className="text-center md:text-left">
+                <motion.h1
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.55 }}
+                  className={cx(
+                    "bg-[linear-gradient(90deg,#6d28d9_0%,#7c3aed_45%,#2563eb_100%)]",
+                    "bg-clip-text text-transparent",
+                    "text-[clamp(2.1rem,5vw,3.25rem)] font-extrabold leading-[1.07] tracking-tight",
+                    "drop-shadow-[0_1px_0_rgba(0,0,0,0.25)]"
+                  )}
+                >
+                  {M.hero.title}
+                </motion.h1>
+
+                <p className="mx-auto mt-4 max-w-[62ch] text-[1.05rem] leading-[1.7] text-gray-700 dark:text-gray-300 md:mx-0">
+                  {M.hero.subtitle}
+                </p>
+
+                <div className="mt-8 flex flex-wrap justify-center gap-4 md:justify-start">
+                  {user ? (
+                    <MagneticCTA href="/dashboard">
+                      {M.nav.openDashboard}
+                    </MagneticCTA>
+                  ) : (
+                    <MagneticCTA href="/register">{M.hero.cta}</MagneticCTA>
+                  )}
+                  <Link
+                    href="/demo"
+                    className="rounded-2xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+                  >
+                    {M.hero.secondary}
+                  </Link>
+                </div>
+
+                {/* Stats */}
+                <div className="mx-auto mt-10 grid max-w-md grid-cols-3 gap-4 md:mx-0">
+                  <Stat
+                    icon={<Users size={18} />}
+                    value={`${formatCompact(120000, lang)}+`}
+                    label={M.stats.users}
+                  />
+                  <Stat
+                    icon={<LineChart size={18} />}
+                    value={`${formatCompact(3200000, lang)}+`}
+                    label={M.stats.habits}
+                  />
+                  <Stat
+                    icon={<Flame size={18} />}
+                    value={
+                      <>
+                        <Counter to={18} />{" "}
+                        <span className="text-sm opacity-70">
+                          {M.units.days}
+                        </span>
+                      </>
+                    }
+                    label={M.stats.streak}
+                  />
+                </div>
+              </div>
+
+              {/* Right visual */}
+              <div className="relative flex items-center justify-center md:justify-end">
+                <div className="relative">
+                  <BreathingRing size={320} variant="soft" />
+                  <div className="absolute inset-0 grid place-items-center">
+                    <div className="w-[230px] rounded-2xl border border-gray-200 bg-white/85 p-5 shadow-xl backdrop-blur-md dark:border-gray-700 dark:bg-gray-900/85">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                        {lang === "ar" ? "تأمل الصباح" : "Morning reflection"}
+                      </p>
+                      <p className="mt-2 text-sm text-gray-800 dark:text-gray-200">
+                        {lang === "ar"
+                          ? "رح أركز اليوم على العمل العميق 3 ساعات وأمشي 10 دقايق."
+                          : "Today I will focus on deep work for 3h and take a 10-minute walk."}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Trust bar */}
-          <div className="mx-auto max-w-7xl px-6 pb-6">
-            <div className="flex flex-wrap items-center justify-center gap-8 opacity-70 md:justify-between">
-              {["Calm", "Notion", "Headspace", "Linear", "Slack"].map((b) => (
-                <span key={b} className="text-sm">
-                  {b}
-                </span>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ===================== DASHBOARD PREVIEW ===================== */}
-        <DashboardPreviewPro lang={lang} />
-
-        {/* ===================== FEATURES ===================== */}
-        <section id="features" className="bg-gray-50 py-16 dark:bg-gray-900/40">
-          <div className="mx-auto max-w-7xl px-6 text-center">
-            <h2 className="text-3xl font-bold sm:text-4xl">
-              {M.featuresTitle}
-            </h2>
-            <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
-              {M.features.map((f, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: idx * 0.08 }}
-                  className="rounded-2xl border border-gray-200 bg-white p-6 text-left shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
-                >
-                  <div className="text-4xl">{f.icon}</div>
-                  <h3 className="mt-3 text-lg font-semibold">{f.title}</h3>
-                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                    {f.desc}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ===================== HOW IT WORKS ===================== */}
-        <section id="how" className="py-16">
-          <div className="mx-auto max-w-7xl px-6">
-            <h2 className="text-center text-3xl font-bold sm:text-4xl">
-              {M.howTitle}
-            </h2>
-            <HowItWorksScrolly steps={STEPS} className="mt-10" />
-          </div>
-        </section>
-
-        {/* ===================== DAY / NIGHT SAMPLES ===================== */}
-        <section className="bg-indigo-50 py-16 dark:bg-indigo-950/40">
-          <div className="mx-auto max-w-7xl px-6">
-            <h2 className="text-center text-3xl font-bold sm:text-4xl">
-              🌙 / ☀️
-            </h2>
-            <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-                <h3 className="text-xl font-semibold">
-                  {lang === "ar" ? "روتين الصباح" : "Morning routine"}
-                </h3>
-                <ul className="mt-3 list-disc space-y-1 pl-6 text-sm text-gray-700 dark:text-gray-300">
-                  <li>
-                    {lang === "ar" ? "تنفّس دقيقتين" : "2-minute breathing"}
-                  </li>
-                  <li>
-                    {lang === "ar" ? "اكتب 3 أولويات" : "Write 3 priorities"}
-                  </li>
-                  <li>{lang === "ar" ? "مشي 15 دقيقة" : "15-minute walk"}</li>
-                </ul>
-              </div>
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-                <h3 className="text-xl font-semibold">
-                  {lang === "ar" ? "تهدئة المساء" : "Evening wind-down"}
-                </h3>
-                <ul className="mt-3 list-disc space-y-1 pl-6 text-sm text-gray-700 dark:text-gray-300">
-                  <li>
-                    {lang === "ar" ? "دوّن إنجاز واحد" : "Reflect on 1 win"}
-                  </li>
-                  <li>
-                    {lang === "ar" ? "قيّم يومك (1-5)" : "Rate your day (1-5)"}
-                  </li>
-                  <li>
-                    {lang === "ar"
-                      ? "خطّط بكرة بثلاث نقاط"
-                      : "Plan tomorrow in 3 bullets"}
-                  </li>
-                </ul>
+            {/* Trust bar */}
+            <div className="mx-auto max-w-7xl px-6 pb-6">
+              <div className="flex flex-wrap items-center justify-center gap-8 opacity-70 md:justify-between">
+                {["Calm", "Notion", "Headspace", "Linear", "Slack"].map((b) => (
+                  <span key={b} className="text-sm">
+                    {b}
+                  </span>
+                ))}
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* ===================== TESTIMONIALS ===================== */}
-        <section className="py-16">
-          <div className="mx-auto max-w-5xl px-6 text-center">
-            <h2 className="text-3xl font-bold sm:text-4xl">
-              {M.testimonialsTitle}
-            </h2>
-            <div className="mt-10">
-              <TestimonialMarquee
-                items={[
-                  {
-                    name: "Sarah A.",
-                    quote:
-                      "MindSync helped me stay consistent with journaling. Love it!",
-                  },
-                  {
-                    name: "Mohammad Z.",
-                    quote:
-                      "As a student, it gave me control over my routines and stress levels.",
-                  },
-                  {
-                    name: "Lina K.",
-                    quote:
-                      "The weekly summaries are magic. It’s like a therapist in my pocket!",
-                  },
-                  {
-                    name: "Jad R.",
-                    quote:
-                      "The AI suggestions are scarily accurate and super helpful.",
-                  },
-                ]}
-                speed={28}
-                dir={lang === "ar" ? "rtl" : "ltr"}
+          {/* ===================== DASHBOARD PREVIEW ===================== */}
+          <DashboardPreviewPro lang={lang} />
+
+          {/* ===================== FEATURES ===================== */}
+          <section
+            id="features"
+            className="bg-gray-50 py-16 dark:bg-gray-900/40"
+          >
+            <div className="mx-auto max-w-7xl px-6 text-center">
+              <h2 className="text-3xl font-bold sm:text-4xl">
+                {M.featuresTitle}
+              </h2>
+              <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
+                {M.features.map((f, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: idx * 0.08 }}
+                    className="rounded-2xl border border-gray-200 bg-white p-6 text-left shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+                  >
+                    <div className="text-4xl">{f.icon}</div>
+                    <h3 className="mt-3 text-lg font-semibold">{f.title}</h3>
+                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                      {f.desc}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ===================== HOW IT WORKS ===================== */}
+          <section id="how" className="py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              <h2 className="text-center text-3xl font-bold sm:text-4xl">
+                {M.howTitle}
+              </h2>
+              <HowItWorksScrolly steps={STEPS} className="mt-10" />
+            </div>
+          </section>
+
+          {/* ===================== DAY / NIGHT SAMPLES ===================== */}
+          <section className="bg-indigo-50 py-16 dark:bg-indigo-950/40">
+            <div className="mx-auto max-w-7xl px-6">
+              <h2 className="text-center text-3xl font-bold sm:text-4xl">
+                🌙 / ☀️
+              </h2>
+              <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+                  <h3 className="text-xl font-semibold">
+                    {lang === "ar" ? "روتين الصباح" : "Morning routine"}
+                  </h3>
+                  <ul className="mt-3 list-disc space-y-1 pl-6 text-sm text-gray-700 dark:text-gray-300">
+                    <li>
+                      {lang === "ar" ? "تنفّس دقيقتين" : "2-minute breathing"}
+                    </li>
+                    <li>
+                      {lang === "ar" ? "اكتب 3 أولويات" : "Write 3 priorities"}
+                    </li>
+                    <li>{lang === "ar" ? "مشي 15 دقيقة" : "15-minute walk"}</li>
+                  </ul>
+                </div>
+                <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+                  <h3 className="text-xl font-semibold">
+                    {lang === "ar" ? "تهدئة المساء" : "Evening wind-down"}
+                  </h3>
+                  <ul className="mt-3 list-disc space-y-1 pl-6 text-sm text-gray-700 dark:text-gray-300">
+                    <li>
+                      {lang === "ar" ? "دوّن إنجاز واحد" : "Reflect on 1 win"}
+                    </li>
+                    <li>
+                      {lang === "ar"
+                        ? "قيّم يومك (1-5)"
+                        : "Rate your day (1-5)"}
+                    </li>
+                    <li>
+                      {lang === "ar"
+                        ? "خطّط بكرة بثلاث نقاط"
+                        : "Plan tomorrow in 3 bullets"}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ===================== TESTIMONIALS ===================== */}
+          <section className="py-16">
+            <div className="mx-auto max-w-5xl px-6 text-center">
+              <h2 className="text-3xl font-bold sm:text-4xl">
+                {M.testimonialsTitle}
+              </h2>
+              <div className="mt-10">
+                <TestimonialMarquee
+                  items={[
+                    {
+                      name: "Sarah A.",
+                      quote:
+                        "MindSync helped me stay consistent with journaling. Love it!",
+                    },
+                    {
+                      name: "Mohammad Z.",
+                      quote:
+                        "As a student, it gave me control over my routines and stress levels.",
+                    },
+                    {
+                      name: "Lina K.",
+                      quote:
+                        "The weekly summaries are magic. It’s like a therapist in my pocket!",
+                    },
+                    {
+                      name: "Jad R.",
+                      quote:
+                        "The AI suggestions are scarily accurate and super helpful.",
+                    },
+                  ]}
+                  speed={28}
+                  dir={lang === "ar" ? "rtl" : "ltr"}
+                  className="mt-10"
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* ===================== FAQ ===================== */}
+          <section className="bg-gray-50 py-16 dark:bg-gray-900/40">
+            <div className="mx-auto max-w-4xl px-6">
+              <h2 className="text-center text-3xl font-bold sm:text-4xl">
+                {M.faqsTitle}
+              </h2>
+
+              <FAQSearch
+                items={FAQ_ITEMS}
+                className="mt-8"
+                lang={lang}
+                dir={dir as "ltr" | "rtl"}
+                placeholder={
+                  lang === "ar" ? "ابحث في الأسئلة…" : "Search FAQs…"
+                }
+                i18n={{
+                  results: (n) =>
+                    lang === "ar"
+                      ? `${n} نتيجة`
+                      : `${n} result${n !== 1 ? "s" : ""}`,
+                  noResults: lang === "ar" ? "لا توجد نتائج" : "No results",
+                  searchAriaLabel:
+                    lang === "ar" ? "ابحث في الأسئلة" : "Search FAQs",
+                }}
+              />
+
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON) }}
+              />
+            </div>
+          </section>
+
+          {/* ===================== PRICING ===================== */}
+          <section id="pricing" className="py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              <h2 className="text-center text-3xl font-bold sm:text-4xl">
+                {M.pricingTitle}
+              </h2>
+              <PricingToggle
+                plans={PRICING_PLANS}
+                percentDiscount={25}
+                currency="USD"
                 className="mt-10"
               />
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* ===================== FAQ ===================== */}
-        <section className="bg-gray-50 py-16 dark:bg-gray-900/40">
-          <div className="mx-auto max-w-4xl px-6">
-            <h2 className="text-center text-3xl font-bold sm:text-4xl">
-              {M.faqsTitle}
-            </h2>
-
-            <FAQSearch
-              items={FAQ_ITEMS}
-              className="mt-8"
-              lang={lang}
-              dir={dir as "ltr" | "rtl"}
-              placeholder={lang === "ar" ? "ابحث في الأسئلة…" : "Search FAQs…"}
-              i18n={{
-                results: (n) =>
-                  lang === "ar"
-                    ? `${n} نتيجة`
-                    : `${n} result${n !== 1 ? "s" : ""}`,
-                noResults: lang === "ar" ? "لا توجد نتائج" : "No results",
-                searchAriaLabel:
-                  lang === "ar" ? "ابحث في الأسئلة" : "Search FAQs",
-              }}
-            />
-
-            <script
-              type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON) }}
-            />
-          </div>
-        </section>
-
-        {/* ===================== PRICING ===================== */}
-        <section id="pricing" className="py-16">
-          <div className="mx-auto max-w-7xl px-6">
-            <h2 className="text-center text-3xl font-bold sm:text-4xl">
-              {M.pricingTitle}
-            </h2>
-            <PricingToggle
-              plans={PRICING_PLANS}
-              percentDiscount={25}
-              currency="USD"
-              className="mt-10"
-            />
-          </div>
-        </section>
-
-        {/* ===================== BLOG ===================== */}
-        <section id="blog" className="bg-gray-50 py-16 dark:bg-gray-900/40">
-          <div className="mx-auto max-w-7xl px-6">
-            <h2 className="text-center text-3xl font-bold sm:text-4xl">
-              {M.blogTitle}
-            </h2>
-            <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
-              {M.blog.map((b, i) => (
-                <article
-                  key={i}
-                  className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
-                >
-                  <div className="text-xs uppercase tracking-wide text-indigo-600">
-                    {b.tag}
-                  </div>
-                  <h3 className="mt-2 text-lg font-semibold">{b.title}</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {b.minutes} {M.units.minRead}
-                  </p>
-                  <Link
-                    href="#"
-                    className="mt-4 inline-block text-sm font-medium text-indigo-600 hover:underline"
+          {/* ===================== BLOG ===================== */}
+          <section id="blog" className="bg-gray-50 py-16 dark:bg-gray-900/40">
+            <div className="mx-auto max-w-7xl px-6">
+              <h2 className="text-center text-3xl font-bold sm:text-4xl">
+                {M.blogTitle}
+              </h2>
+              <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
+                {M.blog.map((b, i) => (
+                  <article
+                    key={i}
+                    className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
                   >
-                    {M.units.read}
-                  </Link>
-                </article>
-              ))}
+                    <div className="text-xs uppercase tracking-wide text-indigo-600">
+                      {b.tag}
+                    </div>
+                    <h3 className="mt-2 text-lg font-semibold">{b.title}</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {b.minutes} {M.units.minRead}
+                    </p>
+                    <Link
+                      href="#"
+                      className="mt-4 inline-block text-sm font-medium text-indigo-600 hover:underline"
+                    >
+                      {M.units.read}
+                    </Link>
+                  </article>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* ===================== FOOTER ===================== */}
-        <footer className="border-t border-gray-200 bg-white py-10 text-sm dark:border-gray-800 dark:bg-gray-950">
-          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 md:flex-row">
-            <div className="text-gray-600 dark:text-gray-300">
-              {M.footer.rights(new Date().getFullYear())}
+          {/* ===================== FOOTER ===================== */}
+          <footer className="border-t border-gray-200 bg-white/80 py-10 text-sm backdrop-blur-sm dark:border-gray-800 dark:bg-gray-950/70">
+            <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 md:flex-row">
+              <div className="text-gray-600 dark:text-gray-300">
+                {M.footer.rights(new Date().getFullYear())}
+              </div>
+              <div className="flex items-center gap-5 text-gray-600 dark:text-gray-300">
+                <Link href="#">{M.footer.privacy}</Link>
+                <Link href="#">{M.footer.contact}</Link>
+                <Link href="#">{M.footer.careers}</Link>
+              </div>
             </div>
-            <div className="flex items-center gap-5 text-gray-600 dark:text-gray-300">
-              <Link href="#">{M.footer.privacy}</Link>
-              <Link href="#">{M.footer.contact}</Link>
-              <Link href="#">{M.footer.careers}</Link>
-            </div>
-          </div>
-        </footer>
-      </div>
-    </main>
+          </footer>
+        </div>
+      </main>
+    </SpotlightBG>
   );
 }
 
@@ -936,7 +914,7 @@ function Stat({
   label: string;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <div className="rounded-2xl border border-gray-200 bg-white/90 p-4 shadow-sm backdrop-blur-sm dark:border-gray-800 dark:bg-gray-900/90">
       <div className="flex items-center gap-2">
         {icon ? (
           <span className="text-gray-600 dark:text-gray-300">{icon}</span>
@@ -950,13 +928,10 @@ function Stat({
   );
 }
 
-/* ====== Dashboard (Pro) preview card ======
-   BEST PRACTICE: small, self-contained preview. Real dashboard lives elsewhere.
-*/
+/* ===== Dashboard (Pro) preview card ===== */
 function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
   const [range, setRange] = useState<"7d" | "14d" | "30d">("7d");
 
-  // lightweight mock data (no chart libs needed)
   const DATA: Record<"7d" | "14d" | "30d", number[]> = {
     "7d": [55, 80, 62, 95, 70, 85, 60],
     "14d": [40, 55, 62, 75, 68, 80, 60, 72, 78, 84, 66, 70, 77, 81],
@@ -1001,7 +976,7 @@ function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
   const completionAvg = Math.round(
     data.reduce((a, b) => a + b, 0) / data.length
   );
-  const bestStreak = 18; // example
+  const bestStreak = 18;
 
   return (
     <section className="mx-auto max-w-7xl px-6 pb-16">
@@ -1012,7 +987,6 @@ function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
             {copy.title}
           </h3>
 
-          {/* Segmented control */}
           <div className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-1 text-xs dark:border-gray-700 dark:bg-gray-950">
             {["7d", "14d", "30d"].map((k) => (
               <button
@@ -1058,7 +1032,7 @@ function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
   );
 }
 
-/* ====== Sub components ====== */
+/* ===== Sub components ===== */
 function Chip({ label }: { label: string }) {
   return (
     <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
@@ -1086,7 +1060,6 @@ function BarChart({ data }: { data: number[] }) {
       role="img"
       aria-label="Completion bars over selected period"
     >
-      {/* gridlines */}
       <div aria-hidden className="pointer-events-none absolute inset-3">
         {[25, 50, 75].map((p) => (
           <div

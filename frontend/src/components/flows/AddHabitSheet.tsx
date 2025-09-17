@@ -1,6 +1,7 @@
 "use client";
-import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { useForm, FormProvider, useFormContext } from "react-hook-form";
+import * as React from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useForm, FormProvider, useFormContext, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSchemas } from "../hooks/schemas";
 import { useAppDispatch } from "@/redux/hooks";
@@ -11,11 +12,12 @@ import { useI18n } from "@/components/ui/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { HabitTemplates } from "./TemplatePresets";
+import EmojiPickerButton from "@/components/EmojiPickerButton";
 
 type HabitCreateForm = {
   name: string;
   description?: string;
-  icon?: string;
+  icon?: string | null;
   category: "health" | "study" | "work" | "faith" | "other";
   repeat: "daily" | "perWeek" | "days" | "monthly";
   perWeek?: number;
@@ -29,7 +31,7 @@ type HabitCreateForm = {
 function Row({ label, children }: React.PropsWithChildren<{ label: string }>) {
   return (
     <label className="block space-y-1 text-sm">
-      <span className="text-[var(--text-2)]">{label}</span>
+      <span className="text-[var(--ink-2)]">{label}</span>
       {children}
     </label>
   );
@@ -52,7 +54,7 @@ export default function AddHabitSheet({
     defaultValues: {
       name: "",
       description: "",
-      icon: "",
+      icon: null,
       category: "other",
       repeat: "daily",
       perWeek: 3,
@@ -65,7 +67,7 @@ export default function AddHabitSheet({
     mode: "onChange",
   });
 
-  // autosave draft
+  // autosave draft (local)
   useEffect(() => {
     const key = "habit_draft";
     const sub = methods.watch((all) => {
@@ -73,15 +75,17 @@ export default function AddHabitSheet({
         localStorage.setItem(key, JSON.stringify(all));
       } catch {}
     });
-    const saved = localStorage.getItem(key);
-    if (saved) methods.reset(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) methods.reset(JSON.parse(saved));
+    } catch {}
     return () => sub.unsubscribe();
   }, [methods]);
 
   const [step, setStep] = useState(0);
   const stepsTotal = 4;
 
-  const canNext = methods.formState.isValid || step < 2; // اسمح بالتنقل المبكر، مع فحص نهائي قبل الإنشاء
+  const canNext = methods.formState.isValid || step < 2; // تسهيل التنقل ثم فحص نهائي عند الحفظ
 
   const goPrev = useCallback(() => setStep((s) => Math.max(0, s - 1)), []);
   const goNext = useCallback(
@@ -89,18 +93,21 @@ export default function AddHabitSheet({
     [stepsTotal]
   );
 
-  async function onCreate(v: HabitCreateForm) {
-    await dispatch(
-      addHabit({
-        name: v.name,
-        description: v.description,
-        icon: v.icon || null,
-        frequency: v.repeat === "daily" ? "daily" : "weekly",
-      } as any)
-    );
-    toast.success(F.created + " 🎉");
-    onOpenChange(false);
-  }
+  const onCreate = useCallback(
+    async (v: HabitCreateForm) => {
+      await dispatch(
+        addHabit({
+          name: v.name,
+          description: v.description,
+          icon: v.icon || null,
+          frequency: v.repeat === "daily" ? "daily" : "weekly", // تبسيط للـMVP
+        } as any)
+      );
+      toast.success(F.created + " 🎉");
+      onOpenChange(false);
+    },
+    [dispatch, F.created, onOpenChange]
+  );
 
   // keyboard shortcuts
   useEffect(() => {
@@ -131,9 +138,9 @@ export default function AddHabitSheet({
         <ChevronLeft className="inline h-4 w-4" /> {t.prev}
       </button>
 
-      <div className="flex items-center gap-3 text-xs text-[var(--text-3)]">
+      <div className="flex items-center gap-3 text-xs text-[var(--ink-2)]">
         {lang === "ar" ? "الخطوة" : "Step"} {step + 1}/{stepsTotal}
-        <div className="h-1.5 w-40 rounded-full bg-[var(--bg-2)] overflow-hidden">
+        <div className="h-1.5 w-40 overflow-hidden rounded-full bg-[var(--bg-2)]">
           <div
             className="h-full bg-indigo-600 transition-all"
             style={{ width: `${((step + 1) / stepsTotal) * 100}%` }}
@@ -146,10 +153,7 @@ export default function AddHabitSheet({
           {t.next} <ChevronRight className="inline h-4 w-4" />
         </button>
       ) : (
-        <button
-          className="btn-primary"
-          onClick={methods.handleSubmit(onCreate)}
-        >
+        <button className="btn-primary" onClick={methods.handleSubmit(onCreate)}>
           <Check className="inline h-4 w-4" /> {F.create}
         </button>
       )}
@@ -229,34 +233,56 @@ function Basics() {
   const F = t.flows;
   const {
     register,
+    control,
     formState: { errors },
   } = useFormContext<HabitCreateForm>();
+
+  const nameId = React.useId();
+  const descId = React.useId();
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <Row label={F.habitName}>
         <input
+          id={nameId}
           {...register("name")}
           className="input"
           placeholder={lang === "ar" ? "مثال: قراءة" : "e.g. Reading"}
           autoFocus
           aria-invalid={!!errors.name}
+          aria-describedby={errors.name ? `${nameId}-err` : undefined}
         />
         {"name" in errors && (
-          <div className="hint-error">
+          <div id={`${nameId}-err`} className="hint-error">
             {String((errors as any).name?.message)}
           </div>
         )}
       </Row>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {/* Icon with EmojiPicker */}
         <Row label={F.emoji}>
-          <input
-            {...register("icon")}
-            className="input text-center w-28"
-            placeholder="📚"
+          <Controller
+            control={control}
+            name="icon"
+            render={({ field: { value, onChange } }) => (
+              <div className="flex items-center gap-3">
+                <EmojiPickerButton
+                  lang={lang as "ar" | "en"}
+                  value={value || undefined}
+                  onChange={onChange}
+                />
+                <span className="text-xs text-[var(--ink-2)]">
+                  {lang === "ar"
+                    ? "اختر الإيموجي الذي يعبّر عن العادة"
+                    : "Pick the emoji that represents the habit"}
+                </span>
+              </div>
+            )}
           />
         </Row>
 
+        {/* Category */}
         <Row label={F.category}>
           <select {...register("category")} className="input">
             <option value="other">{lang === "ar" ? "أخرى" : "Other"}</option>
@@ -268,8 +294,10 @@ function Basics() {
         </Row>
       </div>
 
+      {/* Description */}
       <Row label={F.description}>
         <textarea
+          id={descId}
           {...register("description")}
           className="input"
           rows={3}
@@ -390,7 +418,7 @@ function Review() {
           </div>
         )}
       </div>
-      <div className="text-[var(--text-3)]">
+      <div className="text-[var(--ink-2)]">
         {lang === "ar"
           ? "تقدر ترجع لأي خطوة وتعدل قبل الحفظ."
           : "You can go back and edit before saving."}

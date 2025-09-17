@@ -1,5 +1,8 @@
-import React, { useState } from "react";
+"use client";
+import * as React from "react";
 import NoteModal, { NotePayload } from "@/components/NoteModal";
+import EmojiPickerButton from "@/components/EmojiPickerButton";
+import { useI18n } from "@/components/ui/i18n";
 
 export type HabitExtra = {
   frequency?: "daily" | "weekly";
@@ -12,7 +15,8 @@ export type HabitExtra = {
 };
 
 type Lang = "en" | "ar";
-const TEX = {
+
+const TEX: Record<Lang, Record<string, string>> = {
   en: {
     freq: "Frequency",
     daily: "Daily",
@@ -21,6 +25,10 @@ const TEX = {
     optional: "Optional",
     icon: "Icon",
     note: "Note ✍️",
+    openNote: "Open note editor",
+    emojiHint: "Pick the emoji that represents the habit",
+    previewImg: "attachment image",
+    previewDraw: "drawing",
   },
   ar: {
     freq: "التكرار",
@@ -30,8 +38,12 @@ const TEX = {
     optional: "اختياري",
     icon: "الأيقونة",
     note: "ملاحظة ✍️",
+    openNote: "افتح محرّر الملاحظة",
+    emojiHint: "اختر الإيموجي الذي يعبّر عن العادة",
+    previewImg: "صورة مرفقة",
+    previewDraw: "رسم مرفق",
   },
-} as const;
+};
 
 export default function HabitFormExtra({
   value,
@@ -42,23 +54,25 @@ export default function HabitFormExtra({
   onChange: (v: HabitExtra) => void;
   lang?: Lang;
 }) {
-  const resolvedLang: Lang =
-    lang ||
-    (typeof document !== "undefined" &&
-    (document.documentElement.lang === "ar" ||
-      document.documentElement.dir === "rtl")
-      ? "ar"
-      : "en");
+  const i18n = useI18n?.();
+  const resolvedLang: Lang = (lang || i18n?.lang || "en") as Lang;
   const t = TEX[resolvedLang];
 
-  const [openNote, setOpenNote] = useState(false);
+  const [openNote, setOpenNote] = React.useState(false);
+  const freqId = React.useId();
+  const descBtnId = React.useId();
+  const iconId = React.useId();
 
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-[100px_1fr] items-center gap-2">
-        <label className="text-sm opacity-70">{t.freq}</label>
+    <div className="space-y-4" dir={resolvedLang === "ar" ? "rtl" : "ltr"}>
+      {/* Frequency */}
+      <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+        <label htmlFor={freqId} className="text-sm text-[var(--ink-2)]">
+          {t.freq}
+        </label>
         <select
-          className="border p-2 rounded bg-[var(--bg-0)]"
+          id={freqId}
+          className="input"
           value={value.frequency || "daily"}
           onChange={(e) =>
             onChange({
@@ -72,58 +86,72 @@ export default function HabitFormExtra({
         </select>
       </div>
 
-      <div className="grid grid-cols-[100px_1fr_auto] items-center gap-2">
-        <label className="text-sm opacity-70">{t.desc}</label>
+      {/* Description + Note modal */}
+      <div className="grid grid-cols-[120px_1fr_auto] items-center gap-2">
+        <span className="text-sm text-[var(--ink-2)]">{t.desc}</span>
+
         <button
+          id={descBtnId}
           type="button"
-          className="border p-2 rounded bg-[var(--bg-0)] text-left truncate hover:ring-2 hover:ring-indigo-300 transition"
+          className="btn-secondary truncate text-left"
           onClick={() => setOpenNote(true)}
-          title={t.note}
+          title={t.openNote}
+          aria-haspopup="dialog"
+          aria-expanded={openNote}
         >
           {value.description?.trim()
             ? value.description
             : `${t.optional} — ${t.note}`}
         </button>
+
         <button
           type="button"
-          className="px-3 py-2 rounded-xl border bg-[var(--bg-1)] hover:bg-[var(--bg-0)] transition"
+          className="btn-primary"
           onClick={() => setOpenNote(true)}
-          title={t.note}
+          title={t.openNote}
+          aria-describedby={descBtnId}
         >
           {t.note}
         </button>
       </div>
 
-      <div className="grid grid-cols-[100px_1fr] items-center gap-2">
-        <label className="text-sm opacity-70">{t.icon}</label>
-        <input
-          className="border p-2 rounded bg-[var(--bg-0)] w-28"
-          placeholder="🙂"
-          value={value.icon || ""}
-          onChange={(e) => onChange({ ...value, icon: e.target.value || null })}
-        />
+      {/* Icon via EmojiPicker */}
+      <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+        <label htmlFor={iconId} className="text-sm text-[var(--ink-2)]">
+          {t.icon}
+        </label>
+        <div className="flex items-center gap-3">
+          <EmojiPickerButton
+            lang={resolvedLang}
+            value={value.icon || undefined}
+            onChange={(emoji) => onChange({ ...value, icon: emoji })}
+          />
+          <span className="text-sm text-[var(--ink-2)]">{t.emojiHint}</span>
+        </div>
       </div>
 
+      {/* Attachments preview */}
       {(value.attachments?.imageDataUrl ||
         value.attachments?.drawingDataUrl) && (
         <div className="flex flex-wrap gap-3 pt-1">
           {value.attachments?.imageDataUrl && (
             <img
               src={value.attachments.imageDataUrl}
-              alt="attachment"
+              alt={t.previewImg}
               className="h-16 w-16 rounded-lg border object-cover"
             />
           )}
           {value.attachments?.drawingDataUrl && (
             <img
               src={value.attachments.drawingDataUrl}
-              alt="drawing"
+              alt={t.previewDraw}
               className="h-16 w-16 rounded-lg border object-cover"
             />
           )}
         </div>
       )}
 
+      {/* Note modal */}
       {openNote && (
         <NoteModal
           lang={resolvedLang}

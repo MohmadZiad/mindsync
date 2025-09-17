@@ -485,3 +485,39 @@ body {
 :root[data-focus="true"] .hide-in-focus {
   display: none !important;
 }
+/* === Focus Mode helpers === */
+:root[data-focus] .focus-dim {
+  opacity: .45;
+  filter: saturate(.75);
+  transition: opacity .2s ease;
+}
+
+:root[data-focus] .focus-hide {
+  display: none !important;
+}
+
+:root[data-focus] .focus-ring {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 1rem;
+}
+
+/* اقتراح: عيّن هذه الكلاسات على عناصرك */
+/* أخفي أي عنصر ما بدّي أشوفه بوضع التركيز */
+:root[data-focus="true"] .hide-in-focus {
+  display: none !important;
+}
+
+/* خفّض وضوح عناصر معينة */
+:root[data-focus] .focus-dim {
+  opacity: .45;
+  filter: saturate(.75);
+  transition: opacity .2s ease;
+}
+
+/* إبراز إطار لعنصر مركّز عليه */
+:root[data-focus] .focus-ring {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 1rem;
+}
