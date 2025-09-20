@@ -1,8 +1,9 @@
-// app/layout.tsx
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Providers from "./Providers";
 import PageTransition from "@/components/layout/PageTransition";
+import MoodBody from "@/components/mood/MoodBody";
+import MoodBootstrap from "@/components/mood/MoodBootstrap";
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
@@ -49,14 +50,14 @@ export default function RootLayout({
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
-        {/* prevent theme flash */}
+        {/* 1) Theme boot (pre-hydration) */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
 (function() {
   try {
     var d = document.documentElement;
-    var saved = localStorage.getItem('theme'); 
+    var saved = localStorage.getItem('theme');
     var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (saved === 'dark' || (!saved && prefersDark)) d.classList.add('dark');
     else d.classList.remove('dark');
@@ -64,9 +65,35 @@ export default function RootLayout({
 })();`.trim(),
           }}
         />
+
+        {/* 2) Mood boot (pre-hydration) */}
+        <MoodBootstrap />
+
+        {/* 3) Header elevation on scroll (toggles body.scrolled) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+(function() {
+  function apply() {
+    try { document.body.classList.toggle('scrolled', window.scrollY > 8); } catch (e) {}
+  }
+  try {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', apply, { once: true });
+    } else {
+      apply();
+    }
+    window.addEventListener('scroll', apply, { passive: true });
+  } catch (e) {}
+})();`.trim(),
+          }}
+        />
       </head>
+
       <body className="bg-page text-[var(--ink-1)] antialiased overflow-x-hidden">
         <Providers>
+          {/* Keeps <body> classes in sync with Redux and persists on change */}
+          <MoodBody />
           <PageTransition>{children}</PageTransition>
         </Providers>
       </body>

@@ -88,7 +88,8 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const saved = (localStorage.getItem("login_duo_theme") as DuoTheme) || "serene";
+    const saved =
+      (localStorage.getItem("login_duo_theme") as DuoTheme) || "serene";
     setThemeState(saved);
     setReady(true);
   }, []);
@@ -109,9 +110,10 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
 /*                               Mouse Helpers                                */
 /* ========================================================================== */
 
-function usePointer(
-  ref: React.RefObject<HTMLDivElement>
-): { sx: MotionValue<number>; sy: MotionValue<number> } {
+function usePointer(ref: React.RefObject<HTMLDivElement | null>): {
+  sx: MotionValue<number>;
+  sy: MotionValue<number>;
+} {
   const x = useMotionValue(0),
     y = useMotionValue(0);
   const sx = useSpring(x, { stiffness: 90, damping: 18, mass: 0.4 });
@@ -281,7 +283,9 @@ function ThemeCard({
             <h4 className="font-bold text-lg flex items-center gap-2">
               <span className="inline-block size-2.5 rounded-full bg-violet-500" />{" "}
               {title}
-              {active && <span className="text-xs text-violet-600">(مختار)</span>}
+              {active && (
+                <span className="text-xs text-violet-600">(مختار)</span>
+              )}
             </h4>
             <p className="text-sm text-gray-600 mt-1">{desc}</p>
           </div>
@@ -535,7 +539,8 @@ function LoginShell() {
         >
           {/* holographic border */}
           <div className="pointer-events-none absolute inset-0 rounded-3xl">
-            <div className="absolute inset-0 rounded-3xl [mask:linear-gradient(white,transparent)] opacity-30"
+            <div
+              className="absolute inset-0 rounded-3xl [mask:linear-gradient(white,transparent)] opacity-30"
               style={{
                 background:
                   "linear-gradient(90deg,rgba(109,94,241,.35),rgba(241,94,204,.35),rgba(96,165,250,.35))",
@@ -558,7 +563,10 @@ function LoginShell() {
                 <span className="text-sm font-semibold">MS</span>
               </div>
               <div>
-                <h1 className="text-2xl font-extrabold" style={{ color: "var(--heading)" }}>
+                <h1
+                  className="text-2xl font-extrabold"
+                  style={{ color: "var(--heading)" }}
+                >
                   {t.title}
                 </h1>
                 <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
@@ -733,7 +741,10 @@ function LoginShell() {
             <SocialButtons />
 
             {/* Register */}
-            <div className="text-center text-xs" style={{ color: "var(--muted)" }}>
+            <div
+              className="text-center text-xs"
+              style={{ color: "var(--muted)" }}
+            >
               {STR[lang].noAccount}{" "}
               <Link
                 className="underline"
@@ -764,7 +775,10 @@ function LoginShell() {
 
       <AnimatePresence>
         {showPicker && (
-          <ThemePicker onClose={() => setShowPicker(false)} tPick={t.pickTheme} />
+          <ThemePicker
+            onClose={() => setShowPicker(false)}
+            tPick={t.pickTheme}
+          />
         )}
       </AnimatePresence>
 

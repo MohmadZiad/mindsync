@@ -118,7 +118,7 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
 /*                               Pointer helper                                */
 /* ========================================================================== */
 
-function usePointer(ref: React.RefObject<HTMLDivElement>): {
+function usePointer(ref: React.RefObject<HTMLDivElement | null>): {
   sx: MotionValue<number>;
   sy: MotionValue<number>;
 } {

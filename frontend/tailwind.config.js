@@ -1,41 +1,60 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  // Dark mode controlled by a class on <html> or <body>
+  // Dark mode is toggled via a class on <html> or <body>
   darkMode: "class",
 
-  // Scan your src tree (unchanged)
-  content: ["./src/**/*.{js,ts,jsx,tsx}"],
+  // Scan all UI-bearing files to ensure proper tree-shaking (purge)
+  content: [
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+
+  // Safelist any classes that might be constructed dynamically at runtime
+  // (e.g., indigo/purple/sky used by your mood bridge or string-built classNames)
+  safelist: [
+    // text/bg/border/ring colors often toggled via props or data
+    {
+      pattern:
+        /(text|bg|border|ring)-(indigo|purple|sky)-(50|100|200|300|400|500|600)/,
+    },
+    // gradient endpoints used in legacy headers
+    { pattern: /(from|to)-(indigo|purple|sky)-(300|400|500|600)/ },
+    // state/utility variants that may be composed in strings
+    { pattern: /(hover|focus|active):.*/ },
+    // your mood/body classes (applied outside of JSX utility contexts)
+    "moodify-all",
+    "mood-calm",
+    "mood-focus",
+    "mood-energy",
+    "mood-soft",
+  ],
 
   theme: {
-    // Centered container with consistent padding
     container: { center: true, padding: "1rem" },
 
     extend: {
-      // ---- New, friendly color aliases (added; nothing removed) ----
+      // Bind Tailwind’s color aliases to your CSS variables where applicable
       colors: {
-        /**
-         * Modern Purple/White palette (safe additions).
-         * Use:
-         *  bg-primary / text-primary / hover:bg-primary-dark
-         *  bg-primary-light / text-muted / bg-page / bg-page-dark
-         */
+        // Fixed brand palette (fallbacks) — useful for charts or static assets
         primary: {
-          DEFAULT: "#6D5EF1",  // main purple
-          light: "#E9E4FF",    // subtle backgrounds, badges
-          dark: "#4C3BCF",     // hovers / active states
-          fg: "#FFFFFF",       // on-primary text
+          DEFAULT: "#6D5EF1",
+          light: "#E9E4FF",
+          dark: "#4C3BCF",
+          fg: "#FFFFFF",
         },
         page: {
-          DEFAULT: "#FFFFFF",  // app background (light)
-          dark: "#0B1020",     // app background (dark)
+          DEFAULT: "#FFFFFF",
+          dark: "#0B1020",
         },
         text: {
-          DEFAULT: "#0F172A",  // main ink
-          muted: "#475569",    // secondary ink
-          invert: "#FFFFFF",   // on dark blocks
+          DEFAULT: "#0F172A",
+          muted: "#475569",
+          invert: "#FFFFFF",
         },
 
-        // ---- Your existing design tokens (kept intact) ----
+        // Variable-driven tokens (read from global.css)
         brand: {
           DEFAULT: "hsl(var(--brand))",
           fg: "hsl(var(--brand-foreground))",
@@ -54,21 +73,21 @@ module.exports = {
         danger: "hsl(var(--danger))",
       },
 
-      // Radii aliases (kept)
+      // Use your CSS variable radii (legacy aliases preserved in global.css)
       borderRadius: {
         lg: "var(--radius-lg)",
         xl: "var(--radius-xl)",
         "2xl": "var(--radius-2xl)",
       },
 
-      // Shadow presets (kept)
+      // Common soft shadows (match your global --shadow style)
       boxShadow: {
         sm: "0 1px 2px rgba(0,0,0,.06)",
         md: "0 2px 8px rgba(0,0,0,.08)",
         lg: "0 10px 20px rgba(0,0,0,.10)",
       },
 
-      // Spacing scale (kept)
+      // Consistent spacing scale
       spacing: {
         1: "0.25rem",
         2: "0.5rem",
@@ -82,18 +101,38 @@ module.exports = {
         16: "4rem",
       },
 
-      // Typographic shortcuts (kept)
+      // Typographic presets
       fontSize: {
         h1: ["2.25rem", { lineHeight: "1.2", fontWeight: "800" }],
         h2: ["1.5rem", { lineHeight: "1.3", fontWeight: "700" }],
       },
 
-      // Grid helpers (kept)
-      gridTemplateColumns: { 12: "repeat(12, minmax(0, 1fr))" },
+      // Bind the default sans to your CSS var (set in global.css)
+      fontFamily: {
+        sans: ["var(--app-font)", "ui-sans-serif", "system-ui"],
+      },
+
+      // Helpful grid preset
+      gridTemplateColumns: {
+        12: "repeat(12, minmax(0, 1fr))",
+      },
+
+      // Optional: expose keyframes used in CSS for @apply-able animations if desired
+      // (You already define them in CSS; keeping here commented for future use)
+      /*
+      keyframes: {
+        gradient: { "0%,100%": { "background-position": "0% 50%" }, "50%": { "background-position": "100% 50%" } },
+        breath:  { "0%,100%": { transform: "scale(0.96)", opacity: "0.9" }, "50%": { transform: "scale(1.04)", opacity: "1" } },
+      },
+      animation: {
+        gradient: "gradient 8s ease infinite",
+        breath: "breath 6s ease-in-out infinite",
+      },
+      */
     },
   },
 
-  // Plugins (kept)
+  // Official plugins + RTL
   plugins: [
     require("@tailwindcss/typography"),
     require("@tailwindcss/forms"),

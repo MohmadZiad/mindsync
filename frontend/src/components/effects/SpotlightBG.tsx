@@ -4,14 +4,14 @@ import { PropsWithChildren, useEffect, useRef } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 
 type Props = PropsWithChildren<{
-  size?: number;       // bubble diameter
-  blur?: number;       // blur strength
-  className?: string;  // optional wrapper classes
+  size?: number; // bubble diameter
+  blur?: number; // blur strength
+  className?: string; // optional wrapper classes
 }>;
 
 /**
  * Full-page soft spotlight background that follows the cursor.
- * RTL/LTR safe (uses x/y, not translateX/translateY).
+ * Mood-aware (reads CSS vars --mood / --mood-rgb). RTL/LTR safe.
  */
 export default function SpotlightBG({
   children,
@@ -65,28 +65,62 @@ export default function SpotlightBG({
     return () => window.removeEventListener("pointermove", onMove);
   }, [px, py]);
 
-  const bubbleStyle = (hex: string) =>
+  // helper to style a bubble with CSS vars (mood-aware)
+  const bubbleStyle = (color: string) =>
     ({
       width: size,
       height: size,
       top: 0,
       left: 0,
       position: "absolute" as const,
-      background: `radial-gradient(circle at center, ${hex} 0%, transparent 70%)`,
+      background: `radial-gradient(circle at center, ${color} 0%, transparent 70%)`,
       filter: `blur(${blur}px)`,
       willChange: "transform",
     });
+  
+
+  /**
+   * 🟣 ألوان المود:
+   * - var(--mood)                -> اللون الأساسي
+   * - rgba(var(--mood-rgb), a)   -> للتحكم بالشفافية
+   * - color-mix(...)             -> توليد tint/analogous (مع fallback)
+   */
+  const base = "var(--mood, #6d5ef1)";
+  const baseRgb = "rgba(var(--mood-rgb, 109,94,241),";
+
+  // مزيج/تدرجات مشتقة (fallback إلى rgba لو color-mix غير مدعوم)
+  const tint = `color-mix(in oklab, ${base} 78%, white)`;
+  const pop = `color-mix(in oklab, ${base} 70%, #f15ecc)`;
+  const cool = `color-mix(in oklab, ${base} 68%, #60a5fa)`;
+
+  const tintFallback = `${baseRgb} 0.70)`;
+  const popFallback = `${baseRgb} 0.60)`;
+  const coolFallback = `${baseRgb} 0.55)`;
+
+  // نبني خلفية لكل فقاعة مع fallback داخل القائمة
+  const b1Bg = `radial-gradient(circle at center,
+                 ${tint}, ${tintFallback} 0%,
+                 transparent 70%)`;
+  const b2Bg = `radial-gradient(circle at center,
+                 ${pop}, ${popFallback} 0%,
+                 transparent 70%)`;
+  const b3Bg = `radial-gradient(circle at center,
+                 ${cool}, ${coolFallback} 0%,
+                 transparent 70%)`;
 
   return (
-    <div ref={rootRef} className={`relative isolate overflow-hidden ${className}`}>
-      {/* base wash (light) */}
+    <div
+      ref={rootRef}
+      className={`relative isolate overflow-hidden ${className}`}
+    >
+      {/* base wash (light) — يقرأ من المود */}
       <div
         aria-hidden
         className="absolute inset-0 -z-10"
         style={{
           background: `
-            radial-gradient(1200px 800px at 30% -10%, rgba(241,232,255,0.55) 0%, transparent 60%),
-            radial-gradient(1000px 700px at 90% 20%, rgba(232,240,255,0.50) 0%, transparent 55%)
+            radial-gradient(1200px 800px at 30% -10%, ${baseRgb} 0.38) 0%, transparent 60%),
+            radial-gradient(1000px 700px at 90% 20%, ${baseRgb} 0.30) 0%, transparent 55%)
           `,
         }}
       />
@@ -96,28 +130,41 @@ export default function SpotlightBG({
         className="absolute inset-0 -z-10 hidden dark:block"
         style={{
           background: `
-            radial-gradient(1000px 700px at 20% -10%, rgba(139,123,255,0.20) 0%, transparent 60%),
-            radial-gradient(900px 600px at 85% 15%, rgba(96,165,250,0.18) 0%, transparent 55%)
+            radial-gradient(1000px 700px at 20% -10%, ${baseRgb} 0.22) 0%, transparent 60%),
+            radial-gradient(900px 600px at 85% 15%, ${baseRgb} 0.20) 0%, transparent 55%)
           `,
         }}
       />
-
-      {/* glow bubbles */}
+      {/* glow bubbles - screen mix for soft additive feel */}
       <div className="pointer-events-none absolute inset-0 -z-10 mix-blend-screen">
+        {/* Bubble 1: pure mood color */}
         <motion.div
           className="rounded-full"
-          style={{ ...bubbleStyle("#6D5EF1"), x: b1x, y: b1y }}
+          style={{
+            ...bubbleStyle("var(--mood)"),
+            x: b1x,
+            y: b1y,
+          }}
         />
+        {/* Bubble 2: a lighter mood tone */}
         <motion.div
           className="rounded-full"
-          style={{ ...bubbleStyle("#F15ECC"), x: b2x, y: b2y }}
+          style={{
+            ...bubbleStyle("color-mix(in oklab, var(--mood) 72%, white 28%)"),
+            x: b2x,
+            y: b2y,
+          }}
         />
+        {/* Bubble 3: a cooler blend for depth */}
         <motion.div
           className="rounded-full"
-          style={{ ...bubbleStyle("#60A5FA"), x: b3x, y: b3y }}
+          style={{
+            ...bubbleStyle("color-mix(in oklab, var(--mood) 58%, #60a5fa 42%)"),
+            x: b3x,
+            y: b3y,
+          }}
         />
       </div>
-
       {children}
     </div>
   );

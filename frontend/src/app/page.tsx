@@ -30,9 +30,14 @@ import HowItWorksScrolly from "@/components/HowItWorksScrolly";
 
 import { useI18n } from "@/components/ui/i18n";
 import SpotlightBG from "@/components/effects/SpotlightBG";
+import MoodMenu from "@/components/mood/MoodMenu";
 
-/* ===================== i18n strings (local) ===================== */
+// >>> New: responsive sidebar / mobile sheet <<<
+import UtilityRail from "@/components/layout/UtilityRail";
+
+// ===================== Localized strings =====================
 const STRINGS = {
+  /* ... (unchanged strings) ... */
   en: {
     app: "MindSync",
     nav: {
@@ -226,7 +231,7 @@ const STRINGS = {
   },
 } as const;
 
-/* ===================== helpers ===================== */
+// ===================== helpers =====================
 function formatCompact(n: number, lang: "en" | "ar") {
   return new Intl.NumberFormat(lang === "ar" ? "ar" : "en", {
     notation: "compact",
@@ -245,7 +250,7 @@ function truncateEmail(email?: string) {
   return `${short}@${domain}`;
 }
 
-/* ===== Quick toggles (Language + Theme in Navbar only) ===== */
+// ===== Quick toggles (Language + Theme in Navbar only) =====
 function QuickToggles({
   lang,
   setLang,
@@ -263,10 +268,11 @@ function QuickToggles({
 }) {
   return (
     <div className="hidden items-center gap-2 md:flex">
+      {/* Responsive: small, unobtrusive toggle chip that remains tap-friendly */}
       <button
         aria-label="Toggle language"
         onClick={() => setLang(lang === "en" ? "ar" : "en")}
-        className="rounded-xl border border-gray-300 bg-white px-3 py-1 text-xs font-medium shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+        className="rounded-xl border border-gray-300 bg-white px-3 py-1 text-xs font-medium shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mood)] dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
       >
         🌐 {labels.lang}
       </button>
@@ -275,7 +281,7 @@ function QuickToggles({
         <button
           aria-label="Toggle theme"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="rounded-xl border border-gray-300 bg-white px-3 py-1 text-xs font-medium shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+          className="rounded-xl border border-gray-300 bg-white px-3 py-1 text-xs font-medium shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mood)] dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
         >
           {theme === "dark" ? (
             <>
@@ -292,7 +298,7 @@ function QuickToggles({
   );
 }
 
-/* ===== User chip (email + menu) ===== */
+// ===== User chip (email + menu) =====
 function UserChip({
   email,
   labels,
@@ -314,7 +320,7 @@ function UserChip({
         onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
         className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-2.5 py-1 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
       >
-        <div className="grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-white">
+        <div className="grid h-7 w-7 place-items-center rounded-full bg-[var(--mood)] text-white">
           {email?.[0]?.toUpperCase() || "U"}
         </div>
         <span className="hidden max-w-[12ch] truncate text-sm text-gray-700 dark:text-gray-200 sm:inline">
@@ -369,7 +375,7 @@ function UserChip({
   );
 }
 
-/* ===================== PAGE ===================== */
+// ===================== PAGE =====================
 export default function Home() {
   const { theme, setTheme } = useTheme();
   const dispatch = useAppDispatch();
@@ -378,9 +384,16 @@ export default function Home() {
   const { lang, setLang } = useI18n();
   const M = STRINGS[lang];
 
+  // Ensure auth state
   useEffect(() => {
     dispatch(meThunk());
   }, [dispatch]);
+
+  // Ensure the whole site picks up mood variables on all pages
+  useEffect(() => {
+    document.body.classList.add("moodify-all");
+    return () => document.body.classList.remove("moodify-all");
+  }, []);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -471,17 +484,17 @@ export default function Home() {
         {/* Accessibility: skip to main content */}
         <a
           href="#content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:rounded-lg focus:bg-indigo-600 focus:px-3 focus:py-2 focus:text-white"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:rounded-lg focus:bg-[var(--mood)] focus:px-3 focus:py-2 focus:text-white"
         >
           {lang === "ar" ? "انتقل للمحتوى" : "Skip to content"}
         </a>
 
-        {/* NOTE: removed solid page backgrounds so the global spotlight shows through */}
         <div className="min-h-screen text-gray-900 transition-colors duration-300 dark:text-gray-50">
           {/* ===================== NAV ===================== */}
           <header className="sticky top-0 z-50 border-b border-transparent bg-white/70 backdrop-blur-xl transition-colors dark:bg-gray-950/70 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-gray-950/60">
             <nav
-              className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4"
+              /* Responsive: fluid wrapper */
+              className="wrap flex items-center justify-between gap-6 py-4"
               aria-label="Primary"
             >
               <div className="flex items-center gap-3">
@@ -525,6 +538,9 @@ export default function Home() {
               </div>
 
               <div className="flex items-center gap-3">
+                {/* Mood selector */}
+                <MoodMenu />
+
                 {!user ? (
                   <>
                     <Link
@@ -578,11 +594,10 @@ export default function Home() {
 
           {/* ===================== HERO ===================== */}
           <section className="relative overflow-hidden">
-            {/* (Removed the old local gradient block to avoid double glow) */}
-
             <div
               id="content"
-              className="mx-auto grid max-w-7xl items-center gap-12 px-6 pt-14 pb-24 md:grid-cols-2 md:pt-20 md:pb-28"
+              /* Responsive: fluid wrapper + 2-col grid at md */
+              className="wrap grid items-center gap-12 pt-14 pb-24 md:grid-cols-2 md:pt-20 md:pb-28"
             >
               {/* Left copy */}
               <div className="text-center md:text-left">
@@ -591,10 +606,8 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.55 }}
                   className={cx(
-                    "bg-[linear-gradient(90deg,#6d28d9_0%,#7c3aed_45%,#2563eb_100%)]",
-                    "bg-clip-text text-transparent",
-                    "text-[clamp(2.1rem,5vw,3.25rem)] font-extrabold leading-[1.07] tracking-tight",
-                    "drop-shadow-[0_1px_0_rgba(0,0,0,0.25)]"
+                    "text-hero",
+                    "text-[clamp(2.1rem,5vw,3.25rem)] font-extrabold leading-[1.07] tracking-tight"
                   )}
                 >
                   {M.hero.title}
@@ -614,7 +627,7 @@ export default function Home() {
                   )}
                   <Link
                     href="/demo"
-                    className="rounded-2xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+                    className="rounded-2xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mood)] dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
                   >
                     {M.hero.secondary}
                   </Link>
@@ -652,8 +665,12 @@ export default function Home() {
                 <div className="relative">
                   <BreathingRing size={320} variant="soft" />
                   <div className="absolute inset-0 grid place-items-center">
-                    <div className="w-[230px] rounded-2xl border border-gray-200 bg-white/85 p-5 shadow-xl backdrop-blur-md dark:border-gray-700 dark:bg-gray-900/85">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                    {/* Claim bubble */}
+                    <div className="claim-bubble max-w-xs">
+                      <p
+                        className="text-[11px] font-semibold uppercase tracking-wider"
+                        style={{ color: "#6d5ef1" }}
+                      >
                         {lang === "ar" ? "تأمل الصباح" : "Morning reflection"}
                       </p>
                       <p className="mt-2 text-sm text-gray-800 dark:text-gray-200">
@@ -668,7 +685,7 @@ export default function Home() {
             </div>
 
             {/* Trust bar */}
-            <div className="mx-auto max-w-7xl px-6 pb-6">
+            <div className="wrap pb-6">
               <div className="flex flex-wrap items-center justify-center gap-8 opacity-70 md:justify-between">
                 {["Calm", "Notion", "Headspace", "Linear", "Slack"].map((b) => (
                   <span key={b} className="text-sm">
@@ -687,10 +704,11 @@ export default function Home() {
             id="features"
             className="bg-gray-50 py-16 dark:bg-gray-900/40"
           >
-            <div className="mx-auto max-w-7xl px-6 text-center">
+            <div className="wrap text-center">
               <h2 className="text-3xl font-bold sm:text-4xl">
                 {M.featuresTitle}
               </h2>
+              {/* Responsive: auto grid across breakpoints with safe gaps */}
               <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
                 {M.features.map((f, idx) => (
                   <motion.div
@@ -714,7 +732,7 @@ export default function Home() {
 
           {/* ===================== HOW IT WORKS ===================== */}
           <section id="how" className="py-16">
-            <div className="mx-auto max-w-7xl px-6">
+            <div className="wrap">
               <h2 className="text-center text-3xl font-bold sm:text-4xl">
                 {M.howTitle}
               </h2>
@@ -724,7 +742,7 @@ export default function Home() {
 
           {/* ===================== DAY / NIGHT SAMPLES ===================== */}
           <section className="bg-indigo-50 py-16 dark:bg-indigo-950/40">
-            <div className="mx-auto max-w-7xl px-6">
+            <div className="wrap">
               <h2 className="text-center text-3xl font-bold sm:text-4xl">
                 🌙 / ☀️
               </h2>
@@ -769,7 +787,7 @@ export default function Home() {
 
           {/* ===================== TESTIMONIALS ===================== */}
           <section className="py-16">
-            <div className="mx-auto max-w-5xl px-6 text-center">
+            <div className="wrap wrap-narrow text-center">
               <h2 className="text-3xl font-bold sm:text-4xl">
                 {M.testimonialsTitle}
               </h2>
@@ -807,7 +825,7 @@ export default function Home() {
 
           {/* ===================== FAQ ===================== */}
           <section className="bg-gray-50 py-16 dark:bg-gray-900/40">
-            <div className="mx-auto max-w-4xl px-6">
+            <div className="wrap wrap-narrow">
               <h2 className="text-center text-3xl font-bold sm:text-4xl">
                 {M.faqsTitle}
               </h2>
@@ -840,7 +858,7 @@ export default function Home() {
 
           {/* ===================== PRICING ===================== */}
           <section id="pricing" className="py-16">
-            <div className="mx-auto max-w-7xl px-6">
+            <div className="wrap">
               <h2 className="text-center text-3xl font-bold sm:text-4xl">
                 {M.pricingTitle}
               </h2>
@@ -855,7 +873,7 @@ export default function Home() {
 
           {/* ===================== BLOG ===================== */}
           <section id="blog" className="bg-gray-50 py-16 dark:bg-gray-900/40">
-            <div className="mx-auto max-w-7xl px-6">
+            <div className="wrap">
               <h2 className="text-center text-3xl font-bold sm:text-4xl">
                 {M.blogTitle}
               </h2>
@@ -865,7 +883,7 @@ export default function Home() {
                     key={i}
                     className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
                   >
-                    <div className="text-xs uppercase tracking-wide text-indigo-600">
+                    <div className="text-xs uppercase tracking-wide text-mood">
                       {b.tag}
                     </div>
                     <h3 className="mt-2 text-lg font-semibold">{b.title}</h3>
@@ -874,7 +892,7 @@ export default function Home() {
                     </p>
                     <Link
                       href="#"
-                      className="mt-4 inline-block text-sm font-medium text-indigo-600 hover:underline"
+                      className="mt-4 inline-block text-sm font-medium text-mood hover:underline"
                     >
                       {M.units.read}
                     </Link>
@@ -886,7 +904,7 @@ export default function Home() {
 
           {/* ===================== FOOTER ===================== */}
           <footer className="border-t border-gray-200 bg-white/80 py-10 text-sm backdrop-blur-sm dark:border-gray-800 dark:bg-gray-950/70">
-            <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 md:flex-row">
+            <div className="wrap flex flex-col items-center justify-between gap-4 md:flex-row">
               <div className="text-gray-600 dark:text-gray-300">
                 {M.footer.rights(new Date().getFullYear())}
               </div>
@@ -898,12 +916,21 @@ export default function Home() {
             </div>
           </footer>
         </div>
+
+        {/* >>> Mount the responsive rail once. 
+            - On desktop: a fixed sidebar aligned to the wrap edge.
+            - On mobile: FAB + bottom sheet. 
+            - Auto-flips for RTL via `dir` prop. */}
+        {/* Mobile only: hide on lg+ so it never shows on desktop */}
+        <div className="lg:hidden">
+          <UtilityRail dir={dir as "ltr" | "rtl"} />
+        </div>
       </main>
     </SpotlightBG>
   );
 }
 
-/* ===================== UI Helpers ===================== */
+// ===================== UI Helpers =====================
 function Stat({
   icon,
   value,
@@ -928,7 +955,7 @@ function Stat({
   );
 }
 
-/* ===== Dashboard (Pro) preview card ===== */
+// ===== Dashboard (Pro) preview card =====
 function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
   const [range, setRange] = useState<"7d" | "14d" | "30d">("7d");
 
@@ -979,7 +1006,7 @@ function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
   const bestStreak = 18;
 
   return (
-    <section className="mx-auto max-w-7xl px-6 pb-16">
+    <section className="wrap pb-16">
       <div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/80 shadow-2xl shadow-indigo-500/10 backdrop-blur-sm dark:border-gray-800 dark:bg-gray-900/80">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 border-b border-gray-200/80 px-5 py-3 dark:border-gray-800">
@@ -987,6 +1014,7 @@ function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
             {copy.title}
           </h3>
 
+          {/* Responsive: compact segmented control */}
           <div className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-1 text-xs dark:border-gray-700 dark:bg-gray-950">
             {["7d", "14d", "30d"].map((k) => (
               <button
@@ -994,7 +1022,7 @@ function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
                 onClick={() => setRange(k as "7d" | "14d" | "30d")}
                 className={
                   range === (k as "7d" | "14d" | "30d")
-                    ? "rounded-lg bg-indigo-600 px-2.5 py-1 text-white"
+                    ? "rounded-lg bg-[var(--mood)] px-2.5 py-1 text-white"
                     : "rounded-lg px-2.5 py-1 text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
                 }
               >
@@ -1032,10 +1060,10 @@ function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
   );
 }
 
-/* ===== Sub components ===== */
+// ===== Sub components =====
 function Chip({ label }: { label: string }) {
   return (
-    <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+    <span className="rounded-lg bg-[color-mix(in_oklab,white,rgba(var(--mood-rgb),20%))] px-2.5 py-1 text-xs font-medium text-mood dark:bg-[color-mix(in_oklab,#0b1220,rgba(var(--mood-rgb),28%))]">
       {label}
     </span>
   );
@@ -1044,9 +1072,7 @@ function Chip({ label }: { label: string }) {
 function ReflectionCard({ title, text }: { title: string; text: string }) {
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
-      <p className="text-xs font-semibold tracking-wide text-gray-600 dark:text-gray-300">
-        {title}
-      </p>
+      <p className="text-xs font-semibold tracking-wide text-mood">{title}</p>
       <p className="mt-2 text-sm text-gray-700 dark:text-gray-200">{text}</p>
     </div>
   );
@@ -1077,7 +1103,7 @@ function BarChart({ data }: { data: number[] }) {
               <div
                 style={{ height: `${h}%` }}
                 title={`${v}%`}
-                className="rounded-md bg-[linear-gradient(to_top,#4f46e5,#06b6d4)] shadow-sm"
+                className="rounded-md shadow-sm bg-[linear-gradient(to_top,var(--mood),rgba(var(--mood-rgb),.6))]"
               />
             </div>
           );

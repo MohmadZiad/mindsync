@@ -1,21 +1,39 @@
+/* ==========================================================================
+   Production-ready global.css (World‑class Responsive Pack)
+   --------------------------------------------------------------------------
+   Goals:
+   - Keep file lean: tokens + tiny utilities, avoid heavy overrides
+   - Themeable: light/dark via CSS variables; RTL-friendly
+   - Accessible & performant: focus-visible, reduced-motion, GPU-friendly anims
+   - Responsive by default: fluid type, container queries, auto-grids
+   - Backwards compatible: preserves your existing tokens & class names
+   ========================================================================== */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ===================== Base Theme (Light/Dark) ===================== */
+/* ===================================================================
+      Base Theme Tokens (Light / Dark)
+      These CSS variables are the design tokens used across the app.
+      Tailwind utilities read them via arbitrary values like bg-[var(--bg-1)]
+      =================================================================== */
 :root {
-  /* Base */
+  color-scheme: light dark; /* hint UA for proper form controls in both themes */
+  accent-color: #6d5ef1; /* follows brand by default */
+
+  /* Base text/background */
   --background: #ffffff;
   --foreground: #171717;
 
-  /* App layers (light) */
-  --bg-0: #f6f7fb; /* page */
-  --bg-1: #ffffff; /* surface 1 */
+  /* Application layers (light) */
+  --bg-0: #f6f7fb; /* page background */
+  --bg-1: #ffffff; /* surface 1 / cards */
   --bg-2: #f2f4f8; /* surface 2 */
   --bg-3: #e6e9f2; /* surface 3 */
 
-  --ink-1: #0f172a; /* text */
-  --ink-2: #475569; /* muted */
+  --ink-1: #0f172a; /* primary text */
+  --ink-2: #475569; /* muted text */
   --line: #e5e7eb; /* borders */
 
   /* Brand (purple) */
@@ -26,12 +44,12 @@
   --brand-bg: #ffffff;
   --brand-card: #ffffff;
 
-  /* Status */
+  /* Status colors */
   --ok: #22c55e;
   --warn: #f59e0b;
   --err: #ef4444;
 
-  /* Shape/Shadow */
+  /* Shape / Elevation */
   --radius: 14px;
   --shadow: 0 6px 22px rgba(2, 6, 23, 0.08);
 
@@ -49,9 +67,17 @@
 
   --success: 142 72% 45%;
   --danger: 0 84% 60%;
+
+  /* --- Responsive system variables --- */
+  --bp-sm: 40rem; /* 640px */
+  --bp-md: 48rem; /* 768px */
+  --bp-lg: 64rem; /* 1024px */
+  --bp-xl: 80rem; /* 1280px */
+  --wrap-max: 72rem; /* 1152px comfortable read width */
+  --wrap-pad: clamp(12px, 3vw, 24px);
 }
 
-/* Dark (auto by media) */
+/* Auto dark-mode fallback (in case class toggle isn't used) */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -59,7 +85,7 @@
   }
 }
 
-/* Dark (class toggle) */
+/* Dark theme (class-based toggle) */
 :root.dark {
   --bg-0: #0b1020;
   --bg-1: #111827;
@@ -82,31 +108,222 @@
   --ring: 255 92% 76%;
 }
 
-/* Base apply */
+/* Apply base background/text color */
 body {
   background: var(--bg-0);
   color: var(--ink-1);
 }
 
-/* ===================== Utilities ===================== */
+/* Prefer logical properties for better RTL support on generic spacing (opt-in) */
+:where(h1, h2, h3, h4, h5, h6, p, ul, ol) {
+  margin-block: 0;
+}
+:where(ul, ol) {
+  padding-inline-start: 1.25rem;
+}
+
+/* ===================================================================
+      Accessibility & Interactions
+      =================================================================== */
+@layer base {
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+  :focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--brand), transparent 68%);
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===================================================================
+      WORLD‑CLASS RESPONSIVE PACK
+      Fluid type, wrappers, auto-grids, media helpers, container queries
+      All classes are opt-in → no breaking changes.
+      =================================================================== */
+@layer utilities {
+  /* Fluid wrappers */
+  .wrap {
+    width: min(100% - var(--wrap-pad), var(--wrap-max));
+    margin-inline: auto;
+  }
+  .wrap-narrow {
+    --wrap-max: 60rem;
+  }
+  .wrap-wide {
+    --wrap-max: 84rem;
+  }
+
+  /* Fluid typography */
+  .fluid-h1 {
+    font-size: clamp(1.75rem, 2.5vw + 1rem, 3rem);
+    line-height: 1.15;
+    font-weight: 800;
+  }
+  .fluid-h2 {
+    font-size: clamp(1.35rem, 1.5vw + 0.9rem, 2rem);
+    line-height: 1.2;
+    font-weight: 700;
+  }
+  .fluid-h3 {
+    font-size: clamp(1.1rem, 0.9vw + 0.85rem, 1.35rem);
+    line-height: 1.25;
+    font-weight: 600;
+  }
+  .fluid-text {
+    font-size: clamp(0.95rem, 0.25vw + 0.85rem, 1.075rem);
+    line-height: 1.65;
+  }
+
+  /* Auto grid (cards, features, galleries) */
+  .auto-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(var(--min, 14rem), 1fr));
+    gap: var(--gap, 1rem);
+  }
+  .auto-grid-tight {
+    --gap: 0.75rem;
+  }
+  .auto-grid-comfy {
+    --gap: 1.25rem;
+  }
+  .auto-grid-min-12 {
+    --min: 12rem;
+  } /* 192px */
+  .auto-grid-min-16 {
+    --min: 16rem;
+  } /* 256px */
+  .auto-grid-min-20 {
+    --min: 20rem;
+  } /* 320px */
+
+  /* Media layout (avatar + content, icon + text, etc.) */
+  .media {
+    display: grid;
+    grid-template-columns: var(--media, 72px) 1fr;
+    gap: var(--gap, 1rem);
+    align-items: start;
+  }
+  .media-center {
+    align-items: center;
+  }
+
+  /* Vertical rhythm */
+  .stack {
+    display: grid;
+    gap: var(--gap, 1rem);
+  }
+  .stack-xs {
+    --gap: 0.5rem;
+  }
+  .stack-sm {
+    --gap: 0.75rem;
+  }
+  .stack-lg {
+    --gap: 1.5rem;
+  }
+  .stack-xl {
+    --gap: 2rem;
+  }
+
+  /* Fluid padding/margins (useful inside cards/sections) */
+  .fluid-pad {
+    padding: clamp(0.75rem, 1.2vw, 1.5rem);
+  }
+  .fluid-pad-y {
+    padding-block: clamp(0.75rem, 1.2vw, 1.5rem);
+  }
+  .fluid-pad-x {
+    padding-inline: clamp(0.75rem, 1.2vw, 1.5rem);
+  }
+
+  /* Aspect ratio + responsive media */
+  .ratio {
+    aspect-ratio: var(--ratio, 16/9);
+  }
+  .responsive-img,
+  .responsive-img img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Visibility helpers */
+  .only-desktop {
+    display: none;
+  }
+  @media (min-width: 48rem) {
+    .only-desktop {
+      display: initial;
+    }
+  }
+  @media (min-width: 48rem) {
+    .only-mobile {
+      display: none !important;
+    }
+  }
+
+  /* Prevent horizontal scroll (opt-in) */
+  .no-overflow-x {
+    overflow-x: hidden;
+  }
+
+  /* Scroll snapping (carousels/steps) */
+  .snap-x-mandatory {
+    scroll-snap-type: x mandatory;
+  }
+  .snap-center > * {
+    scroll-snap-align: center;
+  }
+
+  /* Container Queries: enable per-block responsiveness without page breakpoints */
+  .cq {
+    container-type: inline-size;
+  }
+  /* Example utilities that respond to the container width (not viewport) */
+}
+/* Container query rules */
+@container (min-width: 36rem) {
+  .cq\:cols-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--gap, 1rem);
+  }
+}
+@container (min-width: 56rem) {
+  .cq\:cols-3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--gap, 1rem);
+  }
+}
+
+/* ===================================================================
+      Utilities Layer (existing helpers)
+      =================================================================== */
 @layer utilities {
   .animate-gradient {
     background-size: 200% 200%;
     animation: gradient 8s ease infinite;
   }
   .magnetic-will-move {
-    /* Minor perf hint for micro-interactions */
     will-change: transform;
   }
   .glass {
     @apply bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg;
   }
   .ring-breath {
-    /* Decorative breathing ring */
     animation: breath 6s ease-in-out infinite;
   }
-
-  /* Palette helpers */
   .bg-page {
     background-color: var(--bg-0);
   }
@@ -116,7 +333,6 @@ body {
   .text-muted {
     color: var(--ink-2);
   }
-
   .btn {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-2xl border transition active:scale-[.98];
   }
@@ -133,7 +349,6 @@ body {
     min-height: 44px;
     min-width: 44px;
   }
-
   .cardish {
     background: var(--bg-1);
     border: 1px solid var(--line);
@@ -150,7 +365,7 @@ body {
   }
 }
 
-/* Animations */
+/* Keyframes used by utilities */
 @keyframes gradient {
   0%,
   100% {
@@ -172,7 +387,9 @@ body {
   }
 }
 
-/* Helpers */
+/* ===================================================================
+      Generic helpers
+      =================================================================== */
 .edge-fade {
   -webkit-mask-image: linear-gradient(
     to right,
@@ -194,12 +411,13 @@ body {
   height: 1px;
   width: 1px;
   overflow: hidden;
-  clip: rect(1px, 1px, 1px, 1px);
+  clip: rect(1px, 1px, 1px);
   white-space: nowrap;
 }
 .details-reset {
-  /* Hide default marker */
+  /* reserved */
 }
+
 details.faq {
   @apply glass rounded-xl p-4 open:shadow-xl;
 }
@@ -214,11 +432,15 @@ details.faq > summary::-webkit-details-marker {
   filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.12));
 }
 .theme-smooth {
-  transition: background-color 0.3s ease, color 0.3s ease,
-    border-color 0.3s ease;
+  transition:
+    background-color 0.3s,
+    color 0.3s,
+    border-color 0.3s;
 }
 
-/* Marquee */
+/* ===================================================================
+      Marquee
+      =================================================================== */
 .marquee {
   overflow: hidden;
   position: relative;
@@ -261,7 +483,7 @@ details.faq > summary::-webkit-details-marker {
   text-align: right;
 }
 
-/* Reduced motion */
+/* Reduced motion (marquee specific) */
 @media (prefers-reduced-motion: reduce) {
   .marquee-inner {
     animation: none;
@@ -269,14 +491,14 @@ details.faq > summary::-webkit-details-marker {
   }
 }
 
-/* Legacy radius aliases */
+/* Legacy radius aliases (compat with older code) */
 :root {
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-2xl: 20px;
 }
 
-/* RTL icon auto flip */
+/* Auto flip icons in RTL when needed */
 html[dir="rtl"] .dir-flip {
   transform: scaleX(-1);
 }
@@ -291,7 +513,7 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Safe areas */
+/* Safe areas for notches */
 :root {
   --sat: env(safe-area-inset-top);
   --sab: env(safe-area-inset-bottom);
@@ -303,7 +525,7 @@ button {
   padding-bottom: calc(12px + var(--sab));
 }
 
-/* Hide horizontal scrollbar (tabs) */
+/* Hide horizontal scrollbars (e.g., tab strips) */
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -312,7 +534,7 @@ button {
   display: none;
 }
 
-/* Slide/Fade (StepTabs) */
+/* Simple slide/fade helper */
 @keyframes slidefade {
   from {
     transform: translateX(var(--slide-x, 16px));
@@ -324,7 +546,7 @@ button {
   }
 }
 
-/* ===== Aliases (compat for existing tokens) ===== */
+/* Aliases (compat) */
 :root {
   --text-2: var(--ink-2);
   --text-3: #6b7280;
@@ -333,58 +555,55 @@ button {
   --text-3: #9ca3af;
 }
 
-/* ===================== Components ===================== */
+/* ===================================================================
+      Components Layer (existing atoms)
+      =================================================================== */
 @layer components {
   .input {
-    @apply w-full rounded-lg border border-[var(--line)] bg-[var(--bg-1)] px-3 py-2 text-[var(--ink-1)]
-           outline-none transition focus:ring-2 focus:ring-indigo-300;
+    @apply w-full rounded-lg border border-[var(--line)] bg-[var(--bg-1)] px-3 py-2 text-[var(--ink-1)] outline-none transition focus:ring-2 focus:ring-indigo-300;
   }
-
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm
-           hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 active:scale-[.98];
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 active:scale-[.98];
   }
-
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--bg-1)] px-3 py-2
-           text-[var(--ink-1)] hover:bg-[var(--bg-2)] focus:outline-none focus:ring-2 focus:ring-indigo-300 active:scale-[.98];
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--bg-1)] px-3 py-2 text-[var(--ink-1)] hover:bg-[var(--bg-2)] focus:outline-none focus:ring-2 focus:ring-indigo-300 active:scale-[.98];
   }
-
   .btn-tertiary {
     @apply rounded border border-[var(--line)] bg-[var(--bg-2)] px-3 py-2 text-[var(--ink-1)];
   }
-
   .label {
     @apply text-xs text-[var(--text-3)];
   }
-
   .chip {
     @apply rounded-full border border-[var(--line)] bg-[var(--bg-1)] px-3 py-1 text-sm hover:bg-[var(--bg-2)] transition;
   }
-
   .menu-card {
     @apply rounded-xl border border-[var(--line)] bg-[var(--bg-1)] px-4 py-2 shadow hover:bg-[var(--bg-2)] transition;
   }
 }
 
-/* ===== Dashboard polish pack ===== */
-/* Fonts */
+/* ===================================================================
+      Dashboard polish pack (fonts, shadows, gradients)
+      =================================================================== */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap");
+
 :root {
-  --app-font: Inter, system-ui, -apple-system, Segoe UI, Roboto,
-    "Helvetica Neue", Arial;
+  --app-font:
+    Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
 }
 :root[dir="rtl"] {
-  --app-font: "Tajawal", system-ui, -apple-system, Segoe UI, Roboto,
-    "Helvetica Neue", Arial;
+  --app-font:
+    "Tajawal", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue",
+    Arial;
 }
 body {
   font-family: var(--app-font);
 }
 
-/* Soft background gradient for pages */
+/* Page soft background — will be re-colored by Mood System below */
 .page-gradient {
-  background: radial-gradient(
+  background:
+    radial-gradient(
       1200px 600px at 100% -20%,
       rgba(109, 94, 241, 0.09),
       transparent 60%
@@ -396,13 +615,33 @@ body {
     ),
     var(--bg-0);
 }
+:root {
+  --mood-2: color-mix(in oklab, var(--mood) 78%, white 22%);
+  --mood-3: color-mix(in oklab, var(--mood) 55%, #60a5fa 45%);
+}
 
-/* Unified soft shadow + card hover */
+/* Mood-aware headline gradient */
+.text-hero {
+  background-image: linear-gradient(
+    90deg,
+    var(--mood-2) 0%,
+    var(--mood) 50%,
+    var(--mood-3) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.25));
+}
+
+/* Unified soft shadow + hover */
 .shadow-soft {
   box-shadow: var(--shadow);
 }
 .card-hover {
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
 }
 .card-hover:hover {
   transform: translateY(-2px);
@@ -411,16 +650,17 @@ body {
 
 /* Light gradient overlay for cards */
 .animated-card-gradient {
-  background: linear-gradient(180deg, rgba(109, 94, 241, 0.06), transparent 40%),
+  background:
+    linear-gradient(180deg, rgba(109, 94, 241, 0.06), transparent 40%),
     var(--bg-1);
 }
 
-/* Accordion / grid animation */
+/* Simple layout transitions */
 .transition-grid {
   transition: grid-template-rows 0.25s ease;
 }
 
-/* Flip-card 3D toolkit */
+/* 3D flip-card helpers */
 .perspective-1000 {
   perspective: 1000px;
 }
@@ -445,9 +685,10 @@ body {
   transform: rotateY(180deg);
 }
 
-/* Background presets controlled by [data-bg] on <html> */
+/* Page background presets controlled via [data-bg] on <html> */
 [data-bg="aurora"] {
-  background: radial-gradient(
+  background:
+    radial-gradient(
       1200px 500px at 10% 10%,
       rgba(109, 94, 241, 0.15),
       transparent 60%
@@ -460,7 +701,8 @@ body {
     var(--bg-0);
 }
 [data-bg="mesh"] {
-  background: radial-gradient(
+  background:
+    radial-gradient(
       800px 400px at 20% 80%,
       rgba(34, 197, 94, 0.12),
       transparent 60%
@@ -476,74 +718,381 @@ body {
   background: var(--bg-0);
 }
 
-/* Gradient for progress bars */
+/* Generic progress gradient (overridden by Mood System below) */
 .progress-gradient {
   background-image: linear-gradient(90deg, #6d5ef1, #f15ecc);
 }
 
-/* Focus mode: hide marked elements when data-focus=true on :root */
+/* ===================================================================
+      Focus Mode (used by data-focus on :root)
+      =================================================================== */
 :root[data-focus="true"] .hide-in-focus {
   display: none !important;
 }
-/* === Focus Mode helpers === */
 :root[data-focus] .focus-dim {
-  opacity: .45;
-  filter: saturate(.75);
-  transition: opacity .2s ease;
+  opacity: 0.45;
+  filter: saturate(0.75);
+  transition: opacity 0.2s ease;
 }
-
 :root[data-focus] .focus-hide {
   display: none !important;
 }
-
 :root[data-focus] .focus-ring {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
   border-radius: 1rem;
 }
 
-/* اقتراح: عيّن هذه الكلاسات على عناصرك */
-/* أخفي أي عنصر ما بدّي أشوفه بوضع التركيز */
-:root[data-focus="true"] .hide-in-focus {
-  display: none !important;
+/* Tiny ambient animations (optional) */
+@keyframes drift1 {
+  0% {
+    transform: translate(-2%, -1%) scale(1.02);
+  }
+  50% {
+    transform: translate(2%, 1%) scale(1.03);
+  }
+  100% {
+    transform: translate(-2%, -1%) scale(1.02);
+  }
+}
+@keyframes drift2 {
+  0% {
+    transform: translate(1%, -2%) scale(1.02);
+  }
+  50% {
+    transform: translate(-1%, 2%) scale(1.01);
+  }
+  100% {
+    transform: translate(1%, -2%) scale(1.02);
+  }
+}
+@keyframes lasersMove {
+  to {
+    background-position: 120% 0;
+  }
 }
 
-/* خفّض وضوح عناصر معينة */
-:root[data-focus] .focus-dim {
-  opacity: .45;
-  filter: saturate(.75);
-  transition: opacity .2s ease;
-}
-
-/* إبراز إطار لعنصر مركّز عليه */
-:root[data-focus] .focus-ring {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-  border-radius: 1rem;
-}
-/* حركات بسيطة */
-@keyframes drift1 { 0%{transform:translate(-2%,-1%) scale(1.02);} 50%{transform:translate(2%,1%) scale(1.03);} 100%{transform:translate(-2%,-1%) scale(1.02);} }
-@keyframes drift2 { 0%{transform:translate(1%,-2%) scale(1.02);} 50%{transform:translate(-1%,2%) scale(1.01);} 100%{transform:translate(1%,-2%) scale(1.02);} }
-@keyframes lasersMove { to { background-position: 120% 0; } }
-
+/* ===================================================================
+      Optional theme presets (example)
+      =================================================================== */
 [data-theme="serene"] {
   --text: #1f2937;
   --heading: #111827;
   --muted: #6b7280;
   --primary: #635bff;
-  --ring: rgba(99,102,241,0.18);
+  --ring: rgba(99, 102, 241, 0.18);
   --chip-bg: #ffffff;
   --card-bg: #ffffffcc;
   --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
 }
-
 [data-theme="neo"] {
   --text: #0f172a;
   --heading: #0b1220;
   --muted: #475569;
-  --primary: #6d5ef1; 
-  --ring: rgba(109,94,241,0.28);
+  --primary: #6d5ef1;
+  --ring: rgba(109, 94, 241, 0.28);
   --chip-bg: #ffffff;
   --card-bg: #ffffffe6;
-  --shadow: 0 16px 40px rgba(109, 94, 241, 0.20);
+  --shadow: 0 16px 40px rgba(109, 94, 241, 0.2);
 }
+
+/* ===================================================================
+      Mood System (unchanged core, with brand bridge)
+      =================================================================== */
+:root {
+  --mood: #6d5ef1;
+  --mood-rgb: 109, 94, 241;
+  --mood-ink: var(--ink-1);
+}
+body.moodify-all .text-mood {
+  color: var(--mood);
+}
+body.moodify-all .bg-mood {
+  background: var(--mood);
+  color: white;
+}
+body.moodify-all .ring-mood {
+  box-shadow: 0 0 0 2px var(--mood) inset;
+}
+body.moodify-all .page-gradient {
+  background:
+    radial-gradient(
+      1200px 600px at 100% -20%,
+      rgba(var(--mood-rgb), 0.12),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at -10% -10%,
+      rgba(var(--mood-rgb), 0.1),
+      transparent 55%
+    ),
+    var(--bg-0);
+}
+
+.claim-bubble {
+  --_glass-b: rgba(255, 255, 255, 0.75);
+  --_glass-s: rgba(0, 0, 0, 0.06);
+  background: var(--_glass-b);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 18px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 30px var(--_glass-s);
+}
+:root.dark .claim-bubble {
+  --_glass-b: rgba(17, 24, 39, 0.55);
+  --_glass-s: rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+body.moodify-all .claim-bubble {
+  box-shadow:
+    0 10px 30px rgba(2, 6, 23, 0.1),
+    0 0 0 2px rgba(var(--mood-rgb), 0.15) inset,
+    0 12px 40px rgba(var(--mood-rgb), 0.25);
+}
+
+body.mood-calm {
+  --mood: #6d5ef1;
+  --mood-rgb: 109, 94, 241;
+}
+body.mood-focus {
+  --mood: #22c55e;
+  --mood-rgb: 34, 197, 94;
+}
+body.mood-energy {
+  --mood: #f59e0b;
+  --mood-rgb: 245, 158, 11;
+}
+body.mood-soft {
+  --mood: #a78bfa;
+  --mood-rgb: 167, 139, 250;
+}
+
+body.moodify-all .btn--primary {
+  background: var(--mood);
+}
+body.moodify-all a:hover {
+  color: var(--mood);
+}
+body.moodify-all .progress-gradient {
+  background-image: linear-gradient(
+    90deg,
+    var(--mood),
+    rgba(var(--mood-rgb), 0.6)
+  );
+}
+
+body.moodify-all {
+  --brand: var(--mood);
+  --brand-accent: color-mix(in oklab, var(--mood) 88%, white 12%);
+  --ring: color-mix(in oklab, var(--mood) 32%, transparent);
+  --brand-50: color-mix(in oklab, var(--mood) 10%, white 90%);
+  --brand-100: color-mix(in oklab, var(--mood) 18%, white 82%);
+  --brand-200: color-mix(in oklab, var(--mood) 28%, white 72%);
+  --brand-300: color-mix(in oklab, var(--mood) 40%, white 60%);
+  --brand-400: color-mix(in oklab, var(--mood) 55%, white 45%);
+  --brand-500: var(--mood);
+  --brand-600: color-mix(in oklab, var(--mood) 88%, black 12%);
+  --brand-700: color-mix(in oklab, var(--mood) 76%, black 24%);
+  --brand-800: color-mix(in oklab, var(--mood) 62%, black 38%);
+  --brand-900: color-mix(in oklab, var(--mood) 50%, black 50%);
+}
+
+@layer components {
+  .btn-primary {
+    background: var(--brand);
+    color: #fff;
+    box-shadow: var(--shadow);
+  }
+  .btn-primary:hover {
+    background: var(--brand-600);
+  }
+  .btn-primary:focus {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--brand-50),
+      0 0 0 6px var(--brand-300);
+  }
+  .btn-secondary:focus {
+    box-shadow:
+      0 0 0 2px var(--brand-50),
+      0 0 0 6px var(--brand-200);
+  }
+  .text-brand {
+    color: var(--brand);
+  }
+  .bg-brand {
+    background: var(--brand);
+    color: #fff;
+  }
+  .border-brand {
+    border-color: var(--brand);
+  }
+  .ring-brand {
+    --tw-ring-color: var(--brand);
+  }
+}
+
+.text-hero {
+  background-image: linear-gradient(
+    90deg,
+    var(--mood-2) 0%,
+    var(--mood) 50%,
+    var(--mood-3) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.25));
+}
+body.moodify-all .progress-gradient {
+  background-image: linear-gradient(90deg, var(--brand-500), var(--brand-300));
+}
+
+/* Legacy/Compat overrides */
+body.moodify-all
+  :where(
+    .text-indigo-500,
+    .text-indigo-600,
+    .text-purple-500,
+    .text-purple-600,
+    .text-sky-500,
+    .text-sky-600,
+    .hover\:text-indigo-600:hover,
+    .hover\:text-purple-600:hover,
+    .hover\:text-sky-600:hover
+  ) {
+  color: var(--brand) !important;
+}
+body.moodify-all
+  :where(
+    .bg-indigo-50,
+    .bg-indigo-100,
+    .bg-purple-50,
+    .bg-purple-100,
+    .bg-sky-50,
+    .bg-sky-100
+  ) {
+  background-color: var(--brand-50) !important;
+}
+body.moodify-all :where(.bg-indigo-200, .bg-purple-200, .bg-sky-200) {
+  background-color: var(--brand-200) !important;
+}
+body.moodify-all
+  :where(
+    .bg-indigo-500,
+    .bg-indigo-600,
+    .bg-purple-500,
+    .bg-purple-600,
+    .bg-sky-500,
+    .bg-sky-600,
+    .hover\:bg-indigo-600:hover,
+    .hover\:bg-purple-600:hover,
+    .hover\:bg-sky-600:hover
+  ) {
+  background-color: var(--brand) !important;
+  color: #fff !important;
+}
+body.moodify-all
+  :where(
+    .border-indigo-200,
+    .border-indigo-300,
+    .border-purple-200,
+    .border-purple-300,
+    .border-sky-200,
+    .border-sky-300
+  ) {
+  border-color: var(--brand-300) !important;
+}
+body.moodify-all
+  :where(
+    .ring-indigo-300,
+    .ring-indigo-400,
+    .ring-purple-300,
+    .ring-purple-400,
+    .ring-sky-300,
+    .ring-sky-400
+  ) {
+  --tw-ring-color: var(--brand-300) !important;
+}
+body.moodify-all :where(.from-indigo-500, .from-purple-500, .from-sky-500) {
+  --tw-gradient-from: var(--brand-500) !important;
+  --tw-gradient-stops:
+    var(--tw-gradient-from), var(--tw-gradient-to, rgba(0, 0, 0, 0));
+}
+body.moodify-all :where(.to-indigo-300, .to-purple-300, .to-sky-300) {
+  --tw-gradient-to: var(--brand-300) !important;
+}
+body.moodify-all
+  :where(.is-active, .active, [aria-selected="true"]).bg-indigo-100 {
+  background-color: var(--brand-100) !important;
+}
+body.moodify-all
+  :where(.is-active, .active, [aria-selected="true"]).text-indigo-600 {
+  color: var(--brand-600) !important;
+}
+body.moodify-all .claim-bubble {
+  box-shadow:
+    0 10px 30px rgba(2, 6, 23, 0.1),
+    0 0 0 2px rgba(var(--mood-rgb), 0.15) inset,
+    0 12px 40px rgba(var(--mood-rgb), 0.25);
+}
+
+/* Ensure the bridge is active app-wide */
+body:not(.moodify-all) {
+  /* noop for SSR-only routes */
+}
+body.moodify-all #features h2 {
+  background-image: linear-gradient(90deg, var(--mood-2), var(--mood));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+body.moodify-all #features .card-title,
+body.moodify-all #features .feature-title,
+body.moodify-all #features .feature h3 {
+  color: var(--brand) !important;
+}
+body.moodify-all #features .feature p,
+body.moodify-all #features .feature-desc {
+  color: var(--ink-2) !important;
+}
+body.moodify-all #features .feature-card {
+  border-color: color-mix(in oklab, var(--brand), white 85%) !important;
+}
+body.moodify-all #features .feature-card:hover {
+  box-shadow: 0 10px 24px color-mix(in oklab, var(--brand), transparent 80%);
+}
+/* ================= WORLD-CLASS RESPONSIVE SAFETY NET ================= */
+
+/* 1) Fluid root sizing → كل شيء يتدرّج تلقائيًا */
+html {
+  /* يضبط حجم النص الأساسي بين 14px و 18px حسب العرض */
+  --fs-base: clamp(14px, 0.6vw + 12px, 18px);
+  font-size: var(--fs-base);
+}
+
+/* 2) توازن التفاف العناوين والنصوص + كسر الكلمات الطويلة */
+h1, h2, h3, .text-hero { text-wrap: balance; }
+p, li { text-wrap: pretty; }
+* { overflow-wrap: anywhere; }
+
+/* 3) صور/فيديو/SVG دائمًا ريسبونسف */
+img, svg, video, canvas { max-width: 100%; height: auto; }
+
+/* 4) تغليظ الـ wrap قليلًا على الشاشات العريييضة جدًا (لتحسين قابلية القراءة) */
+@media (min-width: 120rem) { /* ≥ 1920px */
+  :root { --wrap-max: 90rem; } /* 1440px حد أقصى للسطور */
+}
+
+/* 5) Ultra-small screens (≤ 352px): صغّر الحجوم والهوامش بأمان */
+@media (max-width: 22rem) { /* 352px */
+  .wrap { --wrap-pad: 8px; }
+  .fluid-h1 { font-size: clamp(1.4rem, 6.5vw + 0.7rem, 2.2rem); line-height: 1.15; }
+  .fluid-text { font-size: clamp(0.9rem, 2.8vw + 0.6rem, 1rem); }
+  .btn, .btn-primary { padding: 0.6rem 1rem; border-radius: 12px; }
+  .chip { padding: 0.35rem 0.6rem; }
+}
+
+/* 6) منع أي تمرير أفقي عارض داخل الصفحة (اختياريًا على body) */
+.no-overflow-x, body { overflow-x: hidden; }

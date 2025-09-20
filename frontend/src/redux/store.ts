@@ -2,12 +2,14 @@ import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice";
 import habitsReducer from "./slices/habitSlice";
 import entriesReducer from "./slices/entrySlice";
+import uiReducer from "./slices/uiSlice"; 
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     habits: habitsReducer,
     entries: entriesReducer,
+    ui: uiReducer, 
   },
 });
 
