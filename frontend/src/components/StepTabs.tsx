@@ -1,141 +1,118 @@
 "use client";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useI18n } from "@/components/ui/i18n";
 
-export type Step = {
+import { useEffect, useMemo, useRef, useState } from "react";
+
+type Step = {
   id: string;
   title: string;
   content: React.ReactNode;
+  /** If explicitly false, the step is disabled (unclickable) */
   ready?: boolean;
 };
 
+/**
+ * Pure client-side tabs/steps:
+ * - Navigation is done with local state only (no URL hashes / router.push).
+ * - Prev/Next are <button>s (no <a href> / <Link>) to guarantee no refresh.
+ * - Accessible (ARIA roles for tabs/tabpanel, focus management).
+ */
 export default function StepTabs({ steps }: { steps: Step[] }) {
-  const { t } = useI18n();
-  const labels = { prev: t.prev, next: t.next };
+  const safeSteps = useMemo(() => steps.filter(Boolean), [steps]);
+  const [idx, setIdx] = useState(0);
 
-  const router = useRouter();
-  const params = useSearchParams();
+  // Keep selected index valid when steps change or become not-ready
+  useEffect(() => {
+    if (idx >= safeSteps.length) setIdx(0);
+    if (safeSteps[idx]?.ready === false) {
+      const firstReady = safeSteps.findIndex((s) => s.ready !== false);
+      setIdx(firstReady === -1 ? 0 : firstReady);
+    }
+  }, [safeSteps, idx]);
 
-  const urlId = params.get("step") || steps[0]?.id || "";
-  const urlIndex = Math.max(
-    0,
-    steps.findIndex((s) => s.id === urlId)
-  );
-  const [index, setIndex] = useState(urlIndex);
-  useEffect(() => setIndex(urlIndex), [urlIndex]);
+  // Focus currently active tab (better keyboard / screen reader experience)
+  const tabsRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const btn =
+      tabsRef.current?.querySelectorAll<HTMLButtonElement>("[role=tab]")?.[idx];
+    btn?.focus({ preventScroll: true });
+  }, [idx]);
 
-  const current = steps[index] ?? steps[0];
-  const canGoNext = useMemo(
-    () => steps[index]?.ready !== false,
-    [steps, index]
-  );
-
-  const goUrl = (id: string) => {
-    const q = new URLSearchParams(params.toString());
-    q.set("step", id);
-    router.replace(`?${q.toString()}`);
+  const goto = (n: number) => {
+    if (n < 0 || n >= safeSteps.length) return;
+    if (safeSteps[n]?.ready === false) return;
+    setIdx(n);
   };
-  useEffect(() => {
-    const id = steps[index]?.id;
-    if (id) goUrl(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index]);
 
-  const dir =
-    typeof document !== "undefined"
-      ? document.documentElement.getAttribute("dir") || "ltr"
-      : "ltr";
-  const isRTL = dir === "rtl";
-
-  const goPrev = () => index > 0 && setIndex(index - 1);
-  const goNext = () =>
-    index < steps.length - 1 && canGoNext && setIndex(index + 1);
-
-  // indicator + scroll
-  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const [indicator, setIndicator] = useState({ width: 0, left: 0 });
-  useEffect(() => {
-    const el = tabRefs.current[index];
-    const wrap = el?.closest(".tabs-wrap") as HTMLElement | null;
-    if (!el || !wrap) return;
-    const r = el.getBoundingClientRect();
-    const wr = wrap.getBoundingClientRect();
-    setIndicator({ width: r.width, left: r.left - wr.left + wrap.scrollLeft });
-    el.scrollIntoView({
-      behavior: "smooth",
-      inline: "center",
-      block: "nearest",
-    });
-  }, [index, steps.length]);
+  const prev = () => goto(idx - 1);
+  const next = () => goto(idx + 1);
 
   return (
-    <div className="w-full">
-      <div className="relative">
-        <ol className="tabs-wrap relative flex gap-2 overflow-x-auto scrollbar-none edge-fade py-1">
-          {steps.map((s, i) => {
-            const isActive = i === index;
-            const disabled =
-              i > index + 1 || (i > index && steps[index]?.ready === false);
-            return (
-              <li key={s.id} className="shrink-0">
-                <button
-                  ref={(el) => (tabRefs.current[i] = el)}
-                  onClick={() => setIndex(i)}
-                  role="tab"
-                  aria-selected={isActive}
-                  disabled={disabled}
-                  className={`touch px-3 py-1.5 rounded-full border text-sm theme-smooth
-                    ${
-                      isActive
-                        ? "bg-indigo-600 text-white border-indigo-600"
-                        : "bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200"
-                    }
-                    ${
-                      disabled
-                        ? "opacity-50 cursor-not-allowed"
-                        : "hover:bg-gray-50 dark:hover:bg-gray-800"
-                    }`}
-                >
-                  {s.title}
-                </button>
-              </li>
-            );
-          })}
-          <span
-            className="pointer-events-none absolute bottom-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 transition-[width,transform] duration-300"
-            style={{
-              width: indicator.width,
-              transform: `translateX(${indicator.left}px)`,
-            }}
-          />
-        </ol>
-      </div>
-
+    <section className="w-full">
+      {/* Tabs header */}
       <div
-        className="mt-3 rounded-2xl border bg-white dark:bg-gray-900 p-4 shadow-sm theme-smooth overflow-hidden"
-        role="tabpanel"
-        aria-labelledby={`tab-${current?.id}`}
+        ref={tabsRef}
+        role="tablist"
+        aria-label="Steps"
+        className="flex flex-wrap gap-3 mb-4"
       >
-        {current?.content}
+        {safeSteps.map((s, i) => {
+          const active = i === idx;
+          const disabled = s.ready === false;
+          return (
+            <button
+              key={s.id}
+              role="tab"
+              type="button"
+              aria-selected={active}
+              aria-controls={`panel-${s.id}`}
+              id={`tab-${s.id}`}
+              disabled={disabled}
+              onClick={() => goto(i)}
+              className={[
+                "px-4 py-2 rounded-full border transition",
+                active
+                  ? "bg-indigo-500 text-white border-indigo-500 shadow"
+                  : "bg-transparent border-[var(--line)] hover:bg-[var(--bg-1)]",
+                disabled ? "opacity-50 cursor-not-allowed" : "",
+              ].join(" ")}
+            >
+              {s.title}
+            </button>
+          );
+        })}
       </div>
 
+      {/* Current panel */}
+      {safeSteps[idx] && (
+        <div
+          role="tabpanel"
+          id={`panel-${safeSteps[idx].id}`}
+          aria-labelledby={`tab-${safeSteps[idx].id}`}
+          className="rounded-2xl border border-[var(--line)] bg-[var(--bg-0)]/40 p-3 md:p-4"
+        >
+          {safeSteps[idx].content}
+        </div>
+      )}
+
+      {/* Prev / Next — buttons only (no href or Link) */}
       <div className="mt-4 flex items-center justify-between">
         <button
-          onClick={goPrev}
-          disabled={index === 0}
-          className="btn btn--ghost touch disabled:opacity-50"
+          type="button"
+          onClick={prev}
+          disabled={idx === 0}
+          className="px-4 py-2 rounded-full border border-[var(--line)] bg-[var(--bg-1)] disabled:opacity-50"
         >
-          {labels.prev}
+          Previous
         </button>
         <button
-          onClick={goNext}
-          disabled={index === steps.length - 1 || !canGoNext}
-          className="btn btn--primary touch disabled:opacity-50"
+          type="button"
+          onClick={next}
+          disabled={idx >= safeSteps.length - 1}
+          className="px-4 py-2 rounded-full bg-indigo-500 text-white disabled:opacity-50"
         >
-          {labels.next}
+          Next
         </button>
       </div>
-    </div>
+    </section>
   );
 }

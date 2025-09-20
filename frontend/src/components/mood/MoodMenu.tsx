@@ -1,19 +1,20 @@
 "use client";
 
-
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { setMood } from "@/redux/slices/uiSlice";
 
-type MoodKey = "calm" | "focus" | "energy" | "sad";
+type MoodKey = "calm" | "focus" | "energy" | "soft";
 
 const OPTIONS: { key: MoodKey; label: string; emoji: string }[] = [
-  { key: "calm", label: "Calm", emoji: "🫧" },
-  { key: "focus", label: "Focus", emoji: "🎯" },
+  { key: "calm",   label: "Calm",   emoji: "🫧" },
+  { key: "focus",  label: "Focus",  emoji: "🎯" },
   { key: "energy", label: "Energy", emoji: "⚡" },
-  { key: "sad", label: "Soft", emoji: "🌙" },
+  { key: "soft",   label: "Soft",   emoji: "🌙" },
 ];
+
+const STORAGE_KEY = "mindsync:mood";
 
 export default function MoodMenu() {
   const current = (useAppSelector((s) => s.ui.mood) as MoodKey) || "calm";
@@ -34,7 +35,9 @@ export default function MoodMenu() {
 
   const choose = (k: MoodKey) => {
     try {
-      localStorage.setItem("mindsync:mood", k);
+      localStorage.setItem(STORAGE_KEY, k);
+      // Broadcast immediately within the same tab
+      window.dispatchEvent(new CustomEvent("ms:mood", { detail: k }));
     } catch {}
     dispatch(setMood(k));
     setOpen(false);

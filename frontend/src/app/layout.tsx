@@ -50,14 +50,14 @@ export default function RootLayout({
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
-        {/* 1) Theme boot (pre-hydration) */}
+        {/* 1) Theme boot (dark/light) */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
 (function() {
   try {
     var d = document.documentElement;
-    var saved = localStorage.getItem('theme');
+    var saved = localStorage.getItem('ms-theme'); // ✅ key موحّد
     var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (saved === 'dark' || (!saved && prefersDark)) d.classList.add('dark');
     else d.classList.remove('dark');
@@ -66,10 +66,26 @@ export default function RootLayout({
           }}
         />
 
-        {/* 2) Mood boot (pre-hydration) */}
+        {/* 2) Mood / Focus boot (pre-hydration) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+(function() {
+  try {
+    var d = document.documentElement;
+    // Focus Mode
+    var f = localStorage.getItem('ms-focus');
+    if (f === '1') d.setAttribute('data-focus','true');
+    else d.removeAttribute('data-focus');
+  } catch (e) {}
+})();`.trim(),
+          }}
+        />
+
+        {/* 3) MoodBootstrap component (mood colors bridge) */}
         <MoodBootstrap />
 
-        {/* 3) Header elevation on scroll (toggles body.scrolled) */}
+        {/* 4) Header elevation on scroll */}
         <script
           dangerouslySetInnerHTML={{
             __html: `

@@ -1,33 +1,34 @@
 "use client";
 
 /**
- * Injects a tiny inline script that:
+ * Pre-hydration boot for mood:
  * - Reads saved mood from localStorage
- * - Applies `moodify-all` + `mood-*` to <body> *before* hydration
- * This avoids color flashes on route changes and first paint.
+ * - Applies `moodify-all` and `mood-*` on <body> ASAP
+ * - Listens to storage / custom events so route changes reflect instantly
  */
 export default function MoodBootstrap() {
   return (
     <script
       dangerouslySetInnerHTML={{
         __html: `
-(function() {
+(function () {
   try {
-    var key = 'mindsync:mood';
-    var list = ['mood-calm','mood-focus','mood-energy','mood-soft'];
-    function apply() {
-      var b = document.body;
-      if (!b) return;
-      var m = localStorage.getItem(key) || 'calm';
+    var KEY = 'mindsync:mood';
+    var ALL = ['mood-calm','mood-focus','mood-energy','mood-soft'];
+    function apply(v) {
+      var m = (v || localStorage.getItem(KEY) || 'calm');
+      var b = document.body; if (!b) return;
       b.classList.add('moodify-all');
-      for (var i=0; i<list.length; i++) b.classList.remove(list[i]);
+      for (var i=0;i<ALL.length;i++) b.classList.remove(ALL[i]);
       b.classList.add('mood-' + m);
     }
+    function onAny(ev) { try { apply(ev && ev.newValue); } catch(e) {} }
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', apply, { once: true });
-    } else {
-      apply();
-    }
+      document.addEventListener('DOMContentLoaded', function(){ apply(); }, { once:true });
+    } else { apply(); }
+    // React immediately to changes (same tab + other tabs)
+    window.addEventListener('storage', function(e){ if (e && e.key === KEY) onAny(e); });
+    window.addEventListener('ms:mood', function(e){ apply(e && e.detail); });
   } catch (e) {}
 })();`.trim(),
       }}

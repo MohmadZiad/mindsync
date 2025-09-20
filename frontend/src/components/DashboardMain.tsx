@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { toast } from "react-hot-toast";
+import { useTheme } from "next-themes";
 
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { meThunk, logoutThunk } from "@/redux/slices/authSlice";
@@ -26,7 +27,6 @@ import type { Streak } from "@/services/streaks";
 import { groupEntriesDaily, wordsFromNotes } from "@/lib/reporting";
 
 // Fixed UI
-import AnimatedCard from "@/components/ui/AnimatedCard";
 import AnimatedStatCard from "@/components/ui/AnimatedStatCard";
 import SmartSearchBar from "@/components/ui/SmartSearchBar";
 import ThemeToggle from "@/components/ui/ThemeToggle";
@@ -36,7 +36,7 @@ import ProgressBarToday from "@/components/ui/ProgressBarToday";
 // Addons
 import FocusModeToggle from "@/components/addons/FocusModeToggle";
 
-// lazy
+// Lazy chunks
 const StepTabs = dynamic(() => import("@/components/StepTabs"));
 const FabMenu = dynamic(() => import("@/components/flows/FabMenu"), {
   ssr: false,
@@ -65,7 +65,7 @@ const ConfettiSuccess = dynamic(
   { ssr: false }
 );
 
-// Sections (new)
+// Sections
 const IntroSection = dynamic(
   () => import("@/components/dashboard/sections/IntroSection")
 );
@@ -94,9 +94,7 @@ const T = {
     mustLogin: "You need to sign in to view the dashboard.",
     goLogin: "Go to login",
     helloTime: (name: string, h: number) =>
-      `${
-        h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"
-      }, ${name || "friend"}`,
+      `${h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"}, ${name || "friend"}`,
     logout: "Logout",
     theme: "Theme",
     lang: "Language",
@@ -149,15 +147,15 @@ const T = {
       heat: "Heatmap (last 6 months)",
       cloud: "Notes Word Cloud",
     },
+    day: "day",
+    days: "days",
   },
   ar: {
     dash: "لوحة التحكم",
     mustLogin: "لازم تسجّل دخول قبل ما تشوف الداشبورد.",
     goLogin: "الذهاب لتسجيل الدخول",
     helloTime: (name: string, h: number) =>
-      `${h < 12 ? "صباح الخير" : h < 18 ? "مساء الخير" : "مساء الخير"} يا ${
-        name || "صديقي"
-      }`,
+      `${h < 12 ? "صباح الخير" : "مساء الخير"} يا ${name || "صديقي"}`,
     logout: "تسجيل الخروج",
     theme: "المظهر",
     lang: "اللغة",
@@ -191,6 +189,7 @@ const T = {
     edit: "تعديل",
     del: "حذف",
     streak: "سلسلة",
+    // IMPORTANT: keep the variable name `n` in Latin letters inside the template string
     checkinToast: (n: number) => `تم تسجيل اليوم ✅ — الستريك الحالي: ${n} 🔥`,
     checkinErr: "فشل التشيك-إن",
     chooseHabit: "اختر عادة",
@@ -210,6 +209,8 @@ const T = {
       heat: "خريطة النشاط (آخر ٦ أشهر)",
       cloud: "سحابة كلمات الملاحظات",
     },
+    day: "يوم",
+    days: "أيام",
   },
 } as const;
 
@@ -218,12 +219,16 @@ export default function DashboardMain() {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
+  const { setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const { user, loading: authLoading } = useAppSelector((s) => s.auth);
   const habits = useAppSelector((s) => s.habits.items);
   const entries = useAppSelector((s) => s.entries.items);
   const currentHabitId = useAppSelector((s) => s.entries.currentHabitId);
 
-  // language
+  // --- Language bootstrap + persistence ---
   const [lang, setLang] = useState<Lang>("en");
   useEffect(() => {
     const l =
@@ -242,35 +247,34 @@ export default function DashboardMain() {
       window.dispatchEvent(new Event("storage"));
     } catch {}
   }, [lang]);
+
   const t = useMemo(() => T[lang], [lang]);
   const dir = lang === "ar" ? "rtl" : "ltr";
   const locale = lang === "ar" ? "ar-EG" : "en-US";
 
-  // theme
-  const [dark, setDark] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return (
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches
-    );
-  });
+  // --- Anti-refresh guards (anchors + rogue submit buttons) ---
   useEffect(() => {
-    const el = document.documentElement;
-    dark ? el.classList.add("dark") : el.classList.remove("dark");
-  }, [dark]);
-
-  // ===== Anti-jump guards (لا تغيّر التصميم) =====
-  useEffect(() => {
-    // 1) امنع أي <a href="#"> من تنفيذ الـ default (يعمل قفزة)
+    // 1) Prevent anchors like href="#..." from changing the hash / jumping
     const onClick = (e: MouseEvent) => {
       const el = e.target as HTMLElement | null;
       if (!el) return;
-      const a = el.closest<HTMLAnchorElement>('a[href="#"], a[href=""]');
+      const a = el.closest<HTMLAnchorElement>('a[href^="#"], a[href=""]');
       if (a) e.preventDefault();
     };
     document.addEventListener("click", onClick, true);
 
-    // 2) لو أي مكوّن غيّر الـ hash (مثل تبويب)، امسحه فورًا حتى ما يصير scroll jump
+    // 2) If a component renders a <form> with <button> lacking type,
+    //    clicking it will submit → navigation. Force them to type="button".
+    const fixButtons = () => {
+      document
+        .querySelectorAll<HTMLButtonElement>("form button:not([type])")
+        .forEach((b) => (b.type = "button"));
+    };
+    fixButtons();
+    const mo = new MutationObserver(fixButtons);
+    mo.observe(document.body, { childList: true, subtree: true });
+
+    // 3) Clear hash if something still toggles it
     const onHash = () => {
       try {
         history.replaceState(null, "", " ");
@@ -281,11 +285,11 @@ export default function DashboardMain() {
     return () => {
       document.removeEventListener("click", onClick, true);
       window.removeEventListener("hashchange", onHash);
+      mo.disconnect();
     };
   }, []);
-  // ================================================
 
-  // local UI state
+  // --- Local UI state ---
   const [newHabit, setNewHabit] = useState("");
   const [newHabitExtra, setNewHabitExtra] = useState<{
     frequency?: "daily" | "weekly";
@@ -312,19 +316,21 @@ export default function DashboardMain() {
   // AI Modal
   const [openAiModal, setOpenAiModal] = useState(false);
 
-  // flows visibility
+  // Flow visibility
   const [openQuickHabit, setOpenQuickHabit] = useState(false);
   const [openProHabit, setOpenProHabit] = useState(false);
   const [openQuickLogPop, setOpenQuickLogPop] = useState(false);
   const [openEntrySheet, setOpenEntrySheet] = useState(false);
 
-  // auth + initial fetch
+  // --- Auth + initial fetch ---
   useEffect(() => {
     dispatch(meThunk());
   }, [dispatch]);
+
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login?next=/dashboard");
   }, [authLoading, user, router]);
+
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -348,6 +354,8 @@ export default function DashboardMain() {
   }, [habits]);
 
   const hasHabits = habits.length > 0;
+
+  // --- Derived numbers ---
   const entriesThisWeek = useMemo(() => {
     const from = new Date();
     const day = from.getDay();
@@ -369,6 +377,7 @@ export default function DashboardMain() {
     }).length;
   }, [entries]);
 
+  // --- Small helpers ---
   function goToHabitsTab() {
     const labels = [T.en.steps.habits, T.ar.steps.habits];
     const btn = Array.from(
@@ -401,186 +410,208 @@ export default function DashboardMain() {
     toast.success(t.qlogSaved);
   }
 
-  const steps = [
-    {
-      id: "intro",
-      title: t.steps.intro,
-      content: (
-        <IntroSection
-          lang={lang}
-          t={t}
-          best={computeBest(habits, entries, streaks)}
-          onOpenAi={() => setOpenAiModal(true)}
-        />
-      ),
-      ready: true,
-    },
-    {
-      id: "habits",
-      title: t.steps.habits,
-      content: (
-        <HabitsSection
-          lang={lang}
-          i18n={{
-            habitNamePh: t.habitNamePh,
-            add: t.add,
-            save: t.save,
-            cancel: t.cancel,
-            todayDone: t.todayDone,
-            edit: t.edit,
-            del: t.del,
-            checkinToast: t.checkinToast,
-            checkinErr: t.checkinErr,
-          }}
-          habits={habits}
-          currentHabitId={currentHabitId}
-          newHabit={newHabit}
-          newHabitExtra={newHabitExtra}
-          editHabit={editHabit}
-          streaks={streaks}
-          setNewHabit={setNewHabit}
-          setNewHabitExtra={setNewHabitExtra}
-          setEditHabit={setEditHabit}
-          onAddHabit={async () => {
-            if (!newHabit.trim()) return;
-            await dispatch(
-              addHabit({ name: newHabit.trim(), ...newHabitExtra } as any)
-            );
-            setNewHabit("");
-            setNewHabitExtra({
-              frequency: "daily",
-              description: "",
-              icon: null,
-            });
-          }}
-          onSelectHabit={async (hId: string) => {
-            dispatch(setCurrentHabit(hId as any));
-            await dispatch(fetchEntries({ habitId: hId } as any));
-            setEntryForm((f) => ({ ...f, habitId: hId }));
-            if (!streaks[hId]) {
+  // --- Steps (memoized) ---
+  const steps = useMemo(
+    () => [
+      {
+        id: "intro",
+        title: t.steps.intro,
+        content: (
+          <IntroSection
+            lang={lang}
+            t={t}
+            best={computeBest(habits, entries, streaks)}
+            onOpenAi={() => setOpenAiModal(true)}
+          />
+        ),
+        ready: true,
+      },
+      {
+        id: "habits",
+        title: t.steps.habits,
+        content: (
+          <HabitsSection
+            lang={lang}
+            i18n={{
+              habitNamePh: t.habitNamePh,
+              add: t.add,
+              save: t.save,
+              cancel: t.cancel,
+              todayDone: t.todayDone,
+              edit: t.edit,
+              del: t.del,
+              checkinToast: t.checkinToast,
+              checkinErr: t.checkinErr,
+              day: t.day,
+              days: t.days,
+            }}
+            habits={habits}
+            currentHabitId={currentHabitId}
+            newHabit={newHabit}
+            newHabitExtra={newHabitExtra}
+            editHabit={editHabit}
+            streaks={streaks}
+            setNewHabit={setNewHabit}
+            setNewHabitExtra={setNewHabitExtra}
+            setEditHabit={setEditHabit}
+            onAddHabit={async () => {
+              if (!newHabit.trim()) return;
+              await dispatch(
+                addHabit({ name: newHabit.trim(), ...newHabitExtra } as any)
+              );
+              setNewHabit("");
+              setNewHabitExtra({
+                frequency: "daily",
+                description: "",
+                icon: null,
+              });
+            }}
+            onSelectHabit={async (hId: string) => {
+              dispatch(setCurrentHabit(hId as any));
+              await dispatch(fetchEntries({ habitId: hId } as any));
+              setEntryForm((f) => ({ ...f, habitId: hId }));
+              if (!streaks[hId]) {
+                try {
+                  const s = await habitsService.getStreak(hId);
+                  setStreaks((p) => ({ ...p, [hId]: s }));
+                } catch {}
+              }
+            }}
+            onCheckin={async (hId: string) => {
               try {
-                const s = await habitsService.getStreak(hId);
-                setStreaks((p) => ({ ...p, [hId]: s }));
-              } catch {}
-            }
-          }}
-          onCheckin={async (hId: string) => {
-            try {
-              const res = await habitsService.checkin(hId);
-              const fresh = await habitsService.getStreak(hId);
-              setStreaks((prev) => ({ ...prev, [hId]: fresh }));
+                const res = await habitsService.checkin(hId);
+                const fresh = await habitsService.getStreak(hId);
+                setStreaks((prev) => ({ ...prev, [hId]: fresh }));
+                if (currentHabitId)
+                  await dispatch(
+                    fetchEntries({ habitId: currentHabitId } as any)
+                  );
+                else await dispatch(fetchEntries(undefined as any));
+                toast.success(t.checkinToast(res.current));
+              } catch (e: any) {
+                toast.error(e?.data?.error || e?.message || t.checkinErr);
+              }
+            }}
+            onEditSave={async (id: string, name: string) => {
+              if (!name.trim()) return;
+              await dispatch(updateHabit({ id, name: name.trim() } as any));
+              setEditHabit(null);
+            }}
+            onDelete={async (id: string) => {
+              await dispatch(deleteHabit(id as any));
+              if (currentHabitId === id) {
+                dispatch(setCurrentHabit(undefined as any));
+                await dispatch(fetchEntries(undefined as any));
+              }
+            }}
+          />
+        ),
+        ready: true,
+      },
+      {
+        id: "entries",
+        title: t.steps.entries,
+        content: (
+          <EntriesSection
+            lang={lang}
+            i18n={{
+              chooseHabit: t.chooseHabit,
+              mood: t.mood,
+              reflectionPh: t.reflectionPh,
+              addEntry: t.addEntry,
+              editEntry: t.editEntry,
+              deleteEntry: t.deleteEntry,
+              clearFilter: t.clearFilter,
+            }}
+            locale={locale}
+            habits={habits}
+            entries={entries}
+            currentHabitId={currentHabitId}
+            entryForm={entryForm}
+            setEntryForm={setEntryForm}
+            onAddEntry={async () => {
+              if (!entryForm.habitId) return;
+              await dispatch(
+                addEntry({
+                  habitId: entryForm.habitId,
+                  mood: entryForm.mood,
+                  reflection: entryForm.reflection || undefined,
+                } as any)
+              );
               if (currentHabitId)
                 await dispatch(
                   fetchEntries({ habitId: currentHabitId } as any)
                 );
               else await dispatch(fetchEntries(undefined as any));
-              toast.success(t.checkinToast(res.current));
-            } catch (e: any) {
-              toast.error(e?.data?.error || e?.message || t.checkinErr);
-            }
-          }}
-          onEditSave={async (id: string, name: string) => {
-            if (!name.trim()) return;
-            await dispatch(updateHabit({ id, name: name.trim() } as any));
-            setEditHabit(null);
-          }}
-          onDelete={async (id: string) => {
-            await dispatch(deleteHabit(id as any));
-            if (currentHabitId === id) {
+              try {
+                const s = await habitsService.getStreak(entryForm.habitId);
+                setStreaks((prev) => ({ ...prev, [entryForm.habitId]: s }));
+              } catch {}
+              setEntryForm((f) => ({ ...f, reflection: "" }));
+              try {
+                window.dispatchEvent(new CustomEvent("ms:entry-added"));
+              } catch {}
+            }}
+            onEditEntry={async (e: { id: string; reflection?: string }) => {
+              const newText =
+                prompt(t.editEntry + ":", e.reflection || "") ?? undefined;
+              if (newText === undefined) return;
+              await dispatch(
+                updateEntry({ id: e.id, data: { reflection: newText } } as any)
+              );
+              if (currentHabitId)
+                await dispatch(
+                  fetchEntries({ habitId: currentHabitId } as any)
+                );
+              else await dispatch(fetchEntries(undefined as any));
+            }}
+            onDeleteEntry={async (id: string) => {
+              await dispatch(deleteEntry(id as any));
+              if (currentHabitId)
+                await dispatch(
+                  fetchEntries({ habitId: currentHabitId } as any)
+                );
+              else await dispatch(fetchEntries(undefined as any));
+            }}
+            onClearFilter={async () => {
               dispatch(setCurrentHabit(undefined as any));
               await dispatch(fetchEntries(undefined as any));
-            }
-          }}
-        />
-      ),
-      ready: true,
-    },
-    {
-      id: "entries",
-      title: t.steps.entries,
-      content: (
-        <EntriesSection
-          lang={lang}
-          i18n={{
-            chooseHabit: t.chooseHabit,
-            mood: t.mood,
-            reflectionPh: t.reflectionPh,
-            addEntry: t.addEntry,
-            editEntry: t.editEntry,
-            deleteEntry: t.deleteEntry,
-            clearFilter: t.clearFilter,
-          }}
-          locale={locale}
-          habits={habits}
-          entries={entries}
-          currentHabitId={currentHabitId}
-          entryForm={entryForm}
-          setEntryForm={setEntryForm}
-          onAddEntry={async () => {
-            if (!entryForm.habitId) return;
-            await dispatch(
-              addEntry({
-                habitId: entryForm.habitId,
-                mood: entryForm.mood,
-                reflection: entryForm.reflection || undefined,
-              } as any)
-            );
-            if (currentHabitId)
-              await dispatch(fetchEntries({ habitId: currentHabitId } as any));
-            else await dispatch(fetchEntries(undefined as any));
-            try {
-              const s = await habitsService.getStreak(entryForm.habitId);
-              setStreaks((prev) => ({ ...prev, [entryForm.habitId]: s }));
-            } catch {}
-            setEntryForm((f) => ({ ...f, reflection: "" }));
-            try {
-              window.dispatchEvent(new CustomEvent("ms:entry-added"));
-            } catch {}
-          }}
-          onEditEntry={async (e: { id: string; reflection?: string }) => {
-            const newText =
-              prompt(t.editEntry + ":", e.reflection || "") ?? undefined;
-            if (newText === undefined) return;
-            await dispatch(
-              updateEntry({ id: e.id, data: { reflection: newText } } as any)
-            );
-            if (currentHabitId)
-              await dispatch(fetchEntries({ habitId: currentHabitId } as any));
-            else await dispatch(fetchEntries(undefined as any));
-          }}
-          onDeleteEntry={async (id: string) => {
-            await dispatch(deleteEntry(id as any));
-            if (currentHabitId)
-              await dispatch(fetchEntries({ habitId: currentHabitId } as any));
-            else await dispatch(fetchEntries(undefined as any));
-          }}
-          onClearFilter={async () => {
-            dispatch(setCurrentHabit(undefined as any));
-            await dispatch(fetchEntries(undefined as any));
-          }}
-        />
-      ),
-      ready: hasHabits,
-    },
-    {
-      id: "reports",
-      title: t.steps.reports,
-      content: (
-        <ReportsSection
-          lang={lang}
-          t={t}
-          entries={entries}
-          compute={{
-            line: groupEntriesDaily(entries),
-            heat: groupEntriesDaily(entries),
-            words: wordsFromNotes(entries),
-          }}
-        />
-      ),
-      ready: true,
-    },
-  ];
+            }}
+          />
+        ),
+        ready: hasHabits,
+      },
+      {
+        id: "reports",
+        title: t.steps.reports,
+        content: (
+          <ReportsSection
+            lang={lang}
+            t={t}
+            entries={entries}
+            compute={{
+              line: groupEntriesDaily(entries),
+              heat: groupEntriesDaily(entries),
+              words: wordsFromNotes(entries),
+            }}
+          />
+        ),
+        ready: true,
+      },
+    ],
+    [
+      lang,
+      t,
+      habits,
+      entries,
+      streaks,
+      currentHabitId,
+      entryForm.mood,
+      entryForm.reflection,
+    ]
+  );
 
+  // --- Render guards ---
   if (authLoading || (!user && typeof window !== "undefined")) {
     return (
       <main dir={dir} className="min-h-[60vh] grid place-items-center">
@@ -600,19 +631,20 @@ export default function DashboardMain() {
     );
   }
 
+  // --- Main UI ---
   return (
     <main
       dir={dir}
       className="min-h-screen bg-page text-[var(--ink-1)] pb-28 theme-smooth"
     >
-      <div className="pointer-events-none absolute inset-x-0 h-48 bg-gradient-to-r from-indigo-500/10 via-fuchsia-400/10 to-indigo-500/10 blur-2xl hide-in-focus" />
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-48 bg-gradient-to-r from-indigo-500/10 via-fuchsia-400/10 to-indigo-500/10 blur-2xl hide-in-focus" />
       <ConfettiSuccess />
 
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-[var(--line)] backdrop-blur bg-[var(--bg-0)]/75">
         <div className="mx-auto max-w-7xl px-3 md:px-6 flex items-center justify-between py-3">
           <div>
-            <div className="text-xs uppercase tracking-wider text-indigo-500">
+            <div className="text-[11px] uppercase tracking-wider text-mood/90">
               {t.dash}
             </div>
             <h1 className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-indigo-500 to-fuchsia-600 bg-clip-text text-transparent">
@@ -638,7 +670,7 @@ export default function DashboardMain() {
             <button
               type="button"
               className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
-              onClick={() => goToHabitsTab()}
+              onClick={goToHabitsTab}
             >
               {t.addHabit}
             </button>
@@ -675,11 +707,17 @@ export default function DashboardMain() {
               dispatch(setCurrentHabit(id as any));
               setEntryForm((f) => ({ ...f, habitId: id }));
             }}
-            onPickReport={() => goToReportsTab()}
+            onPickReport={goToReportsTab}
           />
         </div>
         <div className="flex items-center gap-2">
-          <ThemeToggle lang={lang} />
+          <ThemeToggle
+            lang={lang}
+            currentTheme={
+              mounted ? (resolvedTheme as "light" | "dark") : undefined
+            }
+            onChangeTheme={setTheme}
+          />
           <BackgroundPicker lang={lang} />
           <FocusModeToggle lang={lang} variant="chip" />
         </div>
@@ -865,18 +903,14 @@ function LegacyQuickLog({ habits, qlog, setQlog, onClose, onSave, t }: any) {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className={`px-3 py-2 border rounded bg-[var(--bg-1)] ${
-                  qlog.done ? "ring-2 ring-indigo-400" : ""
-                }`}
+                className={`px-3 py-2 border rounded bg-[var(--bg-1)] ${qlog.done ? "ring-2 ring-indigo-400" : ""}`}
                 onClick={() => setQlog((q: any) => ({ ...q, done: true }))}
               >
                 {t.qlogDone}
               </button>
               <button
                 type="button"
-                className={`px-3 py-2 border rounded bg-[var(--bg-1)] ${
-                  !qlog.done ? "ring-2 ring-indigo-400" : ""
-                }`}
+                className={`px-3 py-2 border rounded bg-[var(--bg-1)] ${!qlog.done ? "ring-2 ring-indigo-400" : ""}`}
                 onClick={() => setQlog((q: any) => ({ ...q, done: false }))}
               >
                 {t.qlogNotDone}
@@ -912,6 +946,8 @@ function computeBest(
   streaks: Record<string, Streak>
 ) {
   if (!habits.length || !entries.length) return null;
+
+  // Top habit by entries this week
   const from = new Date();
   const start = new Date(
     from.getFullYear(),
@@ -923,6 +959,7 @@ function computeBest(
     const d = new Date(e.createdAt);
     if (d >= start) counts.set(e.habitId, (counts.get(e.habitId) || 0) + 1);
   });
+
   let winner: any = null;
   let max = -1;
   habits.forEach((h) => {
@@ -932,6 +969,8 @@ function computeBest(
       winner = h;
     }
   });
+
+  // Points over last 7 days for the winner
   const now = new Date();
   const start2 = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
   const buckets = Array(7).fill(0);
@@ -942,9 +981,10 @@ function computeBest(
     const idx = Math.floor((+d - +start2) / 86400000);
     if (idx >= 0 && idx < 7) buckets[idx] += 1;
   });
+
   return {
     habit: winner,
     weekPoints: buckets,
-    streak: winner ? streaks[winner.id]?.current ?? 0 : 0,
+    streak: winner ? (streaks[winner.id]?.current ?? 0) : 0,
   };
 }
