@@ -521,3 +521,29 @@ body {
   outline-offset: 2px;
   border-radius: 1rem;
 }
+/* حركات بسيطة */
+@keyframes drift1 { 0%{transform:translate(-2%,-1%) scale(1.02);} 50%{transform:translate(2%,1%) scale(1.03);} 100%{transform:translate(-2%,-1%) scale(1.02);} }
+@keyframes drift2 { 0%{transform:translate(1%,-2%) scale(1.02);} 50%{transform:translate(-1%,2%) scale(1.01);} 100%{transform:translate(1%,-2%) scale(1.02);} }
+@keyframes lasersMove { to { background-position: 120% 0; } }
+
+[data-theme="serene"] {
+  --text: #1f2937;
+  --heading: #111827;
+  --muted: #6b7280;
+  --primary: #635bff;
+  --ring: rgba(99,102,241,0.18);
+  --chip-bg: #ffffff;
+  --card-bg: #ffffffcc;
+  --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+}
+
+[data-theme="neo"] {
+  --text: #0f172a;
+  --heading: #0b1220;
+  --muted: #475569;
+  --primary: #6d5ef1; 
+  --ring: rgba(109,94,241,0.28);
+  --chip-bg: #ffffff;
+  --card-bg: #ffffffe6;
+  --shadow: 0 16px 40px rgba(109, 94, 241, 0.20);
+}
