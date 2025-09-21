@@ -11,7 +11,7 @@ const OPTIONS: { key: MoodKey; label: string; emoji: string }[] = [
   { key: "calm",   label: "Calm",   emoji: "🫧" },
   { key: "focus",  label: "Focus",  emoji: "🎯" },
   { key: "energy", label: "Energy", emoji: "⚡" },
-  { key: "soft",   label: "Soft",   emoji: "🌙" },
+  { key: "soft",   label: "Soft",   emoji: "🌙" }, // ← كان "sad" وصححناه لـ soft
 ];
 
 const STORAGE_KEY = "mindsync:mood";
@@ -36,7 +36,8 @@ export default function MoodMenu() {
   const choose = (k: MoodKey) => {
     try {
       localStorage.setItem(STORAGE_KEY, k);
-      // Broadcast immediately within the same tab
+      // Broadcast to other trees/pages immediately (no refresh)
+      window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY, newValue: k }));
       window.dispatchEvent(new CustomEvent("ms:mood", { detail: k }));
     } catch {}
     dispatch(setMood(k));

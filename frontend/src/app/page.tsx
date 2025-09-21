@@ -32,12 +32,11 @@ import { useI18n } from "@/components/ui/i18n";
 import SpotlightBG from "@/components/effects/SpotlightBG";
 import MoodMenu from "@/components/mood/MoodMenu";
 
-// >>> New: responsive sidebar / mobile sheet <<<
+/** Responsive rail/sheet; client-side only navigation */
 import UtilityRail from "@/components/layout/UtilityRail";
 
-// ===================== Localized strings =====================
+/* ===================== Localized strings ===================== */
 const STRINGS = {
-  /* ... (unchanged strings) ... */
   en: {
     app: "MindSync",
     nav: {
@@ -231,7 +230,7 @@ const STRINGS = {
   },
 } as const;
 
-// ===================== helpers =====================
+/* ===================== helpers ===================== */
 function formatCompact(n: number, lang: "en" | "ar") {
   return new Intl.NumberFormat(lang === "ar" ? "ar" : "en", {
     notation: "compact",
@@ -250,7 +249,7 @@ function truncateEmail(email?: string) {
   return `${short}@${domain}`;
 }
 
-// ===== Quick toggles (Language + Theme in Navbar only) =====
+/* ===== Quick toggles (Language + Theme in Navbar only) ===== */
 function QuickToggles({
   lang,
   setLang,
@@ -268,7 +267,7 @@ function QuickToggles({
 }) {
   return (
     <div className="hidden items-center gap-2 md:flex">
-      {/* Responsive: small, unobtrusive toggle chip that remains tap-friendly */}
+      {/* Cheap language toggle — no hard refresh */}
       <button
         aria-label="Toggle language"
         onClick={() => setLang(lang === "en" ? "ar" : "en")}
@@ -298,7 +297,7 @@ function QuickToggles({
   );
 }
 
-// ===== User chip (email + menu) =====
+/* ===== User chip (email + menu) ===== */
 function UserChip({
   email,
   labels,
@@ -375,7 +374,7 @@ function UserChip({
   );
 }
 
-// ===================== PAGE =====================
+/* ===================== PAGE ===================== */
 export default function Home() {
   const { theme, setTheme } = useTheme();
   const dispatch = useAppDispatch();
@@ -384,12 +383,12 @@ export default function Home() {
   const { lang, setLang } = useI18n();
   const M = STRINGS[lang];
 
-  // Ensure auth state
+  // Initialize auth (no redirects here)
   useEffect(() => {
     dispatch(meThunk());
   }, [dispatch]);
 
-  // Ensure the whole site picks up mood variables on all pages
+  // Make mood CSS variables active site-wide after mount
   useEffect(() => {
     document.body.classList.add("moodify-all");
     return () => document.body.classList.remove("moodify-all");
@@ -493,7 +492,6 @@ export default function Home() {
           {/* ===================== NAV ===================== */}
           <header className="sticky top-0 z-50 border-b border-transparent bg-white/70 backdrop-blur-xl transition-colors dark:bg-gray-950/70 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-gray-950/60">
             <nav
-              /* Responsive: fluid wrapper */
               className="wrap flex items-center justify-between gap-6 py-4"
               aria-label="Primary"
             >
@@ -510,6 +508,7 @@ export default function Home() {
                 </span>
               </div>
 
+              {/* In-page anchors (no refresh) */}
               <div className="hidden items-center gap-6 md:flex">
                 <a
                   href="#features"
@@ -538,7 +537,6 @@ export default function Home() {
               </div>
 
               <div className="flex items-center gap-3">
-                {/* Mood selector */}
                 <MoodMenu />
 
                 {!user ? (
@@ -546,9 +544,11 @@ export default function Home() {
                     <Link
                       href="/login"
                       className="hidden text-sm text-gray-700 hover:text-gray-900 md:inline-block dark:text-gray-300 dark:hover:text-white"
+                      prefetch
                     >
                       {M.nav.login}
                     </Link>
+                    {/* MagneticCTA doesn't support `prefetch`; keep it clean */}
                     <MagneticCTA
                       href="/register"
                       className="hidden md:inline-flex"
@@ -561,6 +561,7 @@ export default function Home() {
                     <Link
                       href="/dashboard"
                       className="hidden rounded-full border border-gray-300 px-3 py-1 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 md:inline-block"
+                      prefetch
                     >
                       {M.nav.dashboard}
                     </Link>
@@ -583,9 +584,9 @@ export default function Home() {
                   theme={theme}
                   setTheme={setTheme}
                   labels={{
-                    themeLight: M.toggles.theme.light,
-                    themeDark: M.toggles.theme.dark,
-                    lang: M.toggles.lang,
+                    themeLight: STRINGS[lang].toggles.theme.light,
+                    themeDark: STRINGS[lang].toggles.theme.dark,
+                    lang: STRINGS[lang].toggles.lang,
                   }}
                 />
               </div>
@@ -596,7 +597,6 @@ export default function Home() {
           <section className="relative overflow-hidden">
             <div
               id="content"
-              /* Responsive: fluid wrapper + 2-col grid at md */
               className="wrap grid items-center gap-12 pt-14 pb-24 md:grid-cols-2 md:pt-20 md:pb-28"
             >
               {/* Left copy */}
@@ -619,6 +619,7 @@ export default function Home() {
 
                 <div className="mt-8 flex flex-wrap justify-center gap-4 md:justify-start">
                   {user ? (
+                    // No `prefetch` prop on custom component
                     <MagneticCTA href="/dashboard">
                       {M.nav.openDashboard}
                     </MagneticCTA>
@@ -628,6 +629,7 @@ export default function Home() {
                   <Link
                     href="/demo"
                     className="rounded-2xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mood)] dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+                    prefetch
                   >
                     {M.hero.secondary}
                   </Link>
@@ -665,7 +667,6 @@ export default function Home() {
                 <div className="relative">
                   <BreathingRing size={320} variant="soft" />
                   <div className="absolute inset-0 grid place-items-center">
-                    {/* Claim bubble */}
                     <div className="claim-bubble max-w-xs">
                       <p
                         className="text-[11px] font-semibold uppercase tracking-wider"
@@ -706,11 +707,10 @@ export default function Home() {
           >
             <div className="wrap text-center">
               <h2 className="text-3xl font-bold sm:text-4xl">
-                {M.featuresTitle}
+                {STRINGS[lang].featuresTitle}
               </h2>
-              {/* Responsive: auto grid across breakpoints with safe gaps */}
               <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
-                {M.features.map((f, idx) => (
+                {STRINGS[lang].features.map((f, idx) => (
                   <motion.div
                     key={idx}
                     initial={{ opacity: 0, y: 20 }}
@@ -734,7 +734,7 @@ export default function Home() {
           <section id="how" className="py-16">
             <div className="wrap">
               <h2 className="text-center text-3xl font-bold sm:text-4xl">
-                {M.howTitle}
+                {STRINGS[lang].howTitle}
               </h2>
               <HowItWorksScrolly steps={STEPS} className="mt-10" />
             </div>
@@ -789,7 +789,7 @@ export default function Home() {
           <section className="py-16">
             <div className="wrap wrap-narrow text-center">
               <h2 className="text-3xl font-bold sm:text-4xl">
-                {M.testimonialsTitle}
+                {STRINGS[lang].testimonialsTitle}
               </h2>
               <div className="mt-10">
                 <TestimonialMarquee
@@ -815,7 +815,8 @@ export default function Home() {
                         "The AI suggestions are scarily accurate and super helpful.",
                     },
                   ]}
-                  speed={28}
+                  /** Updated prop name: durationSec (not `speed`) */
+                  durationSec={28}
                   dir={lang === "ar" ? "rtl" : "ltr"}
                   className="mt-10"
                 />
@@ -827,7 +828,7 @@ export default function Home() {
           <section className="bg-gray-50 py-16 dark:bg-gray-900/40">
             <div className="wrap wrap-narrow">
               <h2 className="text-center text-3xl font-bold sm:text-4xl">
-                {M.faqsTitle}
+                {STRINGS[lang].faqsTitle}
               </h2>
 
               <FAQSearch
@@ -849,6 +850,7 @@ export default function Home() {
                 }}
               />
 
+              {/* JSON-LD */}
               <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON) }}
@@ -860,7 +862,7 @@ export default function Home() {
           <section id="pricing" className="py-16">
             <div className="wrap">
               <h2 className="text-center text-3xl font-bold sm:text-4xl">
-                {M.pricingTitle}
+                {STRINGS[lang].pricingTitle}
               </h2>
               <PricingToggle
                 plans={PRICING_PLANS}
@@ -875,10 +877,10 @@ export default function Home() {
           <section id="blog" className="bg-gray-50 py-16 dark:bg-gray-900/40">
             <div className="wrap">
               <h2 className="text-center text-3xl font-bold sm:text-4xl">
-                {M.blogTitle}
+                {STRINGS[lang].blogTitle}
               </h2>
               <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
-                {M.blog.map((b, i) => (
+                {STRINGS[lang].blog.map((b, i) => (
                   <article
                     key={i}
                     className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
@@ -888,13 +890,13 @@ export default function Home() {
                     </div>
                     <h3 className="mt-2 text-lg font-semibold">{b.title}</h3>
                     <p className="mt-1 text-sm text-gray-500">
-                      {b.minutes} {M.units.minRead}
+                      {b.minutes} {STRINGS[lang].units.minRead}
                     </p>
                     <Link
                       href="#"
                       className="mt-4 inline-block text-sm font-medium text-mood hover:underline"
                     >
-                      {M.units.read}
+                      {STRINGS[lang].units.read}
                     </Link>
                   </article>
                 ))}
@@ -906,22 +908,18 @@ export default function Home() {
           <footer className="border-t border-gray-200 bg-white/80 py-10 text-sm backdrop-blur-sm dark:border-gray-800 dark:bg-gray-950/70">
             <div className="wrap flex flex-col items-center justify-between gap-4 md:flex-row">
               <div className="text-gray-600 dark:text-gray-300">
-                {M.footer.rights(new Date().getFullYear())}
+                {STRINGS[lang].footer.rights(new Date().getFullYear())}
               </div>
               <div className="flex items-center gap-5 text-gray-600 dark:text-gray-300">
-                <Link href="#">{M.footer.privacy}</Link>
-                <Link href="#">{M.footer.contact}</Link>
-                <Link href="#">{M.footer.careers}</Link>
+                <Link href="#">{STRINGS[lang].footer.privacy}</Link>
+                <Link href="#">{STRINGS[lang].footer.contact}</Link>
+                <Link href="#">{STRINGS[lang].footer.careers}</Link>
               </div>
             </div>
           </footer>
         </div>
 
-        {/* >>> Mount the responsive rail once. 
-            - On desktop: a fixed sidebar aligned to the wrap edge.
-            - On mobile: FAB + bottom sheet. 
-            - Auto-flips for RTL via `dir` prop. */}
-        {/* Mobile only: hide on lg+ so it never shows on desktop */}
+        {/* Mobile rail only (no refresh, no window.location) */}
         <div className="lg:hidden">
           <UtilityRail dir={dir as "ltr" | "rtl"} />
         </div>
@@ -930,7 +928,7 @@ export default function Home() {
   );
 }
 
-// ===================== UI Helpers =====================
+/* ===================== UI Helpers ===================== */
 function Stat({
   icon,
   value,
@@ -955,7 +953,7 @@ function Stat({
   );
 }
 
-// ===== Dashboard (Pro) preview card =====
+/* ===== Dashboard (Pro) preview card ===== */
 function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
   const [range, setRange] = useState<"7d" | "14d" | "30d">("7d");
 
@@ -973,7 +971,7 @@ function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
       ? {
           title: "عرض لوحة التحكم",
           habit: "إكمال العادات",
-          range: { "7d": "7 أيام", "14d": "14 يوم", "30d": "30 يوم" },
+          range: { "7d": "7 أيام", "14d": "14 يوم", "30d": "30 يوم" } as const,
           morning: "تأمل الصباح",
           evening: "تأمل المساء",
           sampleMorning:
@@ -987,7 +985,11 @@ function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
       : {
           title: "Dashboard preview",
           habit: "Habit completion",
-          range: { "7d": "7 days", "14d": "14 days", "30d": "30 days" },
+          range: {
+            "7d": "7 days",
+            "14d": "14 days",
+            "30d": "30 days",
+          } as const,
           morning: "Morning reflection",
           evening: "Evening reflection",
           sampleMorning:
@@ -1014,19 +1016,19 @@ function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
             {copy.title}
           </h3>
 
-          {/* Responsive: compact segmented control */}
+          {/* Segmented control (no refresh) */}
           <div className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-1 text-xs dark:border-gray-700 dark:bg-gray-950">
-            {["7d", "14d", "30d"].map((k) => (
+            {(["7d", "14d", "30d"] as const).map((k) => (
               <button
                 key={k}
-                onClick={() => setRange(k as "7d" | "14d" | "30d")}
+                onClick={() => setRange(k)}
                 className={
-                  range === (k as "7d" | "14d" | "30d")
+                  range === k
                     ? "rounded-lg bg-[var(--mood)] px-2.5 py-1 text-white"
                     : "rounded-lg px-2.5 py-1 text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
                 }
               >
-                {copy.range[k as keyof typeof copy.range]}
+                {copy.range[k]}
               </button>
             ))}
           </div>
@@ -1060,7 +1062,7 @@ function DashboardPreviewPro({ lang }: { lang: "en" | "ar" }) {
   );
 }
 
-// ===== Sub components =====
+/* ===== Sub components ===== */
 function Chip({ label }: { label: string }) {
   return (
     <span className="rounded-lg bg-[color-mix(in_oklab,white,rgba(var(--mood-rgb),20%))] px-2.5 py-1 text-xs font-medium text-mood dark:bg-[color-mix(in_oklab,#0b1220,rgba(var(--mood-rgb),28%))]">

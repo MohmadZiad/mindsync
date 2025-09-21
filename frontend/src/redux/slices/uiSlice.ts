@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-export type Mood = "calm" | "focus" | "energy" | "soft";
+type Mood = "calm" | "focus" | "energy" | "soft";
 
 interface UIState {
   focusMode: boolean;
@@ -9,7 +9,7 @@ interface UIState {
 
 const initialState: UIState = {
   focusMode: false,
-  mood: "calm", // SSR-safe default; MoodBody will sync from localStorage on client
+  mood: "calm",
 };
 
 const uiSlice = createSlice({

@@ -3,7 +3,6 @@ import "./globals.css";
 import Providers from "./Providers";
 import PageTransition from "@/components/layout/PageTransition";
 import MoodBody from "@/components/mood/MoodBody";
-import MoodBootstrap from "@/components/mood/MoodBootstrap";
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
@@ -50,14 +49,14 @@ export default function RootLayout({
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
-        {/* 1) Theme boot (dark/light) */}
+        {/* 1) Theme boot (dark/light) - runs before hydration, no React state */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-(function() {
+(function () {
   try {
     var d = document.documentElement;
-    var saved = localStorage.getItem('ms-theme'); // ✅ key موحّد
+    var saved = localStorage.getItem('ms-theme');
     var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (saved === 'dark' || (!saved && prefersDark)) d.classList.add('dark');
     else d.classList.remove('dark');
@@ -66,30 +65,26 @@ export default function RootLayout({
           }}
         />
 
-        {/* 2) Mood / Focus boot (pre-hydration) */}
+        {/* 2) Focus/Mood flags - no React */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-(function() {
+(function () {
   try {
     var d = document.documentElement;
-    // Focus Mode
     var f = localStorage.getItem('ms-focus');
-    if (f === '1') d.setAttribute('data-focus','true');
+    if (f === '1') d.setAttribute('data-focus', 'true');
     else d.removeAttribute('data-focus');
   } catch (e) {}
 })();`.trim(),
           }}
         />
 
-        {/* 3) MoodBootstrap component (mood colors bridge) */}
-        <MoodBootstrap />
-
-        {/* 4) Header elevation on scroll */}
+        {/* 3) Header elevation on scroll */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-(function() {
+(function () {
   function apply() {
     try { document.body.classList.toggle('scrolled', window.scrollY > 8); } catch (e) {}
   }
@@ -106,9 +101,13 @@ export default function RootLayout({
         />
       </head>
 
-      <body className="bg-page text-[var(--ink-1)] antialiased overflow-x-hidden">
+      {/* 👇 مهم: تجاهُل اختلافات الـ hydration على الـ body */}
+      <body
+        className="bg-page text-[var(--ink-1)] antialiased overflow-x-hidden"
+        suppressHydrationWarning
+      >
         <Providers>
-          {/* Keeps <body> classes in sync with Redux and persists on change */}
+          {/* يزامن كلاسات/ألوان المزاج بعد الهيدرشن */}
           <MoodBody />
           <PageTransition>{children}</PageTransition>
         </Providers>

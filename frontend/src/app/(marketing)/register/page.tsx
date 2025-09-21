@@ -52,6 +52,8 @@ const STR = {
     strong: "Strong",
     mismatch: "Passwords don’t match",
     pickTheme: "Theme",
+    successTitle: "Welcome aboard! 🎉",
+    successSub: "Redirecting to your next step…",
   },
   ar: {
     title: "إنشاء حساب",
@@ -75,6 +77,8 @@ const STR = {
     strong: "قوية",
     mismatch: "كلمتا المرور غير متطابقتين",
     pickTheme: "اختر التصميم",
+    successTitle: "أهلاً بك! 🎉",
+    successSub: "جاري تحويلك للخطوة التالية…",
   },
 } as const;
 
@@ -284,7 +288,7 @@ function SocialButtons() {
 }
 
 /* ========================================================================== */
-/*                             Password strength utils                         */
+/*                         Password strength (enhanced)                        */
 /* ========================================================================== */
 
 function scorePassword(pw: string) {
@@ -306,6 +310,35 @@ function strengthLabel(score: number, t: (typeof STR)["en"]) {
   if (score < 55) return t.fair;
   if (score < 80) return t.good;
   return t.strong;
+}
+
+function StrengthChips({ password }: { password: string }) {
+  const checks = [
+    { ok: password.length >= 8, label: "8+ chars" },
+    { ok: /[a-z]/.test(password), label: "lowercase" },
+    { ok: /[A-Z]/.test(password), label: "UPPERCASE" },
+    { ok: /[0-9]/.test(password), label: "number" },
+    { ok: /[^A-Za-z0-9]/.test(password), label: "symbol" },
+  ];
+  return (
+    <div className="mt-2 flex flex-wrap gap-1">
+      {checks.map((c, i) => (
+        <motion.span
+          key={c.label}
+          className={`text-[11px] px-2 py-1 rounded-full ${
+            c.ok
+              ? "bg-emerald-500/15 text-emerald-600"
+              : "bg-gray-200 text-gray-500"
+          }`}
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: i * 0.04 }}
+        >
+          {c.label}
+        </motion.span>
+      ))}
+    </div>
+  );
 }
 
 /* ========================================================================== */
@@ -338,7 +371,7 @@ export default function RegisterPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const search = useSearchParams();
-  const next = search.get("next") || "/"; // ==> إلى الصفحة الرئيسية افتراضياً
+  const next = search.get("next") || "/";
 
   const { user, loading, error } = useAppSelector((s) => s.auth);
 
@@ -356,6 +389,20 @@ export default function RegisterPage() {
   const [showPw, setShowPw] = useState(false);
   const [agree, setAgree] = useState(false);
   const [justCreated, setJustCreated] = useState(false);
+
+  // lightweight ambient particles (client-only random to avoid SSR mismatch)
+  const [particles, setParticles] = useState<
+    { left: string; top: string; d: number; delay: number }[]
+  >([]);
+  useEffect(() => {
+    const list = Array.from({ length: 24 }).map(() => ({
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      d: Math.random() * 12 + 10,
+      delay: Math.random() * 5,
+    }));
+    setParticles(list);
+  }, []);
 
   // prefetch
   useEffect(() => {
@@ -396,11 +443,11 @@ export default function RegisterPage() {
     );
     if ((action as any)?.meta?.requestStatus === "fulfilled") {
       setJustCreated(true);
-      setTimeout(() => router.replace(next), 700);
+      setTimeout(() => router.replace(next), 900);
     }
   }
 
-  const { theme } = useDuoTheme();
+  const { theme, setTheme } = useDuoTheme();
 
   if (user) {
     return (
@@ -414,6 +461,19 @@ export default function RegisterPage() {
     <ThemeProvider>
       <main dir={dir} className="relative min-h-screen">
         {theme === "neo" ? <BGNeo /> : <BGSerene />}
+
+        {/* ambient particles (subtle) */}
+        <div className="pointer-events-none fixed inset-0">
+          {particles.map((p, i) => (
+            <motion.span
+              key={i}
+              className="absolute block w-1 h-1 rounded-full bg-white/30"
+              style={{ left: p.left, top: p.top }}
+              animate={{ y: [0, -20, 0], opacity: [0, 0.6, 0] }}
+              transition={{ duration: p.d, delay: p.delay, repeat: Infinity }}
+            />
+          ))}
+        </div>
 
         <div className="relative z-10 min-h-screen grid place-items-center px-4">
           {/* glow ring */}
@@ -464,21 +524,34 @@ export default function RegisterPage() {
                   {t.subtitle}
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  const nextLang = lang === "ar" ? "en" : "ar";
-                  setLang(nextLang);
-                  localStorage.setItem("ms_lang", nextLang);
-                }}
-                className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-gray-50"
-                style={{
-                  borderColor: "var(--ring)",
-                  background: "var(--chip-bg)",
-                  color: "var(--text)",
-                }}
-              >
-                {lang === "ar" ? "EN" : "ع"}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const nextLang = lang === "ar" ? "en" : "ar";
+                    setLang(nextLang);
+                    localStorage.setItem("ms_lang", nextLang);
+                  }}
+                  className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-gray-50"
+                  style={{
+                    borderColor: "var(--ring)",
+                    background: "var(--chip-bg)",
+                    color: "var(--text)",
+                  }}
+                >
+                  {lang === "ar" ? "EN" : "ع"}
+                </button>
+                <button
+                  onClick={() => setTheme(theme === "neo" ? "serene" : "neo")}
+                  className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-gray-50"
+                  style={{
+                    borderColor: "var(--ring)",
+                    background: "var(--chip-bg)",
+                    color: "var(--text)",
+                  }}
+                >
+                  {STR[lang].pickTheme}
+                </button>
+              </div>
             </div>
 
             {/* form */}
@@ -564,7 +637,7 @@ export default function RegisterPage() {
                   </button>
                 </div>
 
-                {/* strength meter */}
+                {/* strength meter (enhanced) */}
                 <div className="mt-2">
                   <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
                     <motion.div
@@ -588,6 +661,8 @@ export default function RegisterPage() {
                   >
                     {strengthLabel(score, STR[lang])}
                   </div>
+
+                  <StrengthChips password={password} />
                 </div>
               </label>
 
@@ -651,13 +726,13 @@ export default function RegisterPage() {
                 )}
               </AnimatePresence>
 
-              {/* submit */}
+              {/* submit (with glow) */}
               <motion.button
                 type="submit"
                 disabled={!canSubmit}
                 whileHover={{ y: -1 }}
                 whileTap={{ y: 0 }}
-                className="w-full rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
+                className="w-full relative overflow-hidden rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
                 style={{
                   background: "linear-gradient(90deg,var(--p1),var(--p2))",
                   color: "#fff",
@@ -666,7 +741,22 @@ export default function RegisterPage() {
                 }}
                 onClick={onSubmit}
               >
-                {loading ? STR[lang].loading : STR[lang].submit}
+                <span className="relative z-10">
+                  {loading ? STR[lang].loading : STR[lang].submit}
+                </span>
+                <motion.span
+                  aria-hidden
+                  className="absolute inset-0 blur-lg opacity-60"
+                  animate={{ scale: [1, 1.06, 1], opacity: [0.45, 0.7, 0.45] }}
+                  transition={{
+                    duration: 2.2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  style={{
+                    background: "linear-gradient(90deg,var(--p1),var(--p2))",
+                  }}
+                />
               </motion.button>
 
               {/* socials */}
@@ -700,22 +790,56 @@ export default function RegisterPage() {
                 </Link>
               </div>
             </form>
+
+            {/* success overlay */}
+            <AnimatePresence>
+              {justCreated && (
+                <motion.div
+                  className="absolute inset-0 rounded-3xl bg-white/80 grid place-items-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <div className="text-center">
+                    <motion.div
+                      className="mx-auto mb-4 size-16 rounded-full bg-emerald-500 grid place-items-center text-white"
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ type: "spring", stiffness: 200 }}
+                    >
+                      <svg
+                        width="28"
+                        height="28"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                      >
+                        <path
+                          d="M5 13l4 4L19 7"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </motion.div>
+                    <div
+                      className="text-lg font-bold"
+                      style={{ color: "var(--heading)" }}
+                    >
+                      {STR[lang].successTitle}
+                    </div>
+                    <div
+                      className="text-sm mt-1"
+                      style={{ color: "var(--muted)" }}
+                    >
+                      {STR[lang].successSub}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </div>
-
-        {/* success sparkle */}
-        <AnimatePresence>
-          {justCreated && (
-            <motion.div
-              className="pointer-events-none fixed inset-0"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <div className="absolute inset-0 [background-image:radial-gradient(circle_at_20%_30%,rgba(255,255,255,.8)_0_2px,transparent_3px),radial-gradient(circle_at_80%_60%,rgba(255,255,255,.75)_0_2px,transparent_3px)] [background-size:10px_10px] mix-blend-screen" />
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* tokens */}
         <style jsx global>{`

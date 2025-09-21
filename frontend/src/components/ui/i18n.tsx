@@ -14,6 +14,7 @@ type Dict = {
   prev: string;
   next: string;
   aiReflection: string;
+  day :string
   days: string;
   language: string;
   generate: string;
@@ -74,6 +75,7 @@ export const DICT: Record<Lang, Dict> = {
     prev: "Previous",
     next: "Next",
     aiReflection: "AI Reflection (quick options)",
+    day: "Day",         
     days: "Days",
     language: "Language",
     generate: "Generate",
@@ -132,6 +134,7 @@ export const DICT: Record<Lang, Dict> = {
     prev: "السابق",
     next: "التالي",
     aiReflection: "تلخيص بالذكاء (خيارات سريعة)",
+    day :"اليوم",
     days: "الأيام",
     language: "اللغة",
     generate: "توليد",

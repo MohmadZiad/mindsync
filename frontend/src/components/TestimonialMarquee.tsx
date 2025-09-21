@@ -2,6 +2,9 @@
 
 import * as React from "react";
 
+/* ========================================================================
+   Types
+   ======================================================================== */
 type Testimonial = {
   name: string;
   quote: string;
@@ -11,12 +14,17 @@ type Props = {
   items: Testimonial[];
   dir?: "ltr" | "rtl";
   className?: string;
-  /** المدة بالثواني للّفة كاملة */
+  /** Duration (seconds) for one full loop */
   durationSec?: number;
-  /** إيقاف الحركة عند الـ hover (افتراضي true) */
+  /** Pause animation on hover (default true) */
   pauseOnHover?: boolean;
 };
 
+/* ========================================================================
+   Component: TestimonialMarquee
+   - Creates an infinite scrolling marquee with testimonial cards
+   - Items are duplicated to ensure a seamless loop
+   ======================================================================== */
 export default function TestimonialMarquee({
   items,
   dir = "ltr",
@@ -24,12 +32,11 @@ export default function TestimonialMarquee({
   durationSec = 28,
   pauseOnHover = true,
 }: Props) {
-  // نكرّر الآيتمز مرّتين للوب سلس
+  // Duplicate the items so the marquee loop looks continuous
   const loop = React.useMemo(() => [...items, ...items], [items]);
 
+  // Pass duration as a custom CSS property (used in animation keyframes)
   const marqueeStyle: React.CSSProperties = {
-    // نمرّر المدة لـ CSS عبر custom prop
-    // وبتكون مستخدمة في .marquee-inner بالـ CSS
     ["--marquee-dur" as any]: `${durationSec}s`,
   };
 
@@ -49,7 +56,11 @@ export default function TestimonialMarquee({
   );
 }
 
-/** صف واحد من الكروت */
+/* ========================================================================
+   Sub-component: Row
+   - Renders one row of testimonial cards
+   - Direction (LTR / RTL) is applied to text alignment
+   ======================================================================== */
 function Row({
   items,
   dir,
@@ -74,6 +85,7 @@ function Row({
           }}
         >
           <div className="flex items-start gap-3">
+            {/* Placeholder avatar bubble (can be replaced with real avatar later) */}
             <div className="mt-1 h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-pink-400 to-purple-500" />
             <figcaption className="text-left">
               <strong className="block">{t.name}</strong>

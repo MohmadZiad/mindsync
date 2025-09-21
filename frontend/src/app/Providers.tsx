@@ -1,3 +1,4 @@
+// app/Providers.tsx
 "use client";
 
 import React, { useEffect } from "react";
@@ -20,8 +21,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       } catch {}
     };
 
-    // Apply once on mount
-    apply();
+    apply(); // once
 
     // Cross-tab updates
     const onStorage = (e: StorageEvent) => {
@@ -29,7 +29,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       apply();
     };
 
-    // Same-tab instant updates
+    // Same-tab instant updates (يُطلق من FocusModeToggle)
     const onCustom = () => apply();
 
     window.addEventListener("storage", onStorage);
