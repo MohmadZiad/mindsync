@@ -8,7 +8,10 @@
     "dev:legacy": "next dev --no-turbo",
     "build": "next build",
     "build:turbo": "next build --turbo",
-    "start": "next start"
+    "start": "next start",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

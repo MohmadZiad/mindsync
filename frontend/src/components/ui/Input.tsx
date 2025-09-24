@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { motion } from "framer-motion";
 import { cn } from "./cn";
 
 type Size = "sm" | "md" | "lg";
@@ -35,18 +36,21 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     // ثبّت النوع بعد إزالة التضارب
     const sz: Size = uiSize;
     const withIcons = Boolean(leftIcon || rightIcon);
+    const hasError = Boolean(error);
 
     const inputEl = (
-      <input
+      <motion.input
         ref={ref}
         className={cn(
           "input w-full bg-[var(--bg-0)] border border-base theme-smooth",
           sizes[sz],
           withIcons && "pl-9 pr-9",
-          error && "border-[hsl(var(--danger))] focus:ring-0",
+          hasError && "border-[hsl(var(--danger))] focus:ring-0",
           className
         )}
-        aria-invalid={!!error || undefined}
+        aria-invalid={hasError || undefined}
+        whileFocus={{ scale: 1.01 }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
         {...rest}
       />
     );
@@ -72,7 +76,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <div
             className={cn(
               "mt-1 text-xs",
-              error ? "text-[hsl(var(--danger))]" : "text-muted"
+              hasError ? "text-[hsl(var(--danger))]" : "text-muted"
             )}
           >
             {typeof error === "string" ? error : hint}

@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { motion } from "framer-motion";
 import { cn } from "./cn";
 
 type Variant = "primary" | "muted" | "danger" | "success" | "ghost" | "outline";
@@ -15,7 +16,7 @@ export interface ButtonProps
   fullWidth?: boolean;
 }
 
-export function Button({
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   className,
   variant = "primary",
   size = "md",
@@ -26,7 +27,7 @@ export function Button({
   children,
   disabled,
   ...props
-}: ButtonProps) {
+}, ref) => {
   const base = "btn theme-smooth touch";
   const variants: Record<Variant, string> = {
     primary: "btn--primary",
@@ -43,7 +44,8 @@ export function Button({
   };
 
   return (
-    <button
+    <motion.button
+      ref={ref}
       className={cn(
         base,
         variants[variant],
@@ -53,6 +55,9 @@ export function Button({
         className
       )}
       disabled={disabled || loading}
+      whileHover={{ scale: disabled || loading ? 1 : 1.02 }}
+      whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
+      transition={{ type: "spring", stiffness: 400, damping: 17 }}
       {...props}
     >
       <span className="inline-flex items-center gap-2">
@@ -68,6 +73,8 @@ export function Button({
         <span className="truncate">{children}</span>
         {rightIcon ? <span className="inline-flex">{rightIcon}</span> : null}
       </span>
-    </button>
+    </motion.button>
   );
-}
+});
+
+Button.displayName = "Button";

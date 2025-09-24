@@ -1,38 +1,43 @@
 "use client";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Command } from "cmdk";
 import { useI18n } from "@/components/ui/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function CommandPalette({
+interface CommandPaletteProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onQuickHabit,
   onProHabit,
   onQuickLog,
   onProEntry,
-}: {
+}
+
+export default function CommandPalette({
+  open,
+  onOpenChange,
   onQuickHabit: () => void;
   onProHabit: () => void;
   onQuickLog: () => void;
   onProEntry: () => void;
-}) {
+}: CommandPaletteProps) {
   const { t, lang } = useI18n();
   const F = t.flows;
-  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        setOpen(true);
+        onOpenChange(true);
       }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, []);
+  }, [onOpenChange]);
 
   return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <AnimatePresence>
           {open && (
@@ -62,7 +67,7 @@ export default function CommandPalette({
                         <Command.Item
                           onSelect={() => {
                             onQuickHabit();
-                            setOpen(false);
+                            onOpenChange(false);
                           }}
                         >
                           {F.fabAddHabit}
@@ -70,7 +75,7 @@ export default function CommandPalette({
                         <Command.Item
                           onSelect={() => {
                             onProHabit();
-                            setOpen(false);
+                            onOpenChange(false);
                           }}
                         >
                           {F.fabAddHabitPro}
@@ -78,7 +83,7 @@ export default function CommandPalette({
                         <Command.Item
                           onSelect={() => {
                             onQuickLog();
-                            setOpen(false);
+                            onOpenChange(false);
                           }}
                         >
                           {F.fabQuickLog}
@@ -86,7 +91,7 @@ export default function CommandPalette({
                         <Command.Item
                           onSelect={() => {
                             onProEntry();
-                            setOpen(false);
+                            onOpenChange(false);
                           }}
                         >
                           {F.fabFullEntry}
