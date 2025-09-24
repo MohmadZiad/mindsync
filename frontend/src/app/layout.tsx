@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Providers from "./Providers";
-import PageTransition from "@/components/layout/PageTransition";
-import MoodBody from "@/components/mood/MoodBody";
+import PageTransition from "@/ui/layout/PageTransition";
+import MoodBody from "@/ui/mood/MoodBody";
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||

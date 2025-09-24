@@ -21,7 +21,7 @@ import type { MotionValue } from "framer-motion";
 import { FaFacebookF, FaGithub, FaGoogle } from "react-icons/fa";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { registerThunk, clearError, meThunk } from "@/redux/slices/authSlice";
-
+import { useI18n } from "@/ui/i18n";
 /* ========================================================================== */
 /*                                    i18n                                    */
 /* ========================================================================== */

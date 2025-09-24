@@ -64,6 +64,29 @@ frontend/src/
 - `components/hooks/` → `hooks/`
 - `utils/` → `lib/`
 
+### Batch 3: Final Components & Cleanup
+- `contexts/LanguageContext.tsx` → `lib/contexts/LanguageContext.tsx`
+- `components/AuthBootstrap.tsx` → `features/auth/components/AuthBootstrap.tsx`
+- `components/layout/` → `ui/layout/`
+- `components/effects/` → `ui/effects/`
+- `components/mood/` → `ui/mood/`
+- `components/primitives/` → `ui/primitives/`
+- `components/addons/` → `ui/addons/`
+- `loginTheme/` → `ui/loginTheme/`
+- `components/MagneticCTA.tsx` → `ui/MagneticCTA.tsx`
+- `components/Counter.tsx` → `ui/Counter.tsx`
+- `components/BreathingRing.tsx` → `ui/BreathingRing.tsx`
+- `components/TestimonialMarquee.tsx` → `ui/TestimonialMarquee.tsx`
+- `components/FAQ.tsx` → `ui/FAQ.tsx`
+- `components/PricingToggle.tsx` → `ui/PricingToggle.tsx`
+- `components/HowItWorksScrolly.tsx` → `ui/HowItWorksScrolly.tsx`
+- `components/StepTabs.tsx` → `ui/StepTabs.tsx`
+- `components/CircadianBackground.tsx` → `ui/CircadianBackground.tsx`
+- `components/ClientDashboard.tsx` → `features/dashboard/ClientDashboard.tsx`
+- `components/GradientHeading.tsx` → `ui/GradientHeading.tsx`
+- `components/UtilityRail.tsx` → `ui/UtilityRail.tsx`
+- `components/EmojiPickerButton.tsx` → `ui/EmojiPickerButton.tsx`
+
 ### Future Batches (Planned)
 - Batch 3: Remaining components and cleanup
 - Batch 4: Documentation and final polish
@@ -72,6 +95,8 @@ frontend/src/
 - **UI components**: Pure presentational components with no business logic
 - **Feature components**: Components tied to specific domain logic
 - **Shared utilities**: Cross-cutting concerns and helpers
+- **Layout/Effects**: UI infrastructure components
+- **Auth**: Authentication-specific components
 
 ## Import Impact
 All components moved will require import path updates in consuming files.

@@ -20,20 +20,20 @@ import {
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { meThunk, logoutThunk } from "@/redux/slices/authSlice";
 
-import MagneticCTA from "@/components/MagneticCTA";
-import Counter from "@/components/Counter";
-import BreathingRing from "@/components/BreathingRing";
-import TestimonialMarquee from "@/components/TestimonialMarquee";
-import FAQSearch, { getFaqJsonLd, type FaqItem } from "@/components/FAQ";
-import PricingToggle from "@/components/PricingToggle";
-import HowItWorksScrolly from "@/components/HowItWorksScrolly";
+import MagneticCTA from "@/ui/MagneticCTA";
+import Counter from "@/ui/Counter";
+import BreathingRing from "@/ui/BreathingRing";
+import TestimonialMarquee from "@/ui/TestimonialMarquee";
+import FAQSearch, { getFaqJsonLd, type FaqItem } from "@/ui/FAQ";
+import PricingToggle from "@/ui/PricingToggle";
+import HowItWorksScrolly from "@/ui/HowItWorksScrolly";
 
 import { useI18n } from "@/ui/i18n";
-import SpotlightBG from "@/components/effects/SpotlightBG";
-import MoodMenu from "@/components/mood/MoodMenu";
+import SpotlightBG from "@/ui/effects/SpotlightBG";
+import MoodMenu from "@/ui/mood/MoodMenu";
 
 /** Responsive rail/sheet; client-side only navigation */
-import UtilityRail from "@/components/layout/UtilityRail";
+import UtilityRail from "@/ui/layout/UtilityRail";
 
 /* ===================== Localized strings ===================== */
 const STRINGS = {
