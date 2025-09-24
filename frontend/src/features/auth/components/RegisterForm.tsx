@@ -11,6 +11,7 @@ import { registerThunk, clearError } from "@/redux/slices/authSlice";
 import { useI18n } from "@/components/ui/i18n";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import AuthProviders from "./AuthProviders";
 
 function PasswordStrengthIndicator({ password }: { password: string }) {
   const checks = [
@@ -102,7 +103,7 @@ export default function RegisterForm() {
         email: formData.email,
         password: formData.password,
         name: formData.name,
-      } as any)
+      })
     );
     
     if (result.meta.requestStatus === "fulfilled") {
@@ -233,6 +234,8 @@ export default function RegisterForm() {
         >
           {loading ? labels.loading : labels.submit}
         </Button>
+
+        <AuthProviders />
 
         <div className="text-center">
           <span className="text-sm text-gray-600 dark:text-gray-400">

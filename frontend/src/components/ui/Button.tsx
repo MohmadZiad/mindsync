@@ -1,6 +1,8 @@
 "use client";
+
 import * as React from "react";
 import { motion } from "framer-motion";
+
 import { cn } from "./cn";
 
 type Variant = "primary" | "muted" | "danger" | "success" | "ghost" | "outline";
@@ -33,7 +35,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
     primary: "btn--primary",
     muted: "btn--ghost",
     ghost: "btn--ghost",
-    outline: "border border-base bg-[var(--bg-1)]",
+    outline: "border border-base bg-[var(--bg-1)] hover:bg-[var(--bg-2)]",
     danger: "bg-[hsl(var(--danger))] text-white hover:opacity-90",
     success: "bg-[hsl(var(--success))] text-white hover:opacity-90",
   };

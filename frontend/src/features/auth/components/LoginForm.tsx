@@ -11,12 +11,13 @@ import { loginThunk, clearError } from "@/redux/slices/authSlice";
 import { useI18n } from "@/components/ui/i18n";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import AuthProviders from "./AuthProviders";
 
 export default function LoginForm() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t, lang } = useI18n();
+  const { lang } = useI18n();
   
   const { loading, error } = useAppSelector((s) => s.auth);
   const next = searchParams.get("next") || "/dashboard";
@@ -34,7 +35,7 @@ export default function LoginForm() {
     e.preventDefault();
     if (!email.trim() || !password.trim()) return;
 
-    const result = await dispatch(loginThunk({ email, password, remember } as any));
+    const result = await dispatch(loginThunk({ email, password }));
     if (result.meta.requestStatus === "fulfilled") {
       router.replace(next);
     }
@@ -143,6 +144,8 @@ export default function LoginForm() {
         >
           {loading ? labels.loading : labels.submit}
         </Button>
+
+        <AuthProviders />
 
         <div className="text-center">
           <span className="text-sm text-gray-600 dark:text-gray-400">

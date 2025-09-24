@@ -7,6 +7,10 @@ import { useI18n } from "@/components/ui/i18n";
 import AiReflectionControls from "@/components/AiReflectionControls";
 import StreakMeCard from "@/components/StreakMeCard";
 import WeeklyGrouped from "@/components/WeeklyGrouped";
+import DailyPromptWidget from "@/components/addons/DailyPromptWidget";
+import AIInsightsCard from "@/components/addons/AIInsightsCard";
+import BestHabitCard from "@/components/addons/BestHabitCard";
+import OnboardingCoach from "@/components/addons/OnboardingCoach";
 
 interface OverviewSectionProps {
   bestHabit?: {
@@ -39,13 +43,35 @@ export default function OverviewSection({ bestHabit }: OverviewSectionProps) {
         </p>
       </motion.div>
 
+      {/* Onboarding Coach */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        <OnboardingCoach 
+          hasHabits={true} // Will be computed from actual data
+          hasEntries={true} // Will be computed from actual data
+          lang={lang}
+        />
+      </motion.div>
+
+      {/* Daily Prompt Widget */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.15 }}
+      >
+        <DailyPromptWidget lang={lang} />
+      </motion.div>
+
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* AI Reflection */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
           className="bg-white dark:bg-gray-900 rounded-2xl border border-[var(--line)] p-6 shadow-sm"
         >
           <h3 className="text-lg font-semibold mb-4 flex items-center">
@@ -59,7 +85,7 @@ export default function OverviewSection({ bestHabit }: OverviewSectionProps) {
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
         >
           <StreakMeCard />
         </motion.div>
@@ -71,33 +97,28 @@ export default function OverviewSection({ bestHabit }: OverviewSectionProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="bg-white dark:bg-gray-900 rounded-2xl border border-[var(--line)] p-6 shadow-sm"
         >
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <span className="mr-2">🏆</span>
-            {lang === "ar" ? "أفضل عادة هذا الأسبوع" : "Best Habit This Week"}
-          </h3>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-lg">
-                {bestHabit.habit.icon} {bestHabit.habit.name}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                🔥 {lang === "ar" ? `سلسلة: ${bestHabit.streak}` : `Streak: ${bestHabit.streak}`}
-              </div>
-            </div>
-            <div className="flex items-end space-x-1 h-12">
-              {bestHabit.weekPoints.map((point, i) => (
-                <div
-                  key={i}
-                  className="w-6 bg-indigo-400/60 rounded-t"
-                  style={{ height: `${Math.max(8, point * 8)}px` }}
-                />
-              ))}
-            </div>
-          </div>
+          <BestHabitCard
+            title={bestHabit.habit.name}
+            weekPoints={bestHabit.weekPoints}
+            streak={bestHabit.streak}
+            lang={lang}
+          />
         </motion.div>
       )}
+
+      {/* AI Insights */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.35 }}
+      >
+        <AIInsightsCard
+          lang={lang}
+          weeklyAvg={3.5} // Will be computed from actual data
+          missedDays={1} // Will be computed from actual data
+        />
+      </motion.div>
 
       {/* Weekly Summary */}
       <motion.div

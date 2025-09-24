@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useEffect, useId, useMemo, useState } from "react";
 import {
   LineChart,
   Line,
@@ -8,7 +9,6 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useEffect, useId, useMemo, useState } from "react";
 
 type Point = { date: string | Date; count: number };
 
@@ -102,8 +102,6 @@ export default function MiniSparkline({
           data={rows}
           margin={{ top: 8, right: 8, bottom: 0, left: 8 }}
         >
-          {/* خلفية خفيفة بدل Grid كاملة */}
-          <rect x={0} y={0} width="100%" height="100%" fill="transparent" />
           <XAxis
             dataKey="_d"
             tickFormatter={(v) => fmt.format(v)}
@@ -124,7 +122,7 @@ export default function MiniSparkline({
             type="monotone"
             dataKey="count"
             dot={false}
-            stroke={`url(${`#${gid}`})`}
+            stroke={`url(#${gid})`}
             strokeWidth={strokeWidth}
             isAnimationActive={!reduceMotion}
             animationDuration={500}

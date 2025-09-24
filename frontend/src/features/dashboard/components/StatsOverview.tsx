@@ -44,6 +44,7 @@ export default function StatsOverview({
     {
       title: lang === "ar" ? "أطول سلسلة" : "Current Streak",
       value: currentStreak,
+      sub: lang === "ar" ? "أيام" : "days",
       icon: <Flame size={20} />,
       color: "text-orange-600",
     },
@@ -56,11 +57,17 @@ export default function StatsOverview({
           key={stat.title}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: index * 0.1 }}
+          transition={{ 
+            duration: 0.5, 
+            delay: index * 0.1,
+            type: "spring",
+            stiffness: 100
+          }}
         >
           <AnimatedStatCard
             title={stat.title}
             value={stat.value}
+            sub={stat.sub}
             icon={stat.icon}
             lang={lang}
           />

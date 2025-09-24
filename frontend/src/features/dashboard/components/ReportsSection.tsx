@@ -9,6 +9,7 @@ import EntriesHeatmap from "@/components/reports/EntriesHeatmap";
 import NotesWordCloud from "@/components/reports/NotesWordCloud";
 import ExportPdfButton from "@/components/reports/ExportPdfButton";
 import MonthlySummary from "@/components/MonthlySummary";
+import InsightsPanel from "@/components/addons/InsightsPanel";
 
 interface ReportsSectionProps {
   entries: any[];
@@ -29,6 +30,7 @@ export default function ReportsSection({ entries, reportData }: ReportsSectionPr
     dailyProgress: lang === "ar" ? "التقدم اليومي" : "Daily Progress",
     activityHeatmap: lang === "ar" ? "خريطة النشاط" : "Activity Heatmap",
     wordCloud: lang === "ar" ? "سحابة الكلمات" : "Word Cloud",
+    insights: lang === "ar" ? "رؤى ذكية" : "Smart Insights",
   };
 
   const end = new Date();
@@ -55,12 +57,25 @@ export default function ReportsSection({ entries, reportData }: ReportsSectionPr
         <ExportPdfButton targetId="reports-container" lang={lang} />
       </motion.div>
 
+      {/* Insights Panel */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        <InsightsPanel
+          entries={entries}
+          habits={[]} // Will be passed from parent
+          lang={lang}
+        />
+      </motion.div>
+
       {/* Reports Grid */}
       <div id="reports-container" className="space-y-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
         >
           <ProgressLine
             data={reportData.line}
@@ -72,7 +87,7 @@ export default function ReportsSection({ entries, reportData }: ReportsSectionPr
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
         >
           <EntriesHeatmap
             values={reportData.heat}
@@ -86,7 +101,7 @@ export default function ReportsSection({ entries, reportData }: ReportsSectionPr
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
         >
           <NotesWordCloud
             words={reportData.words}
@@ -98,7 +113,7 @@ export default function ReportsSection({ entries, reportData }: ReportsSectionPr
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
         >
           <MonthlySummary />
         </motion.div>
