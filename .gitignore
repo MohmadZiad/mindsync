@@ -17,3 +17,4 @@ out/
 *.sqlite
 prisma/dev.db
     
+.env
