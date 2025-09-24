@@ -10,8 +10,6 @@ import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { loginThunk, clearError } from "@/redux/slices/authSlice";
 import { authService } from "@/services/auth";
 import { useI18n } from "@/components/ui/i18n";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 
 type LoginTheme = "minimal" | "gradient" | "aurora" | "sunset" | "ocean" | "forest" | "cosmic" | "neon";
 
@@ -44,7 +42,7 @@ export default function LoginForm() {
 
   // Load saved theme
   useEffect(() => {
-    const saved = localStorage.getItem("login_theme") as LoginTheme;
+    const saved = localStorage.getItem("login_duo_theme") as LoginTheme;
     if (saved && LOGIN_THEMES.find(t => t.id === saved)) {
       setCurrentTheme(saved);
     }
@@ -53,7 +51,7 @@ export default function LoginForm() {
   // Apply theme to body
   useEffect(() => {
     document.body.className = `login-theme-${currentTheme}`;
-    localStorage.setItem("login_theme", currentTheme);
+    localStorage.setItem("login_duo_theme", currentTheme);
     
     return () => {
       document.body.className = "";
@@ -80,12 +78,12 @@ export default function LoginForm() {
         authService.googleRedirect();
         break;
       case "github":
-        // TODO: Implement GitHub OAuth
-        window.location.href = "/auth/github";
+        // GitHub OAuth redirect
+        window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '') || 'http://localhost:4000'}/auth/github`;
         break;
       case "facebook":
-        // TODO: Implement Facebook OAuth
-        window.location.href = "/auth/facebook";
+        // Facebook OAuth redirect
+        window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '') || 'http://localhost:4000'}/auth/facebook`;
         break;
     }
   };
@@ -244,35 +242,34 @@ export default function LoginForm() {
             className="space-y-4"
           >
             <div>
-              <Input
+              <input
                 type="email"
                 placeholder={labels.email}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                error={error && "Invalid credentials"}
+                className="input"
               />
             </div>
 
-            <div>
-              <Input
+            <div className="relative">
+              <input
                 type={showPassword ? "text" : "password"}
                 placeholder={labels.password}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                rightIcon={
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                }
+                className="input pr-12"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
 
             <div className="flex items-center justify-between">
@@ -308,15 +305,13 @@ export default function LoginForm() {
               )}
             </AnimatePresence>
 
-            <Button
+            <button
               type="submit"
-              fullWidth
-              loading={loading}
-              disabled={!email.trim() || !password.trim()}
-              className="mt-6"
+              disabled={!email.trim() || !password.trim() || loading}
+              className="btn-primary w-full mt-6"
             >
               {loading ? labels.loading : labels.submit}
-            </Button>
+            </button>
           </motion.form>
 
           {/* Footer */}

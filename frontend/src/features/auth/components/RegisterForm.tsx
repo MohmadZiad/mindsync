@@ -10,8 +10,6 @@ import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { registerThunk, clearError } from "@/redux/slices/authSlice";
 import { authService } from "@/services/auth";
 import { useI18n } from "@/components/ui/i18n";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 
 type LoginTheme = "minimal" | "gradient" | "aurora" | "sunset" | "ocean" | "forest" | "cosmic" | "neon";
 
@@ -109,7 +107,7 @@ export default function RegisterForm() {
 
   // Load saved theme
   useEffect(() => {
-    const saved = localStorage.getItem("login_theme") as LoginTheme;
+    const saved = localStorage.getItem("login_duo_theme") as LoginTheme;
     if (saved && LOGIN_THEMES.find(t => t.id === saved)) {
       setCurrentTheme(saved);
     }
@@ -118,7 +116,7 @@ export default function RegisterForm() {
   // Apply theme to body
   useEffect(() => {
     document.body.className = `login-theme-${currentTheme}`;
-    localStorage.setItem("login_theme", currentTheme);
+    localStorage.setItem("login_duo_theme", currentTheme);
     
     return () => {
       document.body.className = "";
@@ -139,10 +137,10 @@ export default function RegisterForm() {
         authService.googleRedirect();
         break;
       case "github":
-        window.location.href = "/auth/github";
+        window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '') || 'http://localhost:4000'}/auth/github`;
         break;
       case "facebook":
-        window.location.href = "/auth/facebook";
+        window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '') || 'http://localhost:4000'}/auth/facebook`;
         break;
     }
   };
@@ -327,61 +325,67 @@ export default function RegisterForm() {
             onSubmit={handleSubmit}
             className="space-y-4"
           >
-            <Input
+            <input
               type="text"
               placeholder={labels.name}
               value={formData.name}
               onChange={handleChange("name")}
               required
               autoComplete="name"
+              className="input"
             />
 
-            <Input
+            <input
               type="email"
               placeholder={labels.email}
               value={formData.email}
               onChange={handleChange("email")}
               required
               autoComplete="email"
+              className="input"
             />
 
             <div>
-              <Input
-                type={showPassword ? "text" : "password"}
-                placeholder={labels.password}
-                value={formData.password}
-                onChange={handleChange("password")}
-                required
-                autoComplete="new-password"
-                rightIcon={
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                }
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder={labels.password}
+                  value={formData.password}
+                  onChange={handleChange("password")}
+                  required
+                  autoComplete="new-password"
+                  className="input pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
               {formData.password && (
                 <PasswordStrengthIndicator password={formData.password} lang={lang} />
               )}
             </div>
 
             <div>
-              <Input
+              <input
                 type={showPassword ? "text" : "password"}
                 placeholder={labels.confirmPassword}
                 value={formData.confirmPassword}
                 onChange={handleChange("confirmPassword")}
                 required
                 autoComplete="new-password"
-                error={
+                className={`input ${
                   formData.confirmPassword && !passwordsMatch
-                    ? labels.passwordMismatch
-                    : false
-                }
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : ""
+                }`}
               />
+              {formData.confirmPassword && !passwordsMatch && (
+                <div className="form-error">{labels.passwordMismatch}</div>
+              )}
             </div>
 
             <div className="flex items-center">
@@ -410,15 +414,13 @@ export default function RegisterForm() {
               )}
             </AnimatePresence>
 
-            <Button
+            <button
               type="submit"
-              fullWidth
-              loading={loading}
               disabled={!canSubmit}
-              className="mt-6"
+              className="btn-primary w-full mt-6"
             >
               {loading ? labels.loading : labels.submit}
-            </Button>
+            </button>
           </motion.form>
 
           {/* Footer */}

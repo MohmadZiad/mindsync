@@ -57,6 +57,9 @@
   /* Mood System */
   --mood: var(--brand);
   --mood-rgb: var(--brand-rgb);
+
+  /* Brand Card Background */
+  --brand-card: color-mix(in oklab, var(--mood) 8%, var(--bg-1) 92%);
 }
 
 /* Dark Theme */
@@ -77,6 +80,8 @@
   --brand: #8b7bff;
   --brand-light: #a5b4fc;
   --brand-dark: #6366f1;
+
+  --brand-card: color-mix(in oklab, var(--mood) 12%, var(--bg-1) 88%);
 }
 
 /* ===================================================================
@@ -99,6 +104,7 @@
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   /* RTL Support */
@@ -186,6 +192,19 @@
     box-shadow: var(--shadow-lg);
   }
 
+  .cardish {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+  }
+
+  .cardish-2 {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+
   /* Button Styles */
   .btn {
     display: inline-flex;
@@ -208,13 +227,13 @@
     cursor: not-allowed;
   }
 
-  .btn-primary {
+  .btn-primary, .btn--primary {
     background: linear-gradient(135deg, var(--brand), var(--brand-light));
     color: white;
     box-shadow: var(--shadow);
   }
 
-  .btn-primary:hover:not(:disabled) {
+  .btn-primary:hover:not(:disabled), .btn--primary:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: var(--shadow-lg);
   }
@@ -228,6 +247,28 @@
   .btn-secondary:hover:not(:disabled) {
     background: var(--bg-2);
     border-color: var(--brand);
+  }
+
+  .btn-tertiary {
+    background: var(--bg-2);
+    color: var(--ink-2);
+    border-color: var(--line);
+  }
+
+  .btn-tertiary:hover:not(:disabled) {
+    background: var(--bg-3);
+    color: var(--ink-1);
+  }
+
+  .btn-muted, .btn--ghost {
+    background: var(--bg-2);
+    color: var(--ink-2);
+    border-color: var(--line);
+  }
+
+  .btn-muted:hover:not(:disabled), .btn--ghost:hover:not(:disabled) {
+    background: var(--bg-3);
+    color: var(--ink-1);
   }
 
   .btn-outline {
@@ -259,6 +300,12 @@
   .btn-ghost:hover:not(:disabled) {
     background: var(--bg-2);
     color: var(--ink-1);
+  }
+
+  /* Touch-friendly buttons */
+  .touch {
+    min-height: 44px;
+    min-width: 44px;
   }
 
   /* Input Styles */
@@ -345,6 +392,17 @@
     animation: shimmer 1.5s infinite;
   }
 
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--bg-2) 25%,
+      var(--bg-3) 50%,
+      var(--bg-2) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
   /* Label */
   .label {
     font-size: 0.75rem;
@@ -352,6 +410,195 @@
     color: var(--ink-2);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+  }
+
+  /* Utility classes */
+  .text-muted {
+    color: var(--ink-3);
+  }
+
+  .text-mood {
+    color: var(--mood);
+  }
+
+  .bg-mood {
+    background: var(--mood);
+    color: white;
+  }
+
+  .border-mood {
+    border-color: var(--mood);
+  }
+
+  .ring-mood {
+    box-shadow: 0 0 0 2px var(--mood);
+  }
+
+  .border-base {
+    border-color: var(--line);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow);
+  }
+
+  .theme-smooth {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+
+  /* Stack layout */
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* Safe area for mobile */
+  .safe-pb {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+
+  /* Hint styles */
+  .hint-error {
+    color: var(--danger);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+  }
+
+  /* Page background */
+  .bg-page {
+    background: var(--bg-0);
+  }
+
+  /* Claim bubble for hero */
+  .claim-bubble {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+
+  :root.dark .claim-bubble {
+    background: rgba(30, 41, 59, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Text hero sizing */
+  .text-hero {
+    font-size: clamp(2.1rem, 5vw, 3.25rem);
+    font-weight: 800;
+    line-height: 1.07;
+    letter-spacing: -0.02em;
+  }
+
+  /* Line clamp utilities */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Scrollbar hide */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Transition grid for collapsible content */
+  .transition-grid {
+    transition: grid-template-rows 0.3s ease;
+  }
+
+  /* Perspective for 3D effects */
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  /* Flip card effects */
+  .flip-card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.6s;
+  }
+
+  .flip-card.is-flipped {
+    transform: rotateY(180deg);
+  }
+
+  .flip-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+  }
+
+  .flip-back {
+    transform: rotateY(180deg);
+  }
+
+  /* Animated card gradient */
+  .animated-card-gradient {
+    background: linear-gradient(
+      135deg,
+      var(--bg-1) 0%,
+      color-mix(in oklab, var(--mood) 5%, var(--bg-1) 95%) 50%,
+      var(--bg-1) 100%
+    );
+  }
+
+  /* Edge fade for marquee */
+  .edge-fade {
+    mask: linear-gradient(
+      90deg,
+      transparent 0%,
+      black 5%,
+      black 95%,
+      transparent 100%
+    );
+  }
+
+  .edge-fade[data-dir="rtl"] {
+    mask: linear-gradient(
+      270deg,
+      transparent 0%,
+      black 5%,
+      black 95%,
+      transparent 100%
+    );
+  }
+
+  /* Magnetic effect for CTAs */
+  .magnetic-will-move {
+    transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  /* Visually hidden but accessible */
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 }
 
@@ -382,6 +629,11 @@
 
   .animate-scale-in {
     animation: scale-in 0.3s ease-out;
+  }
+
+  /* Ring breathing animation */
+  .ring-breath {
+    animation: breath 4s ease-in-out infinite;
   }
 }
 
@@ -493,6 +745,19 @@
   }
 }
 
+/* Toast progress bar */
+@keyframes toastbar {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+/* Progress animation */
+@keyframes progress {
+  0% { transform: translateX(-70%); }
+  50% { transform: translateX(20%); }
+  100% { transform: translateX(110%); }
+}
+
 /* ===================================================================
       Mood System - Dynamic Color Theming
       =================================================================== */
@@ -540,12 +805,40 @@ body.moodify-all .ring-mood {
   box-shadow: 0 0 0 2px var(--mood);
 }
 
-body.moodify-all .btn-primary {
+body.moodify-all .btn-primary, body.moodify-all .btn--primary {
   background: linear-gradient(135deg, var(--mood), rgba(var(--mood-rgb), 0.8));
 }
 
 body.moodify-all .progress-gradient {
   background: linear-gradient(90deg, var(--mood), rgba(var(--mood-rgb), 0.6));
+}
+
+/* ===================================================================
+      Focus Mode
+      =================================================================== */
+:root[data-focus="true"] .focus-hide {
+  display: none !important;
+}
+
+:root[data-focus="true"] .focus-dim {
+  opacity: 0.5;
+  filter: saturate(0.7);
+}
+
+:root[data-focus="true"] .focus-highlight {
+  outline: 2px solid var(--brand);
+  outline-offset: 4px;
+}
+
+/* Focus mode styles for main content */
+:root[data-focus="true"] main {
+  max-width: 60rem;
+  margin: 0 auto;
+}
+
+:root[data-focus="true"] .focus-mode {
+  filter: none !important;
+  opacity: 1 !important;
 }
 
 /* ===================================================================
@@ -575,6 +868,47 @@ body.moodify-all .progress-gradient {
   background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
 }
 
+.login-variant-cosmic {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.login-variant-neon {
+  background: linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%);
+}
+
+/* Login theme classes for body */
+.login-theme-minimal {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.login-theme-gradient {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.login-theme-aurora {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.login-theme-sunset {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.login-theme-ocean {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.login-theme-forest {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.login-theme-cosmic {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.login-theme-neon {
+  background: linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%);
+}
+
 /* Login Card Styles */
 .login-card {
   background: rgba(255, 255, 255, 0.95);
@@ -587,6 +921,40 @@ body.moodify-all .progress-gradient {
 :root.dark .login-card {
   background: rgba(30, 41, 59, 0.95);
   border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Login Floating Elements */
+.login-floating-1 {
+  position: absolute;
+  top: 10%;
+  left: 10%;
+  width: 100px;
+  height: 100px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  animation: float 6s ease-in-out infinite;
+}
+
+.login-floating-2 {
+  position: absolute;
+  top: 60%;
+  right: 15%;
+  width: 150px;
+  height: 150px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  animation: float 8s ease-in-out infinite reverse;
+}
+
+.login-floating-3 {
+  position: absolute;
+  bottom: 20%;
+  left: 20%;
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  animation: float 7s ease-in-out infinite;
 }
 
 /* OAuth Provider Buttons */
@@ -686,6 +1054,11 @@ body.moodify-all .progress-gradient {
   border-bottom-color: var(--brand);
 }
 
+/* Page enter animation */
+.page-enter {
+  animation: page-enter 0.5s ease-out;
+}
+
 /* ===================================================================
       Special Effects & Animations
       =================================================================== */
@@ -755,20 +1128,53 @@ body.moodify-all .progress-gradient {
 }
 
 /* ===================================================================
-      Focus Mode
+      FAQ Component Styles
       =================================================================== */
-:root[data-focus="true"] .focus-hide {
-  display: none !important;
+details.faq {
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
 }
 
-:root[data-focus="true"] .focus-dim {
-  opacity: 0.5;
-  filter: saturate(0.7);
+details.faq[open] {
+  box-shadow: var(--shadow);
 }
 
-:root[data-focus="true"] .focus-highlight {
-  outline: 2px solid var(--brand);
-  outline-offset: 4px;
+details.faq > summary {
+  cursor: pointer;
+  font-weight: 500;
+  list-style: none;
+  color: var(--ink-1);
+}
+
+details.faq > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* ===================================================================
+      Calendar Heatmap Styles
+      =================================================================== */
+.react-calendar-heatmap .color-empty {
+  fill: var(--bg-2);
+}
+
+.react-calendar-heatmap .color-github-1 {
+  fill: rgba(var(--mood-rgb), 0.2);
+}
+
+.react-calendar-heatmap .color-github-2 {
+  fill: rgba(var(--mood-rgb), 0.4);
+}
+
+.react-calendar-heatmap .color-github-3 {
+  fill: rgba(var(--mood-rgb), 0.6);
+}
+
+.react-calendar-heatmap .color-github-4 {
+  fill: var(--mood);
 }
 
 /* ===================================================================
@@ -792,6 +1198,25 @@ body.moodify-all .progress-gradient {
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
   }
+
+  .mobile-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .mobile-hide {
+    display: none;
+  }
+
+  .mobile-full {
+    width: 100%;
+  }
+
+  .touch-friendly {
+    min-height: 48px;
+    min-width: 48px;
+  }
 }
 
 @media (min-width: 1280px) {
@@ -811,6 +1236,18 @@ body.moodify-all .progress-gradient {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .ring-breath {
+    animation: none;
+  }
+
+  .breathing-ring {
+    animation: none;
+  }
+
+  .floating-element {
+    animation: none;
   }
 }
 
@@ -881,150 +1318,18 @@ body.moodify-all .progress-gradient {
   .theme-transition {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
   }
-}
 
-/* ===================================================================
-      Component-Specific Overrides
-      =================================================================== */
+  .will-change-transform {
+    will-change: transform;
+  }
 
-/* FAQ Component */
-details.faq {
-  background: var(--bg-1);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 1rem;
-  margin-bottom: 0.5rem;
-  transition: all 0.2s ease;
-}
+  .will-change-opacity {
+    will-change: opacity;
+  }
 
-details.faq[open] {
-  box-shadow: var(--shadow);
-}
-
-details.faq > summary {
-  cursor: pointer;
-  font-weight: 500;
-  list-style: none;
-  color: var(--ink-1);
-}
-
-details.faq > summary::-webkit-details-marker {
-  display: none;
-}
-
-/* Calendar Heatmap */
-.react-calendar-heatmap .color-empty {
-  fill: var(--bg-2);
-}
-
-.react-calendar-heatmap .color-github-1 {
-  fill: rgba(var(--mood-rgb), 0.2);
-}
-
-.react-calendar-heatmap .color-github-2 {
-  fill: rgba(var(--mood-rgb), 0.4);
-}
-
-.react-calendar-heatmap .color-github-3 {
-  fill: rgba(var(--mood-rgb), 0.6);
-}
-
-.react-calendar-heatmap .color-github-4 {
-  fill: var(--mood);
-}
-
-/* Toast Notifications */
-.toast-progress {
-  animation: toast-progress 3s linear forwards;
-}
-
-@keyframes toast-progress {
-  from { width: 100%; }
-  to { width: 0%; }
-}
-
-/* Command Palette */
-.command-palette {
-  background: var(--bg-1);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-}
-
-/* Signature Canvas */
-.signature-canvas {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--bg-1);
-}
-
-/* ===================================================================
-      Login Theme Variants
-      =================================================================== */
-.login-theme-minimal {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.login-theme-gradient {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-}
-
-.login-theme-aurora {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-}
-
-.login-theme-sunset {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-}
-
-.login-theme-ocean {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.login-theme-forest {
-  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-}
-
-.login-theme-cosmic {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.login-theme-neon {
-  background: linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%);
-}
-
-/* Login Floating Elements */
-.login-floating-1 {
-  position: absolute;
-  top: 10%;
-  left: 10%;
-  width: 100px;
-  height: 100px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  animation: float 6s ease-in-out infinite;
-}
-
-.login-floating-2 {
-  position: absolute;
-  top: 60%;
-  right: 15%;
-  width: 150px;
-  height: 150px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 50%;
-  animation: float 8s ease-in-out infinite reverse;
-}
-
-.login-floating-3 {
-  position: absolute;
-  bottom: 20%;
-  left: 20%;
-  width: 80px;
-  height: 80px;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 50%;
-  animation: float 7s ease-in-out infinite;
+  .gpu-accelerated {
+    transform: translateZ(0);
+  }
 }
 
 /* ===================================================================
@@ -1055,46 +1360,7 @@ details.faq > summary::-webkit-details-marker {
 }
 
 /* ===================================================================
-      Mobile Optimizations
-      =================================================================== */
-@media (max-width: 768px) {
-  .mobile-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .mobile-hide {
-    display: none;
-  }
-
-  .mobile-full {
-    width: 100%;
-  }
-
-  .touch-friendly {
-    min-height: 48px;
-    min-width: 48px;
-  }
-}
-
-/* ===================================================================
-      Performance Optimizations
-      =================================================================== */
-.will-change-transform {
-  will-change: transform;
-}
-
-.will-change-opacity {
-  will-change: opacity;
-}
-
-.gpu-accelerated {
-  transform: translateZ(0);
-}
-
-/* ===================================================================
-      Error States
+      Error & Success States
       =================================================================== */
 .error-state {
   color: var(--danger);
@@ -1354,4 +1620,34 @@ details.faq > summary::-webkit-details-marker {
 
 .interactive-scale:active {
   transform: scale(0.98);
+}
+
+/* Toast progress bar */
+.toast-progress {
+  animation: toast-progress 3s linear forwards;
+}
+
+@keyframes toast-progress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+/* Command Palette */
+.command-palette {
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Signature Canvas */
+.signature-canvas {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+}
+
+/* Header elevation on scroll */
+body.scrolled .dashboard-header {
+  box-shadow: var(--shadow);
 }
