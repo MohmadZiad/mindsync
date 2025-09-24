@@ -4,7 +4,7 @@ import { useI18n } from "@/ui/i18n";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { addEntry, fetchEntries } from "@/redux/slices/entrySlice";
 import toast from "react-hot-toast";
-import NoteModal, { type NotePayload } from "@/components/NoteModal";
+import NoteModal, { type NotePayload } from "../components/NoteModal";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function QuickLogPopover({

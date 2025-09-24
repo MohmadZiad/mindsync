@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { entriesService } from "@/services/entries";
-import { Card } from "./card";
+import { Card } from "@/ui/Card";
 import { useI18n } from "@/ui/i18n";
 
 export default function AiReflectionControls() {

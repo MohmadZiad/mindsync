@@ -49,9 +49,24 @@ frontend/src/
 - `components/ui/Toaster.tsx` → `ui/Toaster.tsx`
 
 ### Future Batches (Planned)
-- Batch 2: Feature components (auth, habits, entries)
-- Batch 3: Shared utilities and hooks
-- Batch 4: Documentation and cleanup
+### Batch 2: Feature Components & Utilities
+- `components/flows/` → `features/habits/flows/` (habit-related flows)
+- `components/flows/EntrySheet.tsx` → `features/entries/flows/EntrySheet.tsx`
+- `components/flows/QuickLogPopover.tsx` → `features/entries/flows/QuickLogPopover.tsx`
+- `components/flows/EntryTemplates.tsx` → `features/entries/flows/EntryTemplates.tsx`
+- `components/HabitFormExtra.tsx` → `features/habits/components/HabitFormExtra.tsx`
+- `components/StreakMeCard.tsx` → `features/habits/components/StreakMeCard.tsx`
+- `components/AiReflectionControls.tsx` → `features/entries/components/AiReflectionControls.tsx`
+- `components/NoteModal.tsx` → `features/entries/components/NoteModal.tsx`
+- `components/WeeklyGrouped.tsx` → `features/entries/components/WeeklyGrouped.tsx`
+- `components/MonthlySummary.tsx` → `features/entries/components/MonthlySummary.tsx`
+- `components/reports/` → `features/reports/components/`
+- `components/hooks/` → `hooks/`
+- `utils/` → `lib/`
+
+### Future Batches (Planned)
+- Batch 3: Remaining components and cleanup
+- Batch 4: Documentation and final polish
 
 ## Rationale
 - **UI components**: Pure presentational components with no business logic

@@ -44,26 +44,27 @@ import FocusModeToggle from "@/components/addons/FocusModeToggle";
 
 /* ---------------- Lazy chunks ------------- */
 const StepTabs = dynamic(() => import("@/components/StepTabs"), { ssr: false });
-const FabMenu = dynamic(() => import("@/components/flows/FabMenu"), {
+const FabMenu = dynamic(() => import("@/features/habits/flows/FabMenu"), {
   ssr: false,
 });
 const CommandPalette = dynamic(
-  () => import("@/components/flows/CommandPalette"),
+  () => import("@/features/habits/flows/CommandPalette"),
   { ssr: false }
 );
 const QuickAddHabitPopover = dynamic(
-  () => import("@/components/flows/QuickAddHabitPopover"),
+  () => import("@/features/habits/flows/QuickAddHabitPopover"),
   { ssr: false }
 );
 const AddHabitSheet = dynamic(
-  () => import("@/components/flows/AddHabitSheet"),
+  () => import("@/features/habits/flows/AddHabitSheet"),
   { ssr: false }
 );
 const QuickLogPopover = dynamic(
-  () => import("@/components/flows/QuickLogPopover"),
+  () => import("@/features/entries/flows/QuickLogPopover"),
   { ssr: false }
 );
 const EntrySheet = dynamic(() => import("@/components/flows/EntrySheet"), {
+const EntrySheet = dynamic(() => import("@/features/entries/flows/EntrySheet"), {
   ssr: false,
 });
 const ConfettiSuccess = dynamic(
@@ -72,41 +73,41 @@ const ConfettiSuccess = dynamic(
 );
 
 /* ---------------- Section deps (inline sections use these) ---------------- */
-const NoteModal = dynamic(() => import("@/components/NoteModal"), {
+const NoteModal = dynamic(() => import("@/features/entries/components/NoteModal"), {
   ssr: false,
 });
-const HabitFormExtra = dynamic(() => import("@/components/HabitFormExtra"));
+const HabitFormExtra = dynamic(() => import("@/features/habits/components/HabitFormExtra"));
 const AnimatedCard = dynamic(() => import("@/components/ui/AnimatedCard"));
-const StreakMeCard = dynamic(() => import("@/components/StreakMeCard"));
+const StreakMeCard = dynamic(() => import("@/features/habits/components/StreakMeCard"));
 const AiReflectionControls = dynamic(
-  () => import("@/components/AiReflectionControls"),
+  () => import("@/features/entries/components/AiReflectionControls"),
   { ssr: false }
 );
 const ProgressLine = dynamic(
-  () => import("@/components/reports/ProgressLine"),
+  () => import("@/features/reports/components/ProgressLine"),
   { ssr: false }
 );
 const EntriesHeatmap = dynamic(
-  () => import("@/components/reports/EntriesHeatmap"),
+  () => import("@/features/reports/components/EntriesHeatmap"),
   { ssr: false }
 );
 const NotesWordCloud = dynamic(
-  () => import("@/components/reports/NotesWordCloud"),
+  () => import("@/features/reports/components/NotesWordCloud"),
   { ssr: false }
 );
 const ExportPdfButton = dynamic(
-  () => import("@/components/reports/ExportPdfButton"),
+  () => import("@/features/reports/components/ExportPdfButton"),
   { ssr: false }
 );
-const WeeklyGrouped = dynamic(() => import("@/components/WeeklyGrouped"), {
+const WeeklyGrouped = dynamic(() => import("@/features/entries/components/WeeklyGrouped"), {
   ssr: false,
 });
-const MonthlySummary = dynamic(() => import("@/components/MonthlySummary"), {
+const MonthlySummary = dynamic(() => import("@/features/entries/components/MonthlySummary"), {
   ssr: false,
 });
 
 /* ---------------- Modal shell ------------- */
-import PrettyModal from "@/components/ui/PrettyModal";
+import PrettyModal from "@/ui/PrettyModal";
 
 /* ===================== i18n ===================== */
 export type Lang = "en" | "ar";
