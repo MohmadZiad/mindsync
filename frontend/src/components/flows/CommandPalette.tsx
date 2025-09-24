@@ -8,7 +8,7 @@ import { Plus, Search, Zap, Settings } from "lucide-react";
 
 import { useI18n } from "@/components/ui/i18n";
 
-interface CommandPaletteProps {
+export interface CommandPaletteProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onQuickHabit: () => void;
@@ -28,6 +28,7 @@ export default function CommandPalette({
   const { t, lang } = useI18n();
   const F = t.flows;
 
+  // Ctrl/Cmd + K to open
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
@@ -90,12 +91,17 @@ export default function CommandPalette({
             <>
               <Dialog.Overlay asChild>
                 <motion.div
+<<<<<<< HEAD
                   className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[80]"
+=======
+                  className="fixed inset-0 z-[80] bg-black/30"
+>>>>>>> ceff6d8 (E)
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                 />
               </Dialog.Overlay>
+
               <Dialog.Content asChild>
                 <motion.div
                   className="fixed left-1/2 top-24 z-[90] w-[min(92vw,680px)] -translate-x-1/2 rounded-2xl bg-[var(--bg-0)] border border-[var(--line)] shadow-2xl overflow-hidden"
@@ -117,6 +123,7 @@ export default function CommandPalette({
                       <Command.Empty className="py-6 text-center text-sm text-gray-500">
                         {lang === "ar" ? "لا نتائج." : "No results."}
                       </Command.Empty>
+<<<<<<< HEAD
                       
                       <Command.Group 
                         heading={lang === "ar" ? "إجراءات سريعة" : "Quick Actions"}
@@ -137,6 +144,45 @@ export default function CommandPalette({
                             </kbd>
                           </Command.Item>
                         ))}
+=======
+
+                      <Command.Group heading={lang === "ar" ? "إضافة" : "Add"}>
+                        <Command.Item
+                          onSelect={() => {
+                            onQuickHabit();
+                            onOpenChange(false);
+                          }}
+                        >
+                          {F.fabAddHabit}
+                        </Command.Item>
+
+                        <Command.Item
+                          onSelect={() => {
+                            onProHabit();
+                            onOpenChange(false);
+                          }}
+                        >
+                          {F.fabAddHabitPro}
+                        </Command.Item>
+
+                        <Command.Item
+                          onSelect={() => {
+                            onQuickLog();
+                            onOpenChange(false);
+                          }}
+                        >
+                          {F.fabQuickLog}
+                        </Command.Item>
+
+                        <Command.Item
+                          onSelect={() => {
+                            onProEntry();
+                            onOpenChange(false);
+                          }}
+                        >
+                          {F.fabFullEntry}
+                        </Command.Item>
+>>>>>>> ceff6d8 (E)
                       </Command.Group>
                     </Command.List>
                   </Command>

@@ -3,7 +3,15 @@
 import React from "react";
 import { motion } from "framer-motion";
 
+<<<<<<< HEAD
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+=======
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+>>>>>>> ceff6d8 (E)
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Background will be applied by the form components */}
@@ -13,11 +21,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         transition={{ duration: 1 }}
         className="absolute inset-0 bg-gradient-to-br from-transparent via-black/5 to-black/10"
       />
+<<<<<<< HEAD
       
       {/* Content */}
       <div className="relative z-10">
         {children}
       </div>
+=======
+
+      {/* Content */}
+      <div className="relative z-10">{children}</div>
+>>>>>>> ceff6d8 (E)
     </div>
   );
 }

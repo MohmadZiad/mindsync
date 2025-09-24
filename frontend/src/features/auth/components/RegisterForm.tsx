@@ -4,14 +4,39 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+<<<<<<< HEAD
 import { Eye, EyeOff, Check, X, Chrome, Github, Facebook, Palette } from "lucide-react";
+=======
+import {
+  Eye,
+  EyeOff,
+  Check,
+  X,
+  Chrome,
+  Github,
+  Facebook,
+  Palette,
+} from "lucide-react";
+>>>>>>> ceff6d8 (E)
 
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { registerThunk, clearError } from "@/redux/slices/authSlice";
 import { authService } from "@/services/auth";
 import { useI18n } from "@/components/ui/i18n";
 
+<<<<<<< HEAD
 type LoginTheme = "minimal" | "gradient" | "aurora" | "sunset" | "ocean" | "forest" | "cosmic" | "neon";
+=======
+type LoginTheme =
+  | "minimal"
+  | "gradient"
+  | "aurora"
+  | "sunset"
+  | "ocean"
+  | "forest"
+  | "cosmic"
+  | "neon";
+>>>>>>> ceff6d8 (E)
 
 const LOGIN_THEMES: { id: LoginTheme; name: string; nameAr: string }[] = [
   { id: "minimal", name: "Minimal", nameAr: "بسيط" },
@@ -24,6 +49,7 @@ const LOGIN_THEMES: { id: LoginTheme; name: string; nameAr: string }[] = [
   { id: "neon", name: "Neon", nameAr: "نيون" },
 ];
 
+<<<<<<< HEAD
 function PasswordStrengthIndicator({ password, lang }: { password: string; lang: "en" | "ar" }) {
   const checks = [
     { 
@@ -45,10 +71,42 @@ function PasswordStrengthIndicator({ password, lang }: { password: string; lang:
     { 
       label: lang === "ar" ? "رمز خاص" : "Special char", 
       test: (p: string) => /[^A-Za-z0-9]/.test(p) 
+=======
+function PasswordStrengthIndicator({
+  password,
+  lang,
+}: {
+  password: string;
+  lang: "en" | "ar";
+}) {
+  const checks = [
+    {
+      label: lang === "ar" ? "8+ أحرف" : "8+ characters",
+      test: (p: string) => p.length >= 8,
+    },
+    {
+      label: lang === "ar" ? "حرف صغير" : "Lowercase",
+      test: (p: string) => /[a-z]/.test(p),
+    },
+    {
+      label: lang === "ar" ? "حرف كبير" : "Uppercase",
+      test: (p: string) => /[A-Z]/.test(p),
+    },
+    {
+      label: lang === "ar" ? "رقم" : "Number",
+      test: (p: string) => /[0-9]/.test(p),
+    },
+    {
+      label: lang === "ar" ? "رمز خاص" : "Special char",
+      test: (p: string) => /[^A-Za-z0-9]/.test(p),
+>>>>>>> ceff6d8 (E)
     },
   ];
 
-  const score = checks.reduce((acc, check) => acc + (check.test(password) ? 1 : 0), 0);
+  const score = checks.reduce(
+    (acc, check) => acc + (check.test(password) ? 1 : 0),
+    0
+  );
   const strength = score < 2 ? "weak" : score < 4 ? "medium" : "strong";
   const strengthColors = {
     weak: "bg-red-500",
@@ -63,7 +121,13 @@ function PasswordStrengthIndicator({ password, lang }: { password: string; lang:
           <div
             key={i}
             className={`h-1 flex-1 rounded-full transition-colors ${
+<<<<<<< HEAD
               i <= score ? strengthColors[strength] : "bg-gray-200 dark:bg-gray-700"
+=======
+              i <= score
+                ? strengthColors[strength]
+                : "bg-gray-200 dark:bg-gray-700"
+>>>>>>> ceff6d8 (E)
             }`}
           />
         ))}
@@ -73,7 +137,13 @@ function PasswordStrengthIndicator({ password, lang }: { password: string; lang:
           <div
             key={i}
             className={`flex items-center space-x-1 ${
+<<<<<<< HEAD
               check.test(password) ? "text-green-600 dark:text-green-400" : "text-gray-400"
+=======
+              check.test(password)
+                ? "text-green-600 dark:text-green-400"
+                : "text-gray-400"
+>>>>>>> ceff6d8 (E)
             }`}
           >
             {check.test(password) ? <Check size={12} /> : <X size={12} />}
@@ -90,7 +160,7 @@ export default function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { lang } = useI18n();
-  
+
   const { loading, error } = useAppSelector((s) => s.auth);
   const next = searchParams.get("next") || "/dashboard";
 
@@ -107,8 +177,13 @@ export default function RegisterForm() {
 
   // Load saved theme
   useEffect(() => {
+<<<<<<< HEAD
     const saved = localStorage.getItem("login_duo_theme") as LoginTheme;
     if (saved && LOGIN_THEMES.find(t => t.id === saved)) {
+=======
+    const saved = localStorage.getItem("login_theme") as LoginTheme;
+    if (saved && LOGIN_THEMES.find((t) => t.id === saved)) {
+>>>>>>> ceff6d8 (E)
       setCurrentTheme(saved);
     }
   }, []);
@@ -116,8 +191,13 @@ export default function RegisterForm() {
   // Apply theme to body
   useEffect(() => {
     document.body.className = `login-theme-${currentTheme}`;
+<<<<<<< HEAD
     localStorage.setItem("login_duo_theme", currentTheme);
     
+=======
+    localStorage.setItem("login_theme", currentTheme);
+
+>>>>>>> ceff6d8 (E)
     return () => {
       document.body.className = "";
     };
@@ -127,8 +207,23 @@ export default function RegisterForm() {
     dispatch(clearError());
   }, [dispatch]);
 
-  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, [field]: e.target.value }));
+  const handleChange =
+    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+    };
+
+  const handleOAuthRegister = (provider: "google" | "github" | "facebook") => {
+    switch (provider) {
+      case "google":
+        authService.googleRedirect();
+        break;
+      case "github":
+        window.location.href = "/auth/github";
+        break;
+      case "facebook":
+        window.location.href = "/auth/facebook";
+        break;
+    }
   };
 
   const handleOAuthRegister = (provider: "google" | "github" | "facebook") => {
@@ -146,7 +241,7 @@ export default function RegisterForm() {
   };
 
   const passwordsMatch = formData.password === formData.confirmPassword;
-  const canSubmit = 
+  const canSubmit =
     formData.name.trim() &&
     formData.email.trim() &&
     formData.password.trim() &&
@@ -164,7 +259,7 @@ export default function RegisterForm() {
         password: formData.password,
       })
     );
-    
+
     if (result.meta.requestStatus === "fulfilled") {
       router.replace(next);
     }
@@ -177,12 +272,21 @@ export default function RegisterForm() {
     email: lang === "ar" ? "البريد الإلكتروني" : "Email",
     password: lang === "ar" ? "كلمة المرور" : "Password",
     confirmPassword: lang === "ar" ? "تأكيد كلمة المرور" : "Confirm Password",
-    terms: lang === "ar" ? "أوافق على الشروط والأحكام" : "I agree to the Terms and Conditions",
+    terms:
+      lang === "ar"
+        ? "أوافق على الشروط والأحكام"
+        : "I agree to the Terms and Conditions",
     submit: lang === "ar" ? "إنشاء الحساب" : "Create Account",
     loading: lang === "ar" ? "جاري الإنشاء..." : "Creating account...",
-    haveAccount: lang === "ar" ? "لديك حساب بالفعل؟" : "Already have an account?",
+    haveAccount:
+      lang === "ar" ? "لديك حساب بالفعل؟" : "Already have an account?",
     signIn: lang === "ar" ? "تسجيل الدخول" : "Sign in",
+<<<<<<< HEAD
     passwordMismatch: lang === "ar" ? "كلمات المرور غير متطابقة" : "Passwords don't match",
+=======
+    passwordMismatch:
+      lang === "ar" ? "كلمات المرور غير متطابقة" : "Passwords don't match",
+>>>>>>> ceff6d8 (E)
     orContinue: lang === "ar" ? "أو تابع مع" : "Or continue with",
     google: lang === "ar" ? "جوجل" : "Google",
     github: lang === "ar" ? "جيت هاب" : "GitHub",
@@ -285,7 +389,11 @@ export default function RegisterForm() {
               <Chrome size={20} />
               {labels.google}
             </button>
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> ceff6d8 (E)
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => handleOAuthRegister("github")}
@@ -294,7 +402,11 @@ export default function RegisterForm() {
                 <Github size={18} />
                 {labels.github}
               </button>
+<<<<<<< HEAD
               
+=======
+
+>>>>>>> ceff6d8 (E)
               <button
                 onClick={() => handleOAuthRegister("facebook")}
                 className="oauth-btn facebook"
@@ -325,23 +437,34 @@ export default function RegisterForm() {
             onSubmit={handleSubmit}
             className="space-y-4"
           >
+<<<<<<< HEAD
             <input
+=======
+            <Input
+>>>>>>> ceff6d8 (E)
               type="text"
               placeholder={labels.name}
               value={formData.name}
               onChange={handleChange("name")}
               required
               autoComplete="name"
+<<<<<<< HEAD
               className="input"
             />
 
             <input
+=======
+            />
+
+            <Input
+>>>>>>> ceff6d8 (E)
               type="email"
               placeholder={labels.email}
               value={formData.email}
               onChange={handleChange("email")}
               required
               autoComplete="email"
+<<<<<<< HEAD
               className="input"
             />
 
@@ -366,17 +489,49 @@ export default function RegisterForm() {
               </div>
               {formData.password && (
                 <PasswordStrengthIndicator password={formData.password} lang={lang} />
+=======
+            />
+
+            <div>
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder={labels.password}
+                value={formData.password}
+                onChange={handleChange("password")}
+                required
+                autoComplete="new-password"
+                rightIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                }
+              />
+              {formData.password && (
+                <PasswordStrengthIndicator
+                  password={formData.password}
+                  lang={lang}
+                />
+>>>>>>> ceff6d8 (E)
               )}
             </div>
 
             <div>
+<<<<<<< HEAD
               <input
+=======
+              <Input
+>>>>>>> ceff6d8 (E)
                 type={showPassword ? "text" : "password"}
                 placeholder={labels.confirmPassword}
                 value={formData.confirmPassword}
                 onChange={handleChange("confirmPassword")}
                 required
                 autoComplete="new-password"
+<<<<<<< HEAD
                 className={`input ${
                   formData.confirmPassword && !passwordsMatch
                     ? "border-red-500 focus:border-red-500 focus:ring-red-500"
@@ -386,6 +541,14 @@ export default function RegisterForm() {
               {formData.confirmPassword && !passwordsMatch && (
                 <div className="form-error">{labels.passwordMismatch}</div>
               )}
+=======
+                error={
+                  formData.confirmPassword && !passwordsMatch
+                    ? labels.passwordMismatch
+                    : false
+                }
+              />
+>>>>>>> ceff6d8 (E)
             </div>
 
             <div className="flex items-center">
@@ -396,7 +559,14 @@ export default function RegisterForm() {
                 onChange={(e) => setAgreeToTerms(e.target.checked)}
                 className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               />
+<<<<<<< HEAD
               <label htmlFor="terms" className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+=======
+              <label
+                htmlFor="terms"
+                className="ml-2 text-sm text-gray-600 dark:text-gray-400"
+              >
+>>>>>>> ceff6d8 (E)
                 {labels.terms}
               </label>
             </div>
@@ -414,6 +584,7 @@ export default function RegisterForm() {
               )}
             </AnimatePresence>
 
+<<<<<<< HEAD
             <button
               type="submit"
               disabled={!canSubmit}
@@ -421,6 +592,17 @@ export default function RegisterForm() {
             >
               {loading ? labels.loading : labels.submit}
             </button>
+=======
+            <Button
+              type="submit"
+              fullWidth
+              loading={loading}
+              disabled={!canSubmit}
+              className="mt-6"
+            >
+              {loading ? labels.loading : labels.submit}
+            </Button>
+>>>>>>> ceff6d8 (E)
           </motion.form>
 
           {/* Footer */}

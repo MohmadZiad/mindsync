@@ -9,7 +9,9 @@
 @tailwind utilities;
 
 /* ===================================================================
-      Design Tokens - Light & Dark Theme
+      Base Theme Tokens (Light / Dark)
+      These CSS variables are the design tokens used across the app.
+      Tailwind utilities read them via arbitrary values like bg-[var(--bg-1)]
       =================================================================== */
 :root {
   color-scheme: light dark;
@@ -78,41 +80,35 @@
   --shadow-lg: 0 10px 32px rgba(0, 0, 0, 0.32);
 
   --brand: #8b7bff;
-  --brand-light: #a5b4fc;
-  --brand-dark: #6366f1;
+  --brand-accent: #b1a7ff;
 
-  --brand-card: color-mix(in oklab, var(--mood) 12%, var(--bg-1) 88%);
+  --surface: 215 28% 17%;
+  --surface-foreground: 210 40% 98%;
+  --surface-2: 215 28% 12%;
+  --surface-3: 215 28% 22%;
+
+  --border: 215 28% 30%;
+  --ring: 255 92% 76%;
+}
+
+/* Apply base background/text color */
+body {
+  background: var(--bg-0);
+  color: var(--ink-1);
+}
+
+/* Prefer logical properties for better RTL support on generic spacing (opt-in) */
+:where(h1, h2, h3, h4, h5, h6, p, ul, ol) {
+  margin-block: 0;
+}
+:where(ul, ol) {
+  padding-inline-start: 1.25rem;
 }
 
 /* ===================================================================
-      Base Styles
+      Accessibility & Interactions
       =================================================================== */
 @layer base {
-  * {
-    border-color: var(--line);
-  }
-
-  html {
-    font-size: clamp(14px, 0.8vw + 12px, 18px);
-    scroll-behavior: smooth;
-  }
-
-  body {
-    background: var(--bg-0);
-    color: var(--ink-1);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    transition: background-color 0.3s ease, color 0.3s ease;
-  }
-
-  /* RTL Support */
-  html[dir="rtl"] {
-    font-family: 'Tajawal', system-ui, -apple-system, sans-serif;
-  }
-
-  /* Focus Management */
   :focus:not(:focus-visible) {
     outline: none;
   }
@@ -148,10 +144,12 @@
 }
 
 /* ===================================================================
-      Component Styles
+      WORLD‑CLASS RESPONSIVE PACK
+      Fluid type, wrappers, auto-grids, media helpers, container queries
+      All classes are opt-in → no breaking changes.
       =================================================================== */
-@layer components {
-  /* Layout Utilities */
+@layer utilities {
+  /* Fluid wrappers */
   .wrap {
     width: min(100% - var(--wrap-pad), var(--wrap-max));
     margin-inline: auto;
@@ -603,7 +601,7 @@
 }
 
 /* ===================================================================
-      Animations & Keyframes
+      Utilities Layer (existing helpers)
       =================================================================== */
 @layer utilities {
   .animate-gradient {
@@ -759,22 +757,23 @@
 }
 
 /* ===================================================================
-      Mood System - Dynamic Color Theming
+      Generic helpers
       =================================================================== */
-:root {
-  --mood: var(--brand);
-  --mood-rgb: var(--brand-rgb);
-}
-
-/* Mood Variants */
-body.mood-calm {
-  --mood: #6d5ef1;
-  --mood-rgb: 109, 94, 241;
-}
-
-body.mood-focus {
-  --mood: #22c55e;
-  --mood-rgb: 34, 197, 94;
+.edge-fade {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 8%,
+    black 92%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 8%,
+    black 92%,
+    transparent
+  );
 }
 
 body.mood-energy {
@@ -808,16 +807,20 @@ body.moodify-all .ring-mood {
 body.moodify-all .btn-primary, body.moodify-all .btn--primary {
   background: linear-gradient(135deg, var(--mood), rgba(var(--mood-rgb), 0.8));
 }
-
-body.moodify-all .progress-gradient {
-  background: linear-gradient(90deg, var(--mood), rgba(var(--mood-rgb), 0.6));
+.theme-smooth {
+  transition:
+    background-color 0.3s,
+    color 0.3s,
+    border-color 0.3s;
 }
 
 /* ===================================================================
-      Focus Mode
+      Marquee
       =================================================================== */
-:root[data-focus="true"] .focus-hide {
-  display: none !important;
+.marquee {
+  overflow: hidden;
+  position: relative;
+  isolation: isolate;
 }
 
 :root[data-focus="true"] .focus-dim {
@@ -923,147 +926,66 @@ body.moodify-all .progress-gradient {
   border-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Login Floating Elements */
-.login-floating-1 {
-  position: absolute;
-  top: 10%;
-  left: 10%;
-  width: 100px;
-  height: 100px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  animation: float 6s ease-in-out infinite;
-}
-
-.login-floating-2 {
-  position: absolute;
-  top: 60%;
-  right: 15%;
-  width: 150px;
-  height: 150px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 50%;
-  animation: float 8s ease-in-out infinite reverse;
-}
-
-.login-floating-3 {
-  position: absolute;
-  bottom: 20%;
-  left: 20%;
-  width: 80px;
-  height: 80px;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 50%;
-  animation: float 7s ease-in-out infinite;
-}
-
-/* OAuth Provider Buttons */
-.oauth-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  width: 100%;
-  padding: 0.875rem 1.5rem;
-  border-radius: var(--radius);
-  font-weight: 500;
-  transition: all 0.2s ease;
-  border: 1px solid var(--line);
-  background: var(--bg-1);
-  color: var(--ink-1);
-}
-
-.oauth-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow);
-}
-
-.oauth-btn.google {
-  border-color: #db4437;
-  color: #db4437;
-}
-
-.oauth-btn.google:hover {
-  background: #db4437;
-  color: white;
-}
-
-.oauth-btn.github {
-  border-color: #333;
-  color: #333;
-}
-
-.oauth-btn.github:hover {
-  background: #333;
-  color: white;
-}
-
-:root.dark .oauth-btn.github {
-  border-color: #fff;
-  color: #fff;
-}
-
-.oauth-btn.facebook {
-  border-color: #1877f2;
-  color: #1877f2;
-}
-
-.oauth-btn.facebook:hover {
-  background: #1877f2;
-  color: white;
+/* ===================================================================
+      Components Layer (existing atoms)
+      =================================================================== */
+@layer components {
+  .input {
+    @apply w-full rounded-xl border border-[var(--line)] bg-[var(--bg-1)] px-4 py-3 text-[var(--ink-1)] outline-none transition-all duration-200 focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 hover:border-gray-400 dark:hover:border-gray-600;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-3 text-white font-medium shadow-lg hover:shadow-xl hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all duration-200;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--bg-1)] px-4 py-2.5 text-[var(--ink-1)] font-medium hover:bg-[var(--bg-2)] hover:border-gray-400 dark:hover:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all duration-200;
+  }
+  .btn-tertiary {
+    @apply rounded-lg border border-[var(--line)] bg-[var(--bg-2)] px-3 py-2 text-[var(--ink-1)] hover:bg-[var(--bg-3)] transition-colors duration-200;
+  }
+  .label {
+    @apply text-xs text-[var(--text-3)];
+  }
+  .chip {
+    @apply rounded-full border border-[var(--line)] bg-[var(--bg-1)] px-3 py-1.5 text-sm font-medium hover:bg-[var(--bg-2)] hover:border-gray-400 dark:hover:border-gray-600 transition-all duration-200;
+  }
+  .menu-card {
+    @apply rounded-xl border border-[var(--line)] bg-[var(--bg-1)] px-4 py-3 shadow-sm hover:bg-[var(--bg-2)] hover:shadow-md hover:border-gray-400 dark:hover:border-gray-600 transition-all duration-200;
+  }
 }
 
 /* ===================================================================
-      Dashboard Specific Styles
+      Dashboard polish pack (fonts, shadows, gradients)
       =================================================================== */
-.dashboard-header {
-  background: rgba(var(--bg-1), 0.8);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--line);
-}
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap");
 
-.stats-card {
-  background: var(--bg-1);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  box-shadow: var(--shadow);
-  transition: all 0.3s ease;
+:root {
+  --app-font:
+    Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
 }
-
-.stats-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-}
-
-.nav-tab {
-  position: relative;
-  padding: 1rem 1.5rem;
-  color: var(--ink-2);
-  font-weight: 500;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s ease;
+:root[dir="rtl"] {
+  --app-font:
+    "Tajawal", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue",
+    Arial;
 }
 
 .nav-tab:hover {
   color: var(--ink-1);
 }
 
-.nav-tab.active {
-  color: var(--brand);
-  border-bottom-color: var(--brand);
-}
-
-/* Page enter animation */
-.page-enter {
-  animation: page-enter 0.5s ease-out;
-}
-
-/* ===================================================================
-      Special Effects & Animations
-      =================================================================== */
-.breathing-ring {
-  animation: breath 4s ease-in-out infinite;
+/* Page soft background — will be re-colored by Mood System below */
+.page-gradient {
+  background:
+    radial-gradient(
+      1200px 600px at 100% -20%,
+      rgba(109, 94, 241, 0.09),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at -10% -10%,
+      rgba(241, 94, 204, 0.08),
+      transparent 55%
+    ),
+    var(--bg-0);
 }
 
 .floating-element {
@@ -1081,21 +1003,26 @@ body.moodify-all .progress-gradient {
   position: relative;
   overflow: hidden;
 }
+.card-hover {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(2, 6, 23, 0.12);
+}
 
-.spotlight-bg::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(
-    circle at 50% 50%,
-    rgba(var(--mood-rgb), 0.1) 0%,
-    transparent 70%
-  );
-  animation: float 8s ease-in-out infinite;
-  pointer-events: none;
+/* Light gradient overlay for cards */
+.animated-card-gradient {
+  background:
+    linear-gradient(180deg, rgba(109, 94, 241, 0.06), transparent 40%),
+    var(--bg-1);
+}
+
+/* Simple layout transitions */
+.transition-grid {
+  transition: grid-template-rows 0.25s ease;
 }
 
 /* Marquee */
@@ -1139,38 +1066,37 @@ details.faq {
   transition: all 0.2s ease;
 }
 
-details.faq[open] {
-  box-shadow: var(--shadow);
+/* Page background presets controlled via [data-bg] on <html> */
+[data-bg="aurora"] {
+  background:
+    radial-gradient(
+      1200px 500px at 10% 10%,
+      rgba(109, 94, 241, 0.15),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at 90% 20%,
+      rgba(241, 94, 204, 0.12),
+      transparent 60%
+    ),
+    var(--bg-0);
 }
-
-details.faq > summary {
-  cursor: pointer;
-  font-weight: 500;
-  list-style: none;
-  color: var(--ink-1);
+[data-bg="mesh"] {
+  background:
+    radial-gradient(
+      800px 400px at 20% 80%,
+      rgba(34, 197, 94, 0.12),
+      transparent 60%
+    ),
+    radial-gradient(
+      1000px 600px at 80% 60%,
+      rgba(99, 102, 241, 0.14),
+      transparent 60%
+    ),
+    var(--bg-0);
 }
-
-details.faq > summary::-webkit-details-marker {
-  display: none;
-}
-
-/* ===================================================================
-      Calendar Heatmap Styles
-      =================================================================== */
-.react-calendar-heatmap .color-empty {
-  fill: var(--bg-2);
-}
-
-.react-calendar-heatmap .color-github-1 {
-  fill: rgba(var(--mood-rgb), 0.2);
-}
-
-.react-calendar-heatmap .color-github-2 {
-  fill: rgba(var(--mood-rgb), 0.4);
-}
-
-.react-calendar-heatmap .color-github-3 {
-  fill: rgba(var(--mood-rgb), 0.6);
+[data-bg="plain"] {
+  background: var(--bg-0);
 }
 
 .react-calendar-heatmap .color-github-4 {
@@ -1178,51 +1104,23 @@ details.faq > summary::-webkit-details-marker {
 }
 
 /* ===================================================================
-      Responsive Design
+      Focus Mode (used by data-focus on :root)
       =================================================================== */
-@media (max-width: 640px) {
-  .wrap {
-    --wrap-pad: 16px;
-  }
-
-  .btn {
-    padding: 0.625rem 1.25rem;
-    font-size: 0.8125rem;
-  }
-
-  .stats-card {
-    padding: 1rem;
-  }
-
-  .nav-tab {
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-  }
-
-  .mobile-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .mobile-hide {
-    display: none;
-  }
-
-  .mobile-full {
-    width: 100%;
-  }
-
-  .touch-friendly {
-    min-height: 48px;
-    min-width: 48px;
-  }
+:root[data-focus="true"] .hide-in-focus {
+  display: none !important;
 }
-
-@media (min-width: 1280px) {
-  .wrap {
-    --wrap-max: 80rem;
-  }
+:root[data-focus] .focus-dim {
+  opacity: 0.45;
+  filter: saturate(0.75);
+  transition: opacity 0.2s ease;
+}
+:root[data-focus] .focus-hide {
+  display: none !important;
+}
+:root[data-focus] .focus-ring {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 1rem;
 }
 
 /* ===================================================================
@@ -1263,80 +1161,60 @@ details.faq > summary::-webkit-details-marker {
 }
 
 /* ===================================================================
-      Print Styles
+      Optional theme presets (example)
       =================================================================== */
-@media print {
-  .no-print {
-    display: none !important;
-  }
-
-  .card {
-    box-shadow: none;
-    border: 1px solid #ccc;
-  }
-
-  .btn {
-    border: 1px solid #ccc;
-    box-shadow: none;
-  }
+[data-theme="serene"] {
+  --text: #1f2937;
+  --heading: #111827;
+  --muted: #6b7280;
+  --primary: #635bff;
+  --ring: rgba(99, 102, 241, 0.18);
+  --chip-bg: #ffffff;
+  --card-bg: #ffffffcc;
+  --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+}
+[data-theme="neo"] {
+  --text: #0f172a;
+  --heading: #0b1220;
+  --muted: #475569;
+  --primary: #6d5ef1;
+  --ring: rgba(109, 94, 241, 0.28);
+  --chip-bg: #ffffff;
+  --card-bg: #ffffffe6;
+  --shadow: 0 16px 40px rgba(109, 94, 241, 0.2);
 }
 
 /* ===================================================================
-      Utility Classes
+      Mood System (unchanged core, with brand bridge)
       =================================================================== */
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  .text-pretty {
-    text-wrap: pretty;
-  }
-
-  .safe-top {
-    padding-top: env(safe-area-inset-top);
-  }
-
-  .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-
-  .touch-target {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  .theme-transition {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-  }
-
-  .will-change-transform {
-    will-change: transform;
-  }
-
-  .will-change-opacity {
-    will-change: opacity;
-  }
-
-  .gpu-accelerated {
-    transform: translateZ(0);
-  }
+:root {
+  --mood: #6d5ef1;
+  --mood-rgb: 109, 94, 241;
+  --mood-ink: var(--ink-1);
 }
-
-/* ===================================================================
-      Enhanced Interactions
-      =================================================================== */
-.magnetic-hover {
-  transition: transform 0.2s ease;
+body.moodify-all .text-mood {
+  color: var(--mood);
+}
+body.moodify-all .bg-mood {
+  background: var(--mood);
+  color: white;
+}
+body.moodify-all .ring-mood {
+  box-shadow: 0 0 0 2px var(--mood) inset;
+}
+body.moodify-all .page-gradient {
+  background:
+    radial-gradient(
+      1200px 600px at 100% -20%,
+      rgba(var(--mood-rgb), 0.12),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at -10% -10%,
+      rgba(var(--mood-rgb), 0.1),
+      transparent 55%
+    ),
+    var(--bg-0);
 }
 
 .magnetic-hover:hover {
@@ -1354,18 +1232,16 @@ details.faq > summary::-webkit-details-marker {
 .glow-hover {
   transition: box-shadow 0.3s ease;
 }
-
-.glow-hover:hover {
-  box-shadow: 0 0 20px rgba(var(--brand-rgb), 0.3);
+:root.dark .claim-bubble {
+  --_glass-b: rgba(17, 24, 39, 0.55);
+  --_glass-s: rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.12);
 }
-
-/* ===================================================================
-      Error & Success States
-      =================================================================== */
-.error-state {
-  color: var(--danger);
-  background: rgba(var(--danger-rgb), 0.1);
-  border-color: rgba(var(--danger-rgb), 0.3);
+body.moodify-all .claim-bubble {
+  box-shadow:
+    0 10px 30px rgba(2, 6, 23, 0.1),
+    0 0 0 2px rgba(var(--mood-rgb), 0.15) inset,
+    0 12px 40px rgba(var(--mood-rgb), 0.25);
 }
 
 .success-state {
@@ -1431,47 +1307,38 @@ details.faq > summary::-webkit-details-marker {
   margin-top: 0.25rem;
 }
 
-.form-hint {
-  font-size: 0.75rem;
-  color: var(--ink-3);
-  margin-top: 0.25rem;
-}
-
-/* Input with Icons */
-.input-with-icon {
-  position: relative;
-}
-
-.input-with-icon .input {
-  padding-left: 2.5rem;
-}
-
-.input-with-icon .icon {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--ink-3);
-}
-
-/* ===================================================================
-      Advanced Grid Layouts
-      =================================================================== */
-.auto-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(var(--min-width, 280px), 1fr));
-  gap: var(--grid-gap, 1.5rem);
-}
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
-}
-
-@media (min-width: 1024px) {
-  .dashboard-grid {
-    grid-template-columns: repeat(3, 1fr);
+@layer components {
+  .btn-primary {
+    background: var(--brand);
+    color: #fff;
+    box-shadow: var(--shadow);
+  }
+  .btn-primary:hover {
+    background: var(--brand-600);
+  }
+  .btn-primary:focus {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--brand-50),
+      0 0 0 6px var(--brand-300);
+  }
+  .btn-secondary:focus {
+    box-shadow:
+      0 0 0 2px var(--brand-50),
+      0 0 0 6px var(--brand-200);
+  }
+  .text-brand {
+    color: var(--brand);
+  }
+  .bg-brand {
+    background: var(--brand);
+    color: #fff;
+  }
+  .border-brand {
+    border-color: var(--brand);
+  }
+  .ring-brand {
+    --tw-ring-color: var(--brand);
   }
 }
 
@@ -1560,51 +1427,35 @@ details.faq > summary::-webkit-details-marker {
 .page-exit {
   animation: page-exit 0.3s ease-in;
 }
-
-/* Dashboard specific */
-.dashboard-container {
-  min-height: 100vh;
-  background: var(--bg-0);
+body.moodify-all :where(.from-indigo-500, .from-purple-500, .from-sky-500) {
+  --tw-gradient-from: var(--brand-500) !important;
+  --tw-gradient-stops:
+    var(--tw-gradient-from), var(--tw-gradient-to, rgba(0, 0, 0, 0));
+}
+body.moodify-all :where(.to-indigo-300, .to-purple-300, .to-sky-300) {
+  --tw-gradient-to: var(--brand-300) !important;
+}
+body.moodify-all
+  :where(.is-active, .active, [aria-selected="true"]).bg-indigo-100 {
+  background-color: var(--brand-100) !important;
+}
+body.moodify-all
+  :where(.is-active, .active, [aria-selected="true"]).text-indigo-600 {
+  color: var(--brand-600) !important;
+}
+body.moodify-all .claim-bubble {
+  box-shadow:
+    0 10px 30px rgba(2, 6, 23, 0.1),
+    0 0 0 2px rgba(var(--mood-rgb), 0.15) inset,
+    0 12px 40px rgba(var(--mood-rgb), 0.25);
 }
 
-.dashboard-main {
-  padding-top: 2rem;
-  padding-bottom: 2rem;
+/* Ensure the bridge is active app-wide */
+body:not(.moodify-all) {
+  /* noop for SSR-only routes */
 }
-
-/* Auth pages specific */
-.auth-container {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 400px;
-  padding: 2rem;
-  background: var(--bg-1);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-}
-
-/* ===================================================================
-      Final Polish
-      =================================================================== */
-.premium-gradient {
-  background: linear-gradient(
-    135deg,
-    var(--brand) 0%,
-    var(--brand-light) 50%,
-    var(--brand) 100%
-  );
-}
-
-.premium-text {
-  background: linear-gradient(135deg, var(--brand), var(--brand-light));
+body.moodify-all #features h2 {
+  background-image: linear-gradient(90deg, var(--mood-2), var(--mood));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1626,28 +1477,39 @@ details.faq > summary::-webkit-details-marker {
 .toast-progress {
   animation: toast-progress 3s linear forwards;
 }
+body.moodify-all #features .feature-card:hover {
+  box-shadow: 0 10px 24px color-mix(in oklab, var(--brand), transparent 80%);
+}
+/* ================= WORLD-CLASS RESPONSIVE SAFETY NET ================= */
 
-@keyframes toast-progress {
-  from { width: 100%; }
-  to { width: 0%; }
+/* 1) Fluid root sizing → كل شيء يتدرّج تلقائيًا */
+html {
+  /* يضبط حجم النص الأساسي بين 14px و 18px حسب العرض */
+  --fs-base: clamp(14px, 0.6vw + 12px, 18px);
+  font-size: var(--fs-base);
 }
 
-/* Command Palette */
-.command-palette {
-  background: var(--bg-1);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+/* 2) توازن التفاف العناوين والنصوص + كسر الكلمات الطويلة */
+h1, h2, h3, .text-hero { text-wrap: balance; }
+p, li { text-wrap: pretty; }
+* { overflow-wrap: anywhere; }
+
+/* 3) صور/فيديو/SVG دائمًا ريسبونسف */
+img, svg, video, canvas { max-width: 100%; height: auto; }
+
+/* 4) تغليظ الـ wrap قليلًا على الشاشات العريييضة جدًا (لتحسين قابلية القراءة) */
+@media (min-width: 120rem) { /* ≥ 1920px */
+  :root { --wrap-max: 90rem; } /* 1440px حد أقصى للسطور */
 }
 
-/* Signature Canvas */
-.signature-canvas {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--bg-1);
+/* 5) Ultra-small screens (≤ 352px): صغّر الحجوم والهوامش بأمان */
+@media (max-width: 22rem) { /* 352px */
+  .wrap { --wrap-pad: 8px; }
+  .fluid-h1 { font-size: clamp(1.4rem, 6.5vw + 0.7rem, 2.2rem); line-height: 1.15; }
+  .fluid-text { font-size: clamp(0.9rem, 2.8vw + 0.6rem, 1rem); }
+  .btn, .btn-primary { padding: 0.6rem 1rem; border-radius: 12px; }
+  .chip { padding: 0.35rem 0.6rem; }
 }
 
-/* Header elevation on scroll */
-body.scrolled .dashboard-header {
-  box-shadow: var(--shadow);
-}
+/* 6) منع أي تمرير أفقي عارض داخل الصفحة (اختياريًا على body) */
+.no-overflow-x, body { overflow-x: hidden; }
