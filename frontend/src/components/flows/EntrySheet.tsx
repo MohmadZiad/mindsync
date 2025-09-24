@@ -7,7 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { addEntry, fetchEntries } from "@/redux/slices/entrySlice";
 import { SideSheet } from "@/components/primitives/SideSheet";
 import toast from "react-hot-toast";
-import { useI18n } from "@/components/ui/i18n";
+import { useI18n } from "@/ui/i18n";
 import NoteModal, { type NotePayload } from "@/components/NoteModal";
 import { EntryTemplates } from "./EntryTemplates";
 import { motion, AnimatePresence } from "framer-motion";

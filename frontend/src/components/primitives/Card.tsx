@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 
-import { cn } from "@/components/ui/cn";
+import { cn } from "@/ui/cn";
 
 type Variant = "glass" | "solid" | "soft";
 type NativeAttrs = Omit<React.HTMLAttributes<HTMLElement>, "title">;

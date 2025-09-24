@@ -1,2 +1,2 @@
-export { Card } from "@/components/primitives/Card";
-export { default } from "@/components/primitives/Card";
+export { Card } from "@/ui/Card";
+export { default } from "@/ui/Card";

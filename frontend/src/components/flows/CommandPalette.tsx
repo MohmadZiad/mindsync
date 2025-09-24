@@ -2,7 +2,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useState } from "react";
 import { Command } from "cmdk";
-import { useI18n } from "@/components/ui/i18n";
+import { useI18n } from "@/ui/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function CommandPalette({

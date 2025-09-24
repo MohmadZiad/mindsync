@@ -33,11 +33,11 @@ import type { Streak } from "@/services/streaks";
 import { groupEntriesDaily, wordsFromNotes } from "@/lib/reporting";
 
 /* ---------------- Fixed UI ---------------- */
-import AnimatedStatCard from "@/components/ui/AnimatedStatCard";
-import SmartSearchBar from "@/components/ui/SmartSearchBar";
-import ThemeToggle from "@/components/ui/ThemeToggle";
-import BackgroundPicker from "@/components/ui/BackgroundPicker";
-import ProgressBarToday from "@/components/ui/ProgressBarToday";
+import AnimatedStatCard from "@/ui/AnimatedStatCard";
+import SmartSearchBar from "@/ui/SmartSearchBar";
+import ThemeToggle from "@/ui/ThemeToggle";
+import BackgroundPicker from "@/ui/BackgroundPicker";
+import ProgressBarToday from "@/ui/ProgressBarToday";
 
 /* ---------------- Addons ------------------ */
 import FocusModeToggle from "@/components/addons/FocusModeToggle";

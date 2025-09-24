@@ -8,7 +8,7 @@ import { useAppDispatch } from "@/redux/hooks";
 import { addHabit } from "@/redux/slices/habitSlice";
 import { SideSheet } from "@/components/primitives/SideSheet";
 import toast from "react-hot-toast";
-import { useI18n } from "@/components/ui/i18n";
+import { useI18n } from "@/ui/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { HabitTemplates } from "./TemplatePresets";

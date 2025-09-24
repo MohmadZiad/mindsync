@@ -28,7 +28,7 @@ import FAQSearch, { getFaqJsonLd, type FaqItem } from "@/components/FAQ";
 import PricingToggle from "@/components/PricingToggle";
 import HowItWorksScrolly from "@/components/HowItWorksScrolly";
 
-import { useI18n } from "@/components/ui/i18n";
+import { useI18n } from "@/ui/i18n";
 import SpotlightBG from "@/components/effects/SpotlightBG";
 import MoodMenu from "@/components/mood/MoodMenu";
 
