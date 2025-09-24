@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Settings, BarChart3, BookOpen, TrendingUp, Filter, Edit2, Trash2, CheckCircle, Calendar, User, LogOut } from "lucide-react";
+import React, {
+  memo,
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
+import dynamic from "next/dynamic";
 import { toast } from "react-hot-toast";
+import { useTheme } from "next-themes";
 
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { meThunk, logoutThunk } from "@/redux/slices/authSlice";
@@ -24,147 +31,877 @@ import {
 import { habitsService } from "@/services/habits";
 import type { Streak } from "@/services/streaks";
 import { groupEntriesDaily, wordsFromNotes } from "@/lib/reporting";
-import { useI18n } from "@/components/ui/i18n";
-import { useHotkeys } from "@/components/hooks/useHotkeys";
-import { formatRelativeTime } from "@/features/shared/utils/formatters";
 
-// Import all the original components
-import AiReflectionControls from "@/components/AiReflectionControls";
-import StreakMeCard from "@/components/StreakMeCard";
-import WeeklyGrouped from "@/components/WeeklyGrouped";
-import MonthlySummary from "@/components/MonthlySummary";
-import DailyPromptWidget from "@/components/addons/DailyPromptWidget";
-import AIInsightsCard from "@/components/addons/AIInsightsCard";
-import BestHabitCard from "@/components/addons/BestHabitCard";
-import OnboardingCoach from "@/components/addons/OnboardingCoach";
-import BadgesRow from "@/components/addons/BadgesRow";
-import InsightsPanel from "@/components/addons/InsightsPanel";
-import FocusModeToggle from "@/components/addons/FocusModeToggle";
-import ProgressLine from "@/components/reports/ProgressLine";
-import EntriesHeatmap from "@/components/reports/EntriesHeatmap";
-import NotesWordCloud from "@/components/reports/NotesWordCloud";
-import ExportPdfButton from "@/components/reports/ExportPdfButton";
-import HabitFormExtra, { type HabitExtra } from "@/components/HabitFormExtra";
-import HabitFilters, { type HabitFilter } from "@/components/ui/HabitFilters";
+/* ---------------- Fixed UI ---------------- */
+import AnimatedStatCard from "@/components/ui/AnimatedStatCard";
+import SmartSearchBar from "@/components/ui/SmartSearchBar";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import MoodMenu from "@/components/mood/MoodMenu";
+import BackgroundPicker from "@/components/ui/BackgroundPicker";
+import ProgressBarToday from "@/components/ui/ProgressBarToday";
 
-// Lazy loaded components
-import dynamic from "next/dynamic";
-const CommandPalette = dynamic(() => import("@/components/flows/CommandPalette"), { ssr: false });
-const QuickAddHabitPopover = dynamic(() => import("@/components/flows/QuickAddHabitPopover"), { ssr: false });
-const AddHabitSheet = dynamic(() => import("@/components/flows/AddHabitSheet"), { ssr: false });
-const QuickLogPopover = dynamic(() => import("@/components/flows/QuickLogPopover"), { ssr: false });
-const EntrySheet = dynamic(() => import("@/components/flows/EntrySheet"), { ssr: false });
-const ConfettiSuccess = dynamic(() => import("@/components/addons/ConfettiSuccess"), { ssr: false });
+/* ---------------- Addons ------------------ */
+import FocusModeToggle from "@/components/addons/FocusModeToggle";
 
-type TabId = "overview" | "habits" | "entries" | "reports";
+/* ---------------- Lazy chunks ------------- */
+const StepTabs = dynamic(() => import("@/components/StepTabs"), { ssr: false });
+const FabMenu = dynamic(() => import("@/components/flows/FabMenu"), {
+  ssr: false,
+});
+const CommandPalette = dynamic(
+  () => import("@/components/flows/CommandPalette"),
+  { ssr: false }
+);
+const QuickAddHabitPopover = dynamic(
+  () => import("@/components/flows/QuickAddHabitPopover"),
+  { ssr: false }
+);
+const AddHabitSheet = dynamic(
+  () => import("@/components/flows/AddHabitSheet"),
+  { ssr: false }
+);
+const QuickLogPopover = dynamic(
+  () => import("@/components/flows/QuickLogPopover"),
+  { ssr: false }
+);
+const EntrySheet = dynamic(() => import("@/components/flows/EntrySheet"), {
+  ssr: false,
+});
+const ConfettiSuccess = dynamic(
+  () => import("@/components/addons/ConfettiSuccess"),
+  { ssr: false }
+);
 
-interface Habit {
-  id: string;
-  name: string;
-  icon?: string | null;
-  frequency?: "daily" | "weekly";
-  description?: string;
-}
+/* ---------------- Section deps (inline sections use these) ---------------- */
+const NoteModal = dynamic(() => import("@/components/NoteModal"), {
+  ssr: false,
+});
+const HabitFormExtra = dynamic(() => import("@/components/HabitFormExtra"));
+const AnimatedCard = dynamic(() => import("@/components/ui/AnimatedCard"));
+const StreakMeCard = dynamic(() => import("@/components/StreakMeCard"));
+const AiReflectionControls = dynamic(
+  () => import("@/components/AiReflectionControls"),
+  { ssr: false }
+);
+const ProgressLine = dynamic(
+  () => import("@/components/reports/ProgressLine"),
+  { ssr: false }
+);
+const EntriesHeatmap = dynamic(
+  () => import("@/components/reports/EntriesHeatmap"),
+  { ssr: false }
+);
+const NotesWordCloud = dynamic(
+  () => import("@/components/reports/NotesWordCloud"),
+  { ssr: false }
+);
+const ExportPdfButton = dynamic(
+  () => import("@/components/reports/ExportPdfButton"),
+  { ssr: false }
+);
+const WeeklyGrouped = dynamic(() => import("@/components/WeeklyGrouped"), {
+  ssr: false,
+});
+const MonthlySummary = dynamic(() => import("@/components/MonthlySummary"), {
+  ssr: false,
+});
 
-interface Entry {
-  id: string;
-  habitId: string;
+/* ---------------- Modal shell ------------- */
+import PrettyModal from "@/components/ui/PrettyModal";
+
+/* ===================== i18n ===================== */
+export type Lang = "en" | "ar";
+
+type HabitsI18n = {
+  habitNamePh: string;
+  add: string;
+  save: string;
+  cancel: string;
+  todayDone: string;
+  edit: string;
+  del: string;
+  checkinToast: (n: number) => string;
+  checkinErr: string;
+  day?: string;
+  days?: string;
+};
+
+type EntriesI18n = {
+  chooseHabit: string;
   mood: string;
-  reflection?: string | null;
-  createdAt: string;
-}
+  reflectionPh: string;
+  addEntry: string;
+  editEntry: string;
+  deleteEntry: string;
+  clearFilter: string;
+};
 
-function computeBestHabit(
-  habits: Habit[],
-  entries: Entry[],
+const T = {
+  en: {
+    dash: "Dashboard",
+    mustLogin: "You need to sign in to view the dashboard.",
+    goLogin: "Go to login",
+    helloTime: (name: string, h: number) =>
+      `${h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"}, ${name || "friend"}`,
+    logout: "Logout",
+    theme: "Theme",
+    lang: "Language",
+    light: "Light",
+    dark: "Dark",
+    steps: {
+      intro: "Overview",
+      habits: "Habits",
+      entries: "Entries",
+      reports: "Reports",
+    },
+    introCopy:
+      "MindSync helps you structure your habits and log daily entries, with weekly and monthly insights. Start by adding a habit, then add entries.",
+    addHabit: "Add Habit",
+    quickLog: "Quick Log",
+    activeHabits: "Active habits",
+    entriesThisWeek: "Entries this week",
+    todayCompletion: "Today's completion",
+    qlogTitle: "Quick Log",
+    qlogPickHabit: "Pick a habit",
+    qlogNotePh: "Short note (optional)",
+    qlogDone: "Done",
+    qlogNotDone: "Not done",
+    qlogSave: "Save",
+    qlogSaved: "Logged successfully ✅",
+    habitNamePh: "Habit name",
+    add: "Add",
+    save: "Save",
+    cancel: "Cancel",
+    todayDone: "Mark today",
+    edit: "Edit",
+    del: "Delete",
+    streak: "streak",
+    checkinToast: (n: number) => `Checked in ✅ — current streak: ${n} 🔥`,
+    checkinErr: "Check-in failed",
+    chooseHabit: "Choose habit",
+    mood: "Mood",
+    reflectionPh: "Reflection (optional)",
+    addEntry: "Add Entry",
+    editEntry: "Edit",
+    deleteEntry: "Delete",
+    clearFilter: "Clear filter",
+    noteBtn: "Note ✍️",
+    aiGenerate: "Generate with AI",
+    aiModalTitle: "Smart Summary",
+    aiModalSub: "Create quick, beautiful summaries for your entries.",
+    aiClose: "Close",
+    reportTitles: {
+      line: "Daily Entries",
+      heat: "Heatmap (last 6 months)",
+      cloud: "Notes Word Cloud",
+    },
+    day: "day",
+    days: "days",
+  },
+  ar: {
+    dash: "لوحة التحكم",
+    mustLogin: "لازم تسجّل دخول قبل ما تشوف الداشبورد.",
+    goLogin: "الذهاب لتسجيل الدخول",
+    helloTime: (name: string, h: number) =>
+      `${h < 12 ? "صباح الخير" : "مساء الخير"} يا ${name || "صديقي"}`,
+    logout: "تسجيل الخروج",
+    theme: "المظهر",
+    lang: "اللغة",
+    light: "فاتح",
+    dark: "داكن",
+    steps: {
+      intro: "تعريف وملخص",
+      habits: "العادات",
+      entries: "الإدخالات",
+      reports: "التقارير",
+    },
+    introCopy:
+      "MindSync بيساعدك ترتّب عاداتك وتوثّق إدخالاتك اليومية، وتاخذ ملخصات ذكية أسبوعيًا وشهريًا. ابدأ بإضافة عادة، ثم سجّل إدخالاتك.",
+    addHabit: "أضف عادة",
+    quickLog: "تسجيل سريع",
+    activeHabits: "عادات فعّالة",
+    entriesThisWeek: "مدخلات هذا الأسبوع",
+    todayCompletion: "إنجاز اليوم",
+    qlogTitle: "تسجيل سريع",
+    qlogPickHabit: "اختر عادة",
+    qlogNotePh: "ملاحظة قصيرة (اختياري)",
+    qlogDone: "تم",
+    qlogNotDone: "لم يتم",
+    qlogSave: "حفظ",
+    qlogSaved: "تم الحفظ بنجاح ✅",
+    habitNamePh: "اسم العادة",
+    add: "إضافة",
+    save: "حفظ",
+    cancel: "إلغاء",
+    todayDone: "تمّ اليوم",
+    edit: "تعديل",
+    del: "حذف",
+    streak: "سلسلة",
+    checkinToast: (n: number) => `تم تسجيل اليوم ✅ — الستريك الحالي: ${n} 🔥`,
+    checkinErr: "فشل التشيك-إن",
+    chooseHabit: "اختر عادة",
+    mood: "المزاج",
+    reflectionPh: "تدوينة (اختياري)",
+    addEntry: "إضافة إدخال",
+    editEntry: "تعديل",
+    deleteEntry: "حذف",
+    clearFilter: "إزالة الفلتر",
+    noteBtn: "ملاحظة ✍️",
+    aiGenerate: "توليد بالذكاء",
+    aiModalTitle: "ملخص ذكي",
+    aiModalSub: "أنشئ ملخصات سريعة وأنيقة لإدخالاتك.",
+    aiClose: "إغلاق",
+    reportTitles: {
+      line: "الإدخالات اليومية",
+      heat: "خريطة النشاط (آخر ٦ أشهر)",
+      cloud: "سحابة كلمات الملاحظات",
+    },
+    day: "يوم",
+    days: "أيام",
+  },
+} as const;
+
+/* ===================== Helpers ===================== */
+function computeBest(
+  habits: any[],
+  entries: any[],
   streaks: Record<string, Streak>
 ) {
   if (!habits?.length || !entries?.length) return null;
-
   try {
-    const weekStart = new Date();
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const from = new Date();
+    const start = new Date(
+      from.getFullYear(),
+      from.getMonth(),
+      from.getDate() - from.getDay()
+    );
 
     const counts = new Map<string, number>();
-    entries.forEach((entry) => {
-      const entryDate = new Date(entry.createdAt);
-      if (entryDate >= weekStart) {
-        counts.set(entry.habitId, (counts.get(entry.habitId) || 0) + 1);
-      }
+    entries.forEach((e) => {
+      const d = new Date(e.createdAt);
+      if (d >= start) counts.set(e.habitId, (counts.get(e.habitId) || 0) + 1);
     });
 
-    let bestHabit: Habit | null = null;
-    let maxCount = -1;
-    
-    habits.forEach((habit) => {
-      const count = counts.get(habit.id) || 0;
-      if (count > maxCount) {
-        maxCount = count;
-        bestHabit = habit;
+    let winner: any = null;
+    let max = -1;
+    habits.forEach((h) => {
+      const c = counts.get(h.id) || 0;
+      if (c > max) {
+        max = c;
+        winner = h;
       }
     });
+    if (!winner) return null;
 
-    if (!bestHabit) return null;
-
-    // Generate week points for sparkline
-    const weekPoints = Array(7).fill(0);
-    const startOfWeek = new Date();
-    startOfWeek.setDate(startOfWeek.getDate() - 6);
-    
-    entries.forEach((entry) => {
-      if (entry.habitId !== bestHabit!.id) return;
-      const entryDate = new Date(entry.createdAt);
-      if (entryDate < startOfWeek) return;
-      const dayIndex = Math.floor((entryDate.getTime() - startOfWeek.getTime()) / (1000 * 60 * 60 * 24));
-      if (dayIndex >= 0 && dayIndex < 7) {
-        weekPoints[dayIndex] += 1;
-      }
+    const now = new Date();
+    const start2 = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - 6
+    );
+    const buckets = Array(7).fill(0);
+    entries.forEach((e) => {
+      if (e.habitId !== winner.id) return;
+      const d = new Date(e.createdAt);
+      if (d < start2) return;
+      const idx = Math.floor((+d - +start2) / 86400000);
+      if (idx >= 0 && idx < 7) buckets[idx] += 1;
     });
 
     return {
-      habit: bestHabit,
-      weekPoints,
-      streak: streaks[bestHabit.id]?.current ?? 0,
+      habit: winner,
+      weekPoints: buckets,
+      streak: streaks[winner.id]?.current ?? 0,
     };
-  } catch (error) {
-    console.error("Error computing best habit:", error);
+  } catch (err) {
+    console.error("computeBest error:", err);
     return null;
   }
 }
 
-function DashboardSkeleton({ lang }: { lang: "en" | "ar" }) {
+/* =============================================================================
+   Sections (INLINE)
+   ========================================================================== */
+
+/* ---------- IntroSection ---------- */
+const IntroSection = memo(function IntroSection({
+  lang,
+  t,
+  best,
+  onOpenAi,
+}: {
+  lang: Lang;
+  t: any;
+  best: { habit: any; weekPoints: number[]; streak: number } | null;
+  onOpenAi: () => void;
+}) {
   return (
-    <div className="min-h-screen bg-[var(--bg-0)]">
-      <div className="h-16 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl border-b border-[var(--line)]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
-          <div className="h-6 w-32 bg-gray-200 dark:bg-gray-800 rounded shimmer" />
-          <div className="flex gap-3">
-            <div className="h-8 w-24 bg-gray-200 dark:bg-gray-800 rounded shimmer" />
-            <div className="h-8 w-24 bg-gray-200 dark:bg-gray-800 rounded shimmer" />
+    <div className="grid grid-cols-12 gap-4 auto-rows-min">
+      <div className="col-span-12 lg:col-span-8">
+        <AnimatedCard
+          lang={lang}
+          title="MindSync"
+          subtitle={t.introCopy}
+          icon="✨"
+          gradient
+          defaultOpen
+        >
+          <div className="mt-2 flex gap-2">
+            <button
+              className="btn-primary rounded-2xl"
+              onClick={onOpenAi}
+              title={t.aiGenerate}
+            >
+              ✨ {t.aiGenerate}
+            </button>
           </div>
+        </AnimatedCard>
+      </div>
+      <div className="col-span-12 lg:col-span-4">
+        <div className="h-full">
+          <StreakMeCard />
         </div>
       </div>
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 bg-gray-200 dark:bg-gray-800 rounded-2xl shimmer" />
-          ))}
+      <div className="col-span-12 xl:col-span-7">
+        <AnimatedCard
+          lang={lang}
+          title={lang === "ar" ? "انعكاس ذكي" : "AI Reflection"}
+          icon="🧠"
+          gradient
+          defaultOpen
+        >
+          <div className="rounded-xl border border-[var(--line)] bg-[var(--bg-1)] p-3">
+            <AiReflectionControls />
+          </div>
+        </AnimatedCard>
+      </div>
+      {best?.habit && (
+        <div className="col-span-12 xl:col-span-5">
+          <AnimatedCard
+            lang={lang}
+            title={
+              lang === "ar" ? "أفضل عادة هذا الأسبوع" : "Best Habit This Week"
+            }
+            icon="🏆"
+            flip
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div className="text-sm">
+                <div className="font-semibold">
+                  {best.habit.icon
+                    ? `${best.habit.icon} ${best.habit.name}`
+                    : best.habit.name}
+                </div>
+                <div className="opacity-70">
+                  {lang === "ar"
+                    ? `🔥 سلسلة: ${best.streak}`
+                    : `🔥 Streak: ${best.streak}`}
+                </div>
+              </div>
+              <div className="flex gap-1 items-end w-40">
+                {best.weekPoints.map((v, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 rounded-t bg-indigo-400/20"
+                    style={{ height: 6 + v * 10 }}
+                  />
+                ))}
+              </div>
+            </div>
+          </AnimatedCard>
         </div>
-        <div className="space-y-6">
-          <div className="h-64 bg-gray-200 dark:bg-gray-800 rounded-2xl shimmer" />
-          <div className="h-48 bg-gray-200 dark:bg-gray-800 rounded-2xl shimmer" />
-        </div>
-      </main>
+      )}
     </div>
   );
-}
+});
 
-export default function DashboardPage() {
+/* ---------- HabitsSection ---------- */
+const HabitsSection = memo(function HabitsSection(props: {
+  lang?: Lang;
+  i18n: HabitsI18n;
+  habits: any[];
+  currentHabitId?: string | null;
+  newHabit: string;
+  newHabitExtra: any;
+  editHabit: { id: string; name: string } | null;
+  streaks: Record<string, Streak>;
+  setNewHabit: (v: string) => void;
+  setNewHabitExtra: (v: any) => void;
+  setEditHabit: (v: any) => void;
+  onAddHabit: () => Promise<void>;
+  onSelectHabit: (id: string) => Promise<void>;
+  onCheckin: (id: string) => Promise<void>;
+  onEditSave: (id: string, name: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const {
+    lang,
+    i18n,
+    habits,
+    currentHabitId,
+    newHabit,
+    newHabitExtra,
+    editHabit,
+    streaks,
+    setNewHabit,
+    setNewHabitExtra,
+    setEditHabit,
+    onAddHabit,
+    onSelectHabit,
+    onCheckin,
+    onEditSave,
+    onDelete,
+  } = props;
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-[var(--line)] bg-[var(--bg-1)] shadow-sm overflow-hidden">
+        <div className="w-full flex items-center gap-2 px-4 py-3 border-b border-[var(--line)]">
+          <span className="text-xl">➕</span>
+          <span className="font-semibold flex-1 text-left">
+            {lang === "ar" ? "أضف عادة" : "Add Habit"}
+          </span>
+        </div>
+        <div className="p-4 space-y-2">
+          <div className="flex gap-2">
+            <input
+              className="input flex-1"
+              placeholder={i18n.habitNamePh}
+              value={newHabit}
+              onChange={(e) => setNewHabit(e.target.value)}
+            />
+            <button className="btn-primary" onClick={onAddHabit}>
+              {i18n.add}
+            </button>
+          </div>
+          <HabitFormExtra
+            value={newHabitExtra}
+            onChange={setNewHabitExtra}
+            lang={lang}
+          />
+        </div>
+      </div>
+
+      <ul className="grid sm:grid-cols-2 gap-3">
+        {habits.map((h) => {
+          const curr = streaks[h.id]?.current ?? 0;
+          return (
+            <li
+              key={h.id}
+              className="border border-[var(--line)] rounded-2xl p-3 bg-[var(--bg-1)] shadow-sm card-hover"
+            >
+              {editHabit && editHabit.id === h.id ? (
+                <div className="flex gap-2 w-full">
+                  <input
+                    className="input flex-1"
+                    value={editHabit.name}
+                    onChange={(e) =>
+                      setEditHabit({ id: h.id, name: e.target.value })
+                    }
+                  />
+                  <button
+                    className="btn-primary"
+                    onClick={() => onEditSave(h.id, editHabit.name)}
+                  >
+                    {i18n.save}
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    onClick={() => setEditHabit(null)}
+                  >
+                    {i18n.cancel}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <button
+                    className={`text-left flex-1 ${currentHabitId === h.id ? "font-semibold underline" : ""}`}
+                    onClick={() => onSelectHabit(h.id)}
+                    title={h.name}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{h.icon ?? "📌"}</span>
+                      <div className="flex items-center gap-2">
+                        <span>{h.name}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
+                          🔥 {curr}{" "}
+                          {curr === 1
+                            ? (i18n.day ?? "day")
+                            : (i18n.days ?? "days")}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="text-sm px-2 py-1 rounded bg-green-600 text-white"
+                      onClick={() => onCheckin(h.id)}
+                      title={i18n.todayDone}
+                    >
+                      {i18n.todayDone}
+                    </button>
+                    <button
+                      className="text-sm px-2 py-1 border rounded"
+                      onClick={() => setEditHabit({ id: h.id, name: h.name })}
+                    >
+                      {i18n.edit}
+                    </button>
+                    <button
+                      className="text-sm px-2 py-1 rounded bg-red-600 text-white"
+                      onClick={() => onDelete(h.id)}
+                    >
+                      {i18n.del}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+});
+
+/* ---------- EntriesSection ---------- */
+const EntriesSection = memo(function EntriesSection(props: {
+  lang?: Lang;
+  i18n: EntriesI18n;
+  locale: string;
+  habits: any[];
+  entries: any[];
+  currentHabitId?: string | null;
+  entryForm: { habitId: string; mood: string; reflection: string };
+  setEntryForm: (v: any) => void;
+  onAddEntry: () => Promise<void>;
+  onEditEntry: (e: any) => Promise<void>;
+  onDeleteEntry: (id: string) => Promise<void>;
+  onClearFilter: () => Promise<void>;
+}) {
+  const {
+    lang,
+    i18n,
+    locale,
+    habits,
+    entries,
+    currentHabitId,
+    entryForm,
+    setEntryForm,
+    onAddEntry,
+    onEditEntry,
+    onDeleteEntry,
+    onClearFilter,
+  } = props;
+
+  const [noteOpen, setNoteOpen] = useState(false);
+
+  return (
+    <div className="space-y-4">
+      <div className="grid md:grid-cols-4 gap-2">
+        <select
+          className="input"
+          value={entryForm.habitId}
+          onChange={(e) =>
+            setEntryForm({ ...entryForm, habitId: e.target.value })
+          }
+        >
+          <option value="">{i18n.chooseHabit}</option>
+          {habits.map((h) => (
+            <option key={h.id} value={h.id}>
+              {h.icon ? `${h.icon} ${h.name}` : h.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="input"
+          aria-label={i18n.mood}
+          value={entryForm.mood}
+          onChange={(e) => setEntryForm({ ...entryForm, mood: e.target.value })}
+          title={i18n.mood}
+        >
+          <option value="🙂">🙂</option>
+          <option value="😐">😐</option>
+          <option value="😢">😢</option>
+          <option value="😡">😡</option>
+          <option value="😴">😴</option>
+          <option value="🎉">🎉</option>
+        </select>
+
+        <button
+          type="button"
+          className="btn-secondary text-left"
+          onClick={() => setNoteOpen(true)}
+          title={i18n.reflectionPh}
+        >
+          {entryForm.reflection
+            ? entryForm.reflection.slice(0, 40) + "…"
+            : lang === "ar"
+              ? "ملاحظة ✍️"
+              : "Note ✍️"}
+        </button>
+
+        <button className="btn-primary" onClick={onAddEntry}>
+          {i18n.addEntry}
+        </button>
+      </div>
+
+      {noteOpen && (
+        <NoteModal
+          lang={lang}
+          defaultText={entryForm.reflection || ""}
+          onCancel={() => setNoteOpen(false)}
+          onSave={(payload: any) => {
+            setEntryForm({ ...entryForm, reflection: payload.text });
+            setNoteOpen(false);
+          }}
+        />
+      )}
+
+      <ul className="divide-y divide-[var(--line)] border border-[var(--line)] rounded-2xl overflow-hidden">
+        {entries.map((e) => (
+          <li key={e.id} className="p-3 bg-[var(--bg-1)]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-sm">
+                  <span className="font-medium">{e.mood}</span>
+                  <span className="opacity-70">
+                    {" "}
+                    — {new Date(e.createdAt).toLocaleString(locale)}
+                  </span>
+                </div>
+                {e.reflection && (
+                  <div className="text-xs text-[var(--ink-1)]/90">
+                    {e.reflection}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  className="text-sm px-2 py-1 border rounded"
+                  onClick={() => onEditEntry(e)}
+                >
+                  {i18n.editEntry}
+                </button>
+                <button
+                  className="text-sm px-2 py-1 rounded bg-red-600 text-white"
+                  onClick={() => onDeleteEntry(e.id)}
+                >
+                  {i18n.deleteEntry}
+                </button>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {currentHabitId && (
+        <button className="btn-secondary" onClick={onClearFilter}>
+          {i18n.clearFilter}
+        </button>
+      )}
+    </div>
+  );
+});
+
+/* ---------- ReportsSection ---------- */
+const ReportsSection = memo(function ReportsSection({
+  lang = "en",
+  t,
+  entries,
+  compute,
+}: {
+  lang?: Lang;
+  t: any;
+  entries: any[];
+  compute: {
+    line: any[];
+    heat: any[];
+    words: { text: string; value: number }[];
+  };
+}) {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - 180);
+
+  return (
+    <div className="grid gap-4">
+      <div className="flex justify-end">
+        <ExportPdfButton targetId="report-root" />
+      </div>
+      <div id="report-root" className="grid gap-4">
+        <ProgressLine data={compute.line} title={t.reportTitles.line} />
+        <EntriesHeatmap
+          values={compute.heat}
+          startDate={start}
+          endDate={end}
+          title={t.reportTitles.heat}
+        />
+        <NotesWordCloud words={compute.words} title={t.reportTitles.cloud} />
+        <WeeklyGrouped />
+        <MonthlySummary />
+      </div>
+    </div>
+  );
+});
+
+/* ---------- TopHelpers (inline) ---------- */
+const TopHelpers = memo(function TopHelpers({
+  lang,
+  hasHabits,
+  habits,
+  entries,
+}: {
+  lang: Lang;
+  hasHabits: boolean;
+  habits: any[];
+  entries: any[];
+}) {
+  const OnboardingCoach = dynamic(
+    () => import("@/components/addons/OnboardingCoach"),
+    { ssr: false }
+  );
+  const DailyPromptWidget = dynamic(
+    () => import("@/components/addons/DailyPromptWidget"),
+    { ssr: false }
+  );
+  const InsightsPanel = dynamic(
+    () => import("@/components/addons/InsightsPanel"),
+    { ssr: false }
+  );
+
+  return (
+    <section className="mx-auto max-w-7xl px-3 md:px-6 mt-4 space-y-4 hide-in-focus">
+      <OnboardingCoach
+        hasHabits={hasHabits}
+        hasEntries={entries.length > 0}
+        lang={lang}
+      />
+      <DailyPromptWidget
+        lang={lang}
+        onStart={() => document.dispatchEvent(new CustomEvent("open:quicklog"))}
+      />
+      <InsightsPanel entries={entries} habits={habits} lang={lang} />
+    </section>
+  );
+});
+
+/* ---------- LegacyQuickLog (inline) ---------- */
+const LegacyQuickLog = memo(function LegacyQuickLog({
+  habits,
+  qlog,
+  setQlog,
+  onClose,
+  onSave,
+  t,
+}: {
+  habits: any[];
+  qlog: any;
+  setQlog: (updater: (prev: any) => any) => void;
+  onClose: () => void;
+  onSave: () => void;
+  t: any;
+}) {
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.target === e.currentTarget) onClose();
+    },
+    [onClose]
+  );
+
+  const handleHabitChange = useCallback(
+    (habitId: string) => setQlog((q) => ({ ...q, habitId })),
+    [setQlog]
+  );
+  const handleDoneChange = useCallback(
+    (done: boolean) => setQlog((q) => ({ ...q, done })),
+    [setQlog]
+  );
+  const handleNoteChange = useCallback(
+    (note: string) => setQlog((q) => ({ ...q, note })),
+    [setQlog]
+  );
+
+  return (
+    <div className="fixed inset-0 z-50">
+      <div
+        className="absolute inset-0 bg-black/30"
+        onClick={handleBackdropClick}
+      />
+      <section className="absolute bottom-0 inset-x-0 bg-[var(--bg-0)] rounded-t-2xl p-4 shadow-2xl border border-[var(--line)]">
+        <div className="mx-auto max-w-3xl space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-semibold">{t.qlogTitle}</div>
+            <button
+              type="button"
+              className="text-sm opacity-70 hover:opacity-100"
+              onClick={onClose}
+            >
+              ✕
+            </button>
+          </div>
+          <div className="grid md:grid-cols-4 gap-2">
+            <select
+              className="border p-2 rounded bg-[var(--bg-1)]"
+              value={qlog.habitId}
+              onChange={(e) => handleHabitChange(e.target.value)}
+            >
+              <option value="">{t.qlogPickHabit}</option>
+              {habits.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.icon ? `${h.icon} ${h.name}` : h.name}
+                </option>
+              ))}
+            </select>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className={`px-3 py-2 border rounded bg-[var(--bg-1)] transition-colors ${qlog.done ? "ring-2 ring-indigo-400" : ""}`}
+                onClick={() => handleDoneChange(true)}
+              >
+                {t.qlogDone}
+              </button>
+              <button
+                type="button"
+                className={`px-3 py-2 border rounded bg-[var(--bg-1)] transition-colors ${!qlog.done ? "ring-2 ring-indigo-400" : ""}`}
+                onClick={() => handleDoneChange(false)}
+              >
+                {t.qlogNotDone}
+              </button>
+            </div>
+            <input
+              className="border p-2 rounded md:col-span-2 bg-[var(--bg-1)]"
+              placeholder={t.qlogNotePh}
+              value={qlog.note}
+              onChange={(e) => handleNoteChange(e.target.value)}
+            />
+          </div>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              className="px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={onSave}
+              disabled={!qlog.habitId}
+            >
+              {t.qlogSave}
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+});
+
+/* =============================================================================
+   Main Component
+   ========================================================================== */
+
+export default function DashboardMain() {
   const dispatch = useAppDispatch();
-  const { lang } = useI18n();
   const initialized = useRef(false);
+  const loadingStreaks = useRef(false);
+
+  const { setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
   // Redux state
   const { user, loading: authLoading } = useAppSelector((s) => s.auth);
@@ -173,1162 +910,732 @@ export default function DashboardPage() {
   const currentHabitId = useAppSelector((s) => s.entries.currentHabitId);
 
   // Local state
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [lang, setLang] = useState<Lang>("en");
+  const [bootstrapped, setBootstrapped] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
   const [streaks, setStreaks] = useState<Record<string, Streak>>({});
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [initError, setInitError] = useState<string | null>(null);
 
-  // Modal states
-  const [showCommandPalette, setShowCommandPalette] = useState(false);
-  const [showQuickHabit, setShowQuickHabit] = useState(false);
-  const [showProHabit, setShowProHabit] = useState(false);
-  const [showQuickLog, setShowQuickLog] = useState(false);
-  const [showEntrySheet, setShowEntrySheet] = useState(false);
-
-  // Form states for habits
+  // UI state
   const [newHabit, setNewHabit] = useState("");
-  const [newHabitExtra, setNewHabitExtra] = useState<HabitExtra>({
+  const [newHabitExtra, setNewHabitExtra] = useState<{
+    frequency?: "daily" | "weekly";
+    description?: string;
+    icon?: string | null;
+  }>({
     frequency: "daily",
     description: "",
     icon: null,
   });
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState("");
-  const [habitFilter, setHabitFilter] = useState<HabitFilter>("all");
-  const [habitSearchQuery, setHabitSearchQuery] = useState("");
-
-  // Form states for entries
-  const [entryForm, setEntryForm] = useState({
+  const [editHabit, setEditHabit] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [entryForm, setEntryForm] = useState<{
+    habitId: string;
+    mood: string;
+    reflection: string;
+  }>({
     habitId: "",
     mood: "🙂",
     reflection: "",
   });
-  const [entrySearchQuery, setEntrySearchQuery] = useState("");
+  const [qlog, setQlog] = useState<{
+    habitId: string;
+    note: string;
+    done: boolean;
+  }>({ habitId: "", note: "", done: true });
 
-  // Initialize auth
+  // Modals / sheets
+  const [showQuickLog, setShowQuickLog] = useState(false);
+  const [openAiModal, setOpenAiModal] = useState(false);
+  const [openQuickHabit, setOpenQuickHabit] = useState(false);
+  const [openProHabit, setOpenProHabit] = useState(false);
+  const [openQuickLogPop, setOpenQuickLogPop] = useState(false);
+  const [openEntrySheet, setOpenEntrySheet] = useState(false);
+
+  /* ---------------- Effects ---------------- */
+
+  // Mounted
+  useEffect(() => setMounted(true), []);
+
+  // Language bootstrap + reflect on <html>
+  useEffect(() => {
+    const saved =
+      typeof window !== "undefined"
+        ? ((localStorage.getItem("ms_lang") as Lang | null) ?? "en")
+        : "en";
+    setLang(saved);
+  }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("ms_lang", lang);
+    const html = document.documentElement;
+    html.lang = lang === "ar" ? "ar" : "en";
+    html.dir = lang === "ar" ? "rtl" : "ltr";
+  }, [lang]);
+
+  // Auth init
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
     dispatch(meThunk());
   }, [dispatch]);
 
-  // Initialize dashboard data
+  // Auth checked
   useEffect(() => {
-    if (!user || isInitialized) return;
-    
-    const initDashboard = async () => {
-      try {
-        setInitError(null);
-        await Promise.all([
-          dispatch(fetchHabits()),
-          dispatch(fetchEntries(undefined)),
-        ]);
-        setIsInitialized(true);
-      } catch (error) {
-        console.error("Dashboard initialization error:", error);
-        setInitError(error instanceof Error ? error.message : "Failed to load dashboard");
+    if (!authLoading) setAuthChecked(true);
+  }, [authLoading]);
+
+  // NOTE: ❌ لا نعمل أي redirect على العميل هنا.
+  // الحراسة تُنفَّذ على السيرفر داخل app/dashboard/page.tsx بواسطة redirect().
+
+  // Bootstrap data (habits + entries)
+  const initializeDashboard = useCallback(async () => {
+    if (!user || !authChecked || bootstrapped || isInitializing) return;
+    setIsInitializing(true);
+    try {
+      await Promise.all([
+        dispatch(fetchHabits()),
+        dispatch(fetchEntries(undefined)),
+      ]);
+      setBootstrapped(true);
+    } catch (error) {
+      console.error("Dashboard initialization error:", error);
+    } finally {
+      setIsInitializing(false);
+    }
+  }, [user, authChecked, bootstrapped, isInitializing, dispatch]);
+  useEffect(() => {
+    initializeDashboard();
+  }, [initializeDashboard]);
+
+  // Load streaks once we have habits
+  const loadStreaks = useCallback(async (habitsList: any[]) => {
+    if (!habitsList.length || loadingStreaks.current) return;
+    loadingStreaks.current = true;
+    try {
+      const results = await Promise.allSettled(
+        habitsList.map((h) => habitsService.getStreak(h.id))
+      );
+      const newStreaks: Record<string, Streak> = {};
+      results.forEach((r, i) => {
+        if (r.status === "fulfilled" && r.value)
+          newStreaks[habitsList[i].id] = r.value;
+      });
+      setStreaks((prev) => ({ ...prev, ...newStreaks }));
+    } catch (error) {
+      console.error("Error loading streaks:", error);
+    } finally {
+      loadingStreaks.current = false;
+    }
+  }, []);
+  useEffect(() => {
+    if (habits.length > 0) loadStreaks(habits);
+  }, [habits, loadStreaks]);
+
+  // Anti-refresh guards for anchors/buttons
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (!el) return;
+      const a = el.closest<HTMLAnchorElement>('a[href=""], a[href="#"]');
+      if (a) {
+        e.preventDefault();
+        e.stopPropagation();
       }
     };
-
-    initDashboard();
-  }, [user, dispatch, isInitialized]);
-
-  // Load streaks when habits change
-  useEffect(() => {
-    if (!habits.length) return;
-
-    const loadStreaks = async () => {
-      try {
-        const streakPromises = habits.map((habit) =>
-          habitsService.getStreak(habit.id).then((streak) => ({ habitId: habit.id, streak }))
-        );
-        const results = await Promise.allSettled(streakPromises);
-        
-        const newStreaks: Record<string, Streak> = {};
-        results.forEach((result) => {
-          if (result.status === "fulfilled") {
-            newStreaks[result.value.habitId] = result.value.streak;
-          }
-        });
-        
-        setStreaks(newStreaks);
-      } catch (error) {
-        console.error("Error loading streaks:", error);
-      }
+    const ensureButtonType = (root: ParentNode) => {
+      root
+        .querySelectorAll<HTMLButtonElement>("form button:not([type])")
+        .forEach((b) => (b.type = "button"));
     };
-
-    loadStreaks();
-  }, [habits]);
-
-  // Keyboard shortcuts
-  useHotkeys({
-    "mod+k": () => setShowCommandPalette(true),
-    "mod+h": () => setShowQuickHabit(true),
-    "mod+l": () => setShowQuickLog(true),
-    "mod+shift+h": () => setShowProHabit(true),
-    "mod+shift+l": () => setShowEntrySheet(true),
-    "esc": () => {
-      setShowCommandPalette(false);
-      setShowQuickHabit(false);
-      setShowProHabit(false);
-      setShowQuickLog(false);
-      setShowEntrySheet(false);
-    },
-  });
-
-  // Computed values
-  const stats = useMemo(() => {
-    const now = new Date();
-    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
-    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
-
-    const entriesThisWeek = entries.filter(
-      (entry) => new Date(entry.createdAt) >= weekStart
-    ).length;
-
-    const entriesToday = entries.filter((entry) => {
-      const entryDate = new Date(entry.createdAt);
-      return entryDate >= dayStart && entryDate < dayEnd;
-    }).length;
-
-    const todayCompletion = habits.length > 0 
-      ? Math.round((entriesToday / habits.length) * 100)
-      : 0;
-
-    const currentStreak = Math.max(...Object.values(streaks).map(s => s.current), 0);
-
-    return {
-      totalHabits: habits.length,
-      entriesThisWeek,
-      todayCompletion,
-      currentStreak,
+    ensureButtonType(document);
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((m) => {
+        if (m.type === "childList") {
+          m.addedNodes.forEach((n) => {
+            if (n instanceof HTMLElement) ensureButtonType(n);
+          });
+        }
+      });
+    });
+    document.addEventListener("click", handleClick, true);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      document.removeEventListener("click", handleClick, true);
+      observer.disconnect();
     };
-  }, [habits, entries, streaks]);
+  }, []);
 
+  /* ---------------- Memo ---------------- */
+  const t = useMemo(() => T[lang], [lang]);
+  const dir = useMemo(() => (lang === "ar" ? "rtl" : "ltr"), [lang]);
+  const locale = useMemo(() => (lang === "ar" ? "ar-EG" : "en-US"), [lang]);
+  const hasHabits = useMemo(() => habits.length > 0, [habits.length]);
   const bestHabit = useMemo(
-    () => computeBestHabit(habits, entries, streaks),
+    () => computeBest(habits, entries, streaks),
     [habits, entries, streaks]
   );
 
-  const reportData = useMemo(() => ({
-    line: groupEntriesDaily(entries),
-    heat: groupEntriesDaily(entries),
-    words: wordsFromNotes(entries),
-  }), [entries]);
+  const stats = useMemo(() => {
+    const now = new Date();
+    const weekStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - now.getDay()
+    );
+    const entriesThisWeek = entries.filter(
+      (e) => new Date(e.createdAt) >= weekStart
+    ).length;
 
-  // Handlers
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayEnd = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1
+    );
+    const entriesToday = entries.filter((e) => {
+      const d = new Date(e.createdAt);
+      return d >= dayStart && d < dayEnd;
+    }).length;
+
+    return { entriesThisWeek, entriesToday };
+  }, [entries]);
+
+  /* ---------------- Handlers ---------------- */
+  const goToHabitsTab = useCallback(() => {
+    const labels = [T.en.steps.habits, T.ar.steps.habits];
+    const btn = Array.from(
+      document.querySelectorAll("button,[role='tab']")
+    ).find((b: any) => labels.includes((b.textContent || "").trim()));
+    (btn as HTMLButtonElement | undefined)?.click();
+  }, []);
+
+  const goToReportsTab = useCallback(() => {
+    const labels = [T.en.steps.reports, T.ar.steps.reports];
+    const btn = Array.from(
+      document.querySelectorAll("button,[role='tab']")
+    ).find((b: any) => labels.includes((b.textContent || "").trim()));
+    (btn as HTMLButtonElement | undefined)?.click();
+  }, []);
+
+  const handleQuickLogSave = useCallback(async () => {
+    if (!qlog.habitId) return;
+    try {
+      await dispatch(
+        addEntry({
+          habitId: qlog.habitId,
+          mood: qlog.done ? "🎉" : "😐",
+          reflection: qlog.note || undefined,
+        } as any)
+      );
+      if (currentHabitId)
+        await dispatch(fetchEntries({ habitId: currentHabitId } as any));
+      else await dispatch(fetchEntries(undefined as any));
+      setQlog({ habitId: "", note: "", done: true });
+      setShowQuickLog(false);
+      toast.success(t.qlogSaved);
+    } catch (error) {
+      console.error("Quick log save error:", error);
+      toast.error(t.checkinErr);
+    }
+  }, [qlog, dispatch, currentHabitId, t.qlogSaved, t.checkinErr]);
+
   const handleAddHabit = useCallback(async () => {
     if (!newHabit.trim()) return;
     try {
-      await dispatch(addHabit({ name: newHabit.trim(), ...newHabitExtra }));
-      await dispatch(fetchHabits());
-      toast.success(lang === "ar" ? "تم إضافة العادة بنجاح 🎉" : "Habit added successfully 🎉");
+      await dispatch(
+        addHabit({ name: newHabit.trim(), ...newHabitExtra } as any)
+      );
       setNewHabit("");
       setNewHabitExtra({ frequency: "daily", description: "", icon: null });
-      window.dispatchEvent(new CustomEvent("ms:entry-added"));
     } catch (error) {
-      toast.error(lang === "ar" ? "فشل في إضافة العادة" : "Failed to add habit");
+      console.error("Add habit error:", error);
+      toast.error("فشل في إضافة العادة");
     }
-  }, [dispatch, newHabit, newHabitExtra, lang]);
+  }, [newHabit, newHabitExtra, dispatch]);
 
-  const handleUpdateHabit = useCallback(async (id: string, name: string) => {
-    try {
-      await dispatch(updateHabit({ id, name }));
-      toast.success(lang === "ar" ? "تم تحديث العادة ✅" : "Habit updated ✅");
-    } catch (error) {
-      toast.error(lang === "ar" ? "فشل في تحديث العادة" : "Failed to update habit");
-    }
-  }, [dispatch, lang]);
+  const handleSelectHabit = useCallback(
+    async (habitId: string) => {
+      dispatch(setCurrentHabit(habitId as any));
+      await dispatch(fetchEntries({ habitId } as any));
+      setEntryForm((f) => ({ ...f, habitId }));
 
-  const handleDeleteHabit = useCallback(async (id: string) => {
-    if (!confirm(lang === "ar" ? "هل أنت متأكد من حذف هذه العادة؟" : "Are you sure you want to delete this habit?")) {
-      return;
-    }
-
-    try {
-      await dispatch(deleteHabit(id));
-      if (currentHabitId === id) {
-        dispatch(setCurrentHabit(undefined));
-        await dispatch(fetchEntries(undefined));
+      if (!streaks[habitId]) {
+        try {
+          const streak = await habitsService.getStreak(habitId);
+          setStreaks((prev) => ({ ...prev, [habitId]: streak }));
+        } catch (error) {
+          console.error("Failed to load streak:", error);
+        }
       }
-      toast.success(lang === "ar" ? "تم حذف العادة" : "Habit deleted");
-    } catch (error) {
-      toast.error(lang === "ar" ? "فشل في حذف العادة" : "Failed to delete habit");
-    }
-  }, [dispatch, currentHabitId, lang]);
+    },
+    [dispatch, streaks]
+  );
 
-  const handleCheckinHabit = useCallback(async (habitId: string) => {
-    try {
-      const result = await habitsService.checkin(habitId);
-      const freshStreak = await habitsService.getStreak(habitId);
-      setStreaks((prev) => ({ ...prev, [habitId]: freshStreak }));
+  const handleCheckin = useCallback(
+    async (habitId: string) => {
+      try {
+        const result = await habitsService.checkin(habitId);
+        const freshStreak = await habitsService.getStreak(habitId);
+        setStreaks((prev) => ({ ...prev, [habitId]: freshStreak }));
 
-      if (currentHabitId) {
-        await dispatch(fetchEntries({ habitId: currentHabitId }));
-      } else {
-        await dispatch(fetchEntries(undefined));
+        if (currentHabitId)
+          await dispatch(fetchEntries({ habitId: currentHabitId } as any));
+        else await dispatch(fetchEntries(undefined as any));
+
+        toast.success(t.checkinToast(result.current));
+      } catch (error: any) {
+        console.error("Checkin error:", error);
+        toast.error(error?.data?.error || error?.message || t.checkinErr);
       }
+    },
+    [dispatch, currentHabitId, t.checkinToast, t.checkinErr]
+  );
 
-      toast.success(
-        lang === "ar" 
-          ? `تم التسجيل ✅ — السلسلة الحالية: ${result.current} 🔥`
-          : `Checked in ✅ — Current streak: ${result.current} 🔥`
-      );
-
-      if (result.current > 0 && result.current % 7 === 0) {
-        window.dispatchEvent(new CustomEvent("ms:entry-added"));
+  const handleEditSave = useCallback(
+    async (id: string, name: string) => {
+      if (!name.trim()) return;
+      try {
+        await dispatch(updateHabit({ id, name: name.trim() } as any));
+        setEditHabit(null);
+      } catch (error) {
+        console.error("Edit habit error:", error);
+        toast.error("فشل في تحديث العادة");
       }
-    } catch (error: any) {
-      toast.error(error?.message || (lang === "ar" ? "فشل التسجيل" : "Check-in failed"));
-    }
-  }, [dispatch, currentHabitId, lang]);
+    },
+    [dispatch]
+  );
+
+  const handleDeleteHabit = useCallback(
+    async (id: string) => {
+      try {
+        await dispatch(deleteHabit(id as any));
+        if (currentHabitId === id) {
+          dispatch(setCurrentHabit(undefined as any));
+          await dispatch(fetchEntries(undefined as any));
+        }
+      } catch (error) {
+        console.error("Delete habit error:", error);
+        toast.error("فشل في حذف العادة");
+      }
+    },
+    [dispatch, currentHabitId]
+  );
 
   const handleAddEntry = useCallback(async () => {
     if (!entryForm.habitId) return;
     try {
-      await dispatch(addEntry(entryForm));
-      
-      if (currentHabitId) {
-        await dispatch(fetchEntries({ habitId: currentHabitId }));
-      } else {
-        await dispatch(fetchEntries(undefined));
+      await dispatch(
+        addEntry({
+          habitId: entryForm.habitId,
+          mood: entryForm.mood,
+          reflection: entryForm.reflection || undefined,
+        } as any)
+      );
+      if (currentHabitId)
+        await dispatch(fetchEntries({ habitId: currentHabitId } as any));
+      else await dispatch(fetchEntries(undefined as any));
+      try {
+        const streak = await habitsService.getStreak(entryForm.habitId);
+        setStreaks((prev) => ({ ...prev, [entryForm.habitId]: streak }));
+      } catch (error) {
+        console.error("Failed to update streak:", error);
       }
-      
-      toast.success(lang === "ar" ? "تم إضافة الإدخال ✅" : "Entry added ✅");
-      setEntryForm({ habitId: "", mood: "🙂", reflection: "" });
-      window.dispatchEvent(new CustomEvent("ms:entry-added"));
+      setEntryForm((f) => ({ ...f, reflection: "" }));
+      try {
+        window.dispatchEvent(new CustomEvent("ms:entry-added"));
+      } catch {}
     } catch (error) {
-      toast.error(lang === "ar" ? "فشل في إضافة الإدخال" : "Failed to add entry");
+      console.error("Add entry error:", error);
+      toast.error("فشل في إضافة الإدخال");
     }
-  }, [dispatch, entryForm, currentHabitId, lang]);
+  }, [entryForm, dispatch, currentHabitId]);
 
-  const handleUpdateEntry = useCallback(async (id: string, data: any) => {
-    try {
-      await dispatch(updateEntry({ id, data }));
-      
-      if (currentHabitId) {
-        await dispatch(fetchEntries({ habitId: currentHabitId }));
-      } else {
-        await dispatch(fetchEntries(undefined));
+  const handleEditEntry = useCallback(
+    async (entry: { id: string; reflection?: string }) => {
+      const newText =
+        prompt(t.editEntry + ":", entry.reflection || "") ?? undefined;
+      if (newText === undefined) return;
+      try {
+        await dispatch(
+          updateEntry({ id: entry.id, data: { reflection: newText } } as any)
+        );
+        if (currentHabitId)
+          await dispatch(fetchEntries({ habitId: currentHabitId } as any));
+        else await dispatch(fetchEntries(undefined as any));
+      } catch (error) {
+        console.error("Edit entry error:", error);
+        toast.error("فشل في تحديث الإدخال");
       }
-      
-      toast.success(lang === "ar" ? "تم تحديث الإدخال ✅" : "Entry updated ✅");
-    } catch (error) {
-      toast.error(lang === "ar" ? "فشل في تحديث الإدخال" : "Failed to update entry");
-    }
-  }, [dispatch, currentHabitId, lang]);
+    },
+    [dispatch, currentHabitId, t.editEntry]
+  );
 
-  const handleDeleteEntry = useCallback(async (id: string) => {
-    if (!confirm(lang === "ar" ? "هل أنت متأكد من حذف هذا الإدخال؟" : "Are you sure you want to delete this entry?")) {
-      return;
-    }
-
-    try {
-      await dispatch(deleteEntry(id));
-      
-      if (currentHabitId) {
-        await dispatch(fetchEntries({ habitId: currentHabitId }));
-      } else {
-        await dispatch(fetchEntries(undefined));
+  const handleDeleteEntry = useCallback(
+    async (id: string) => {
+      try {
+        await dispatch(deleteEntry(id as any));
+        if (currentHabitId)
+          await dispatch(fetchEntries({ habitId: currentHabitId } as any));
+        else await dispatch(fetchEntries(undefined as any));
+      } catch (error) {
+        console.error("Delete entry error:", error);
+        toast.error("فشل في حذف الإدخال");
       }
-      
-      toast.success(lang === "ar" ? "تم حذف الإدخال" : "Entry deleted");
-    } catch (error) {
-      toast.error(lang === "ar" ? "فشل في حذف الإدخال" : "Failed to delete entry");
-    }
-  }, [dispatch, currentHabitId, lang]);
+    },
+    [dispatch, currentHabitId]
+  );
 
-  const handleFilterByHabit = useCallback(async (habitId: string | null) => {
-    dispatch(setCurrentHabit(habitId));
-    if (habitId) {
-      await dispatch(fetchEntries({ habitId }));
-    } else {
-      await dispatch(fetchEntries(undefined));
-    }
+  const handleClearFilter = useCallback(async () => {
+    dispatch(setCurrentHabit(undefined as any));
+    await dispatch(fetchEntries(undefined as any));
   }, [dispatch]);
 
-  const handleEditEntry = async (entry: Entry) => {
-    const newReflection = prompt(lang === "ar" ? "تعديل" : "Edit", entry.reflection || "");
-    if (newReflection !== null) {
-      await handleUpdateEntry(entry.id, { reflection: newReflection });
-    }
-  };
+  /* ---------------- Steps config ---------------- */
+  const steps = useMemo(
+    () => [
+      {
+        id: "intro",
+        title: t.steps.intro,
+        content: (
+          <IntroSection
+            lang={lang}
+            t={t}
+            best={bestHabit}
+            onOpenAi={() => setOpenAiModal(true)}
+          />
+        ),
+        ready: true,
+      },
+      {
+        id: "habits",
+        title: t.steps.habits,
+        content: (
+          <HabitsSection
+            lang={lang}
+            i18n={{
+              habitNamePh: t.habitNamePh,
+              add: t.add,
+              save: t.save,
+              cancel: t.cancel,
+              todayDone: t.todayDone,
+              edit: t.edit,
+              del: t.del,
+              checkinToast: t.checkinToast,
+              checkinErr: t.checkinErr,
+              day: t.day,
+              days: t.days,
+            }}
+            habits={habits}
+            currentHabitId={currentHabitId}
+            newHabit={newHabit}
+            newHabitExtra={newHabitExtra}
+            editHabit={editHabit}
+            streaks={streaks}
+            setNewHabit={setNewHabit}
+            setNewHabitExtra={setNewHabitExtra}
+            setEditHabit={setEditHabit}
+            onAddHabit={handleAddHabit}
+            onSelectHabit={handleSelectHabit}
+            onCheckin={handleCheckin}
+            onEditSave={handleEditSave}
+            onDelete={handleDeleteHabit}
+          />
+        ),
+        ready: true,
+      },
+      {
+        id: "entries",
+        title: t.steps.entries,
+        content: (
+          <EntriesSection
+            lang={lang}
+            i18n={{
+              chooseHabit: t.chooseHabit,
+              mood: t.mood,
+              reflectionPh: t.reflectionPh,
+              addEntry: t.addEntry,
+              editEntry: t.editEntry,
+              deleteEntry: t.deleteEntry,
+              clearFilter: t.clearFilter,
+            }}
+            locale={locale}
+            habits={habits}
+            entries={entries}
+            currentHabitId={currentHabitId}
+            entryForm={entryForm}
+            setEntryForm={setEntryForm}
+            onAddEntry={handleAddEntry}
+            onEditEntry={handleEditEntry}
+            onDeleteEntry={handleDeleteEntry}
+            onClearFilter={handleClearFilter}
+          />
+        ),
+        ready: hasHabits,
+      },
+      {
+        id: "reports",
+        title: t.steps.reports,
+        content: (
+          <ReportsSection
+            lang={lang}
+            t={t}
+            entries={entries}
+            compute={{
+              line: groupEntriesDaily(entries),
+              heat: groupEntriesDaily(entries),
+              words: wordsFromNotes(entries),
+            }}
+          />
+        ),
+        ready: true,
+      },
+    ],
+    [
+      lang,
+      t,
+      bestHabit,
+      habits,
+      entries,
+      streaks,
+      currentHabitId,
+      entryForm,
+      newHabit,
+      newHabitExtra,
+      editHabit,
+      hasHabits,
+      locale,
+      handleAddHabit,
+      handleSelectHabit,
+      handleCheckin,
+      handleEditSave,
+      handleDeleteHabit,
+      handleAddEntry,
+      handleEditEntry,
+      handleDeleteEntry,
+      handleClearFilter,
+    ]
+  );
 
-  // Filter habits
-  const filteredHabits = habits.filter((habit) => {
-    const matchesSearch = habit.name.toLowerCase().includes(habitSearchQuery.toLowerCase());
-    const matchesFilter = 
-      habitFilter === "all" ||
-      (habitFilter === "daily" && habit.frequency === "daily") ||
-      (habitFilter === "weekly" && habit.frequency === "weekly") ||
-      (habitFilter === "archived" && false);
-    
-    return matchesSearch && matchesFilter;
-  });
-
-  // Filter entries
-  const filteredEntries = entries.filter((entry) => {
-    const habit = habits.find(h => h.id === entry.habitId);
-    const habitName = habit?.name || "";
-    const reflection = entry.reflection || "";
-    
+  /* ---------------- Render guards ---------------- */
+  if (authLoading || (!authChecked && typeof window !== "undefined")) {
     return (
-      habitName.toLowerCase().includes(entrySearchQuery.toLowerCase()) ||
-      reflection.toLowerCase().includes(entrySearchQuery.toLowerCase()) ||
-      entry.mood.includes(entrySearchQuery)
+      <main dir={dir} className="min-h-[60vh] grid place-items-center">
+        <div className="text-sm text-gray-500">Loading…</div>
+      </main>
     );
-  });
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    const name = user?.email?.split("@")[0]?.replace(/\./g, " ") || "friend";
-    
-    if (lang === "ar") {
-      return hour < 12 ? `صباح الخير، ${name}` : `مساء الخير، ${name}`;
-    }
-    
-    if (hour < 12) return `Good morning, ${name}`;
-    if (hour < 18) return `Good afternoon, ${name}`;
-    return `Good evening, ${name}`;
-  };
-
-  const labels = {
-    dashboard: lang === "ar" ? "لوحة التحكم" : "Dashboard",
-    addHabit: lang === "ar" ? "إضافة عادة" : "Add Habit",
-    quickLog: lang === "ar" ? "تسجيل سريع" : "Quick Log",
-    search: lang === "ar" ? "بحث" : "Search",
-    logout: lang === "ar" ? "تسجيل الخروج" : "Logout",
-    language: lang === "ar" ? "اللغة" : "Language",
-    searchPlaceholder: lang === "ar" ? "ابحث عن عادة أو تقرير..." : "Search habits or reports...",
-    
-    // Tabs
-    overview: lang === "ar" ? "نظرة عامة" : "Overview",
-    habits: lang === "ar" ? "العادات" : "Habits",
-    entries: lang === "ar" ? "الإدخالات" : "Entries",
-    reports: lang === "ar" ? "التقارير" : "Reports",
-
-    // Stats
-    totalHabits: lang === "ar" ? "العادات النشطة" : "Active Habits",
-    entriesThisWeek: lang === "ar" ? "إدخالات هذا الأسبوع" : "This Week's Entries",
-    todayProgress: lang === "ar" ? "إنجاز اليوم" : "Today's Progress",
-    currentStreak: lang === "ar" ? "أطول سلسلة" : "Current Streak",
-    days: lang === "ar" ? "أيام" : "days",
-
-    // Habits
-    addNewHabit: lang === "ar" ? "إضافة عادة جديدة" : "Add New Habit",
-    habitName: lang === "ar" ? "اسم العادة" : "Habit Name",
-    add: lang === "ar" ? "إضافة" : "Add",
-    save: lang === "ar" ? "حفظ" : "Save",
-    cancel: lang === "ar" ? "إلغاء" : "Cancel",
-    edit: lang === "ar" ? "تعديل" : "Edit",
-    delete: lang === "ar" ? "حذف" : "Delete",
-    markDone: lang === "ar" ? "تم اليوم" : "Mark Done",
-    streak: lang === "ar" ? "سلسلة" : "Streak",
-    noHabits: lang === "ar" ? "لا توجد عادات بعد" : "No habits yet",
-    addFirst: lang === "ar" ? "أضف عادتك الأولى للبدء" : "Add your first habit to get started",
-    searchHabits: lang === "ar" ? "ابحث في العادات..." : "Search habits...",
-    filters: lang === "ar" ? "فلاتر" : "Filters",
-
-    // Entries
-    addNewEntry: lang === "ar" ? "إضافة إدخال جديد" : "Add New Entry",
-    chooseHabit: lang === "ar" ? "اختر عادة" : "Choose Habit",
-    mood: lang === "ar" ? "المزاج" : "Mood",
-    reflection: lang === "ar" ? "التأمل (اختياري)" : "Reflection (optional)",
-    noEntries: lang === "ar" ? "لا توجد إدخالات بعد" : "No entries yet",
-    addFirstEntry: lang === "ar" ? "أضف إدخالك الأول" : "Add your first entry",
-    searchEntries: lang === "ar" ? "ابحث في الإدخالات..." : "Search entries...",
-    allHabits: lang === "ar" ? "جميع العادات" : "All Habits",
-    clearFilter: lang === "ar" ? "إزالة الفلتر" : "Clear Filter",
-
-    // Reports
-    reportsTitle: lang === "ar" ? "التقارير والتحليلات" : "Reports & Analytics",
-    reportsSubtitle: lang === "ar" ? "تحليل شامل لتقدمك" : "Comprehensive analysis of your progress",
-    export: lang === "ar" ? "تصدير PDF" : "Export PDF",
-    dailyProgress: lang === "ar" ? "التقدم اليومي" : "Daily Progress",
-    activityHeatmap: lang === "ar" ? "خريطة النشاط" : "Activity Heatmap",
-    wordCloud: lang === "ar" ? "سحابة الكلمات" : "Word Cloud",
-    insights: lang === "ar" ? "رؤى ذكية" : "Smart Insights",
-  };
-
-  // Loading state
-  if (authLoading || !user) {
-    return <DashboardSkeleton lang={lang} />;
   }
 
-  // Error state
-  if (initError) {
+  if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-0)]">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-4xl mb-4">⚠️</div>
-          <h2 className="text-xl font-semibold mb-2">
-            {lang === "ar" ? "خطأ في التحميل" : "Loading Error"}
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
-            {initError}
-          </p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="btn-primary"
-          >
-            {lang === "ar" ? "إعادة المحاولة" : "Try Again"}
-          </button>
-        </div>
+      <div dir={dir} className="max-w-xl mx-auto mt-16 space-y-4">
+        <h1 className="text-2xl font-bold">{t.dash}</h1>
+        <p className="text-sm text-gray-600">{t.mustLogin}</p>
+        <a className="underline" href="/login?next=/dashboard">
+          {t.goLogin}
+        </a>
       </div>
     );
   }
 
-  const moods = ["🙂", "😐", "😢", "😡", "😴", "🎉", "💪", "🧠", "❤️"];
-
-  const end = new Date();
-  const start = new Date();
-  start.setDate(end.getDate() - 180);
-
+  /* ---------------- Main ---------------- */
   return (
-    <div className="min-h-screen bg-[var(--bg-0)] page-enter" dir={lang === "ar" ? "rtl" : "ltr"}>
+    <main
+      dir={dir}
+      className="min-h-screen bg-page text-[var(--ink-1)] pb-28 theme-smooth"
+    >
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-48 bg-gradient-to-r from-indigo-500/10 via-fuchsia-400/10 to-indigo-500/10 blur-2xl hide-in-focus" />
       <ConfettiSuccess />
-      
+
       {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="sticky top-0 z-40 border-b border-[var(--line)] backdrop-blur-xl bg-[var(--bg-0)]/80"
-      >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Left: Logo & Greeting */}
-            <div className="flex items-center space-x-4">
-              <motion.div 
-                className="flex-shrink-0"
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
-              >
-                <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  MindSync
-                </h1>
-              </motion.div>
-              <div className="hidden md:block">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {getGreeting()}
-                </p>
-              </div>
+      <header className="sticky top-0 z-40 border-b border-[var(--line)] backdrop-blur bg-[var(--bg-0)]/75">
+        <div className="mx-auto max-w-7xl px-3 md:px-6 flex items-center justify-between py-3">
+          <div>
+            <div className="text-[11px] uppercase tracking-wider text-mood/90">
+              {t.dash}
             </div>
+            <h1 className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-indigo-500 to-fuchsia-600 bg-clip-text text-transparent">
+              {t.helloTime(
+                (user?.email?.split("@")[0] ?? "").replace(/\./g, " "),
+                new Date().getHours()
+              )}
+            </h1>
+          </div>
 
-            {/* Center: Search */}
-            <div className="flex-1 max-w-lg mx-8">
-              <motion.button
-                onClick={() => setShowCommandPalette(true)}
-                className="w-full flex items-center space-x-3 px-4 py-2 text-left text-gray-500 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-              >
-                <Search size={16} />
-                <span className="text-sm flex-1">
-                  {labels.searchPlaceholder}
-                </span>
-                <div className="ml-auto">
-                  <kbd className="px-2 py-1 text-xs bg-white dark:bg-gray-900 border rounded">
-                    ⌘K
-                  </kbd>
-                </div>
-              </motion.button>
-            </div>
+          <div className="flex items-center gap-2">
+            <select
+              className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
+              value={lang}
+              onChange={(e) => setLang(e.target.value as Lang)}
+              aria-label={t.lang}
+              title={t.lang}
+            >
+              <option value="en">English</option>
+              <option value="ar">العربية</option>
+            </select>
 
-            {/* Right: Actions */}
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setShowQuickLog(true)}
-                className="btn-secondary hidden sm:inline-flex"
-              >
-                <Plus size={16} className="mr-2" />
-                {labels.quickLog}
-              </button>
-              
-              <button
-                onClick={() => setShowProHabit(true)}
-                className="btn-primary"
-              >
-                <Plus size={16} className="mr-2" />
-                <span className="hidden sm:inline">{labels.addHabit}</span>
-                <span className="sm:hidden">Add</span>
-              </button>
-
-              <FocusModeToggle lang={lang} />
-              <MoodMenu />
-
-              <select
-                value={lang}
-                onChange={(e) => {
-                  const { setLang } = require("@/components/ui/i18n");
-                  setLang(e.target.value as "en" | "ar");
-                }}
-                className="px-3 py-1.5 rounded-lg border bg-[var(--bg-1)] text-sm hidden md:block"
-                title={labels.language}
-              >
-                <option value="en">English</option>
-                <option value="ar">العربية</option>
-              </select>
-
-              <ThemeToggle lang={lang} />
-
-              <div className="relative group">
-                <motion.button
-                  onClick={() => dispatch(logoutThunk())}
-                  className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  title={labels.logout}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <User size={18} />
-                </motion.button>
-                
-                <div className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  {labels.logout}
-                </div>
-              </div>
-            </div>
+            <button
+              type="button"
+              className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
+              onClick={goToHabitsTab}
+            >
+              {t.addHabit}
+            </button>
+            <button
+              type="button"
+              className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
+              onClick={() => setShowQuickLog(true)}
+            >
+              {t.quickLog}
+            </button>
+            <button
+              type="button"
+              className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
+              onClick={() => dispatch(logoutThunk())}
+            >
+              {t.logout}
+            </button>
           </div>
         </div>
-      </motion.header>
+      </header>
 
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Overview */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6 }}
-          className="stagger-children mb-8"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { title: labels.totalHabits, value: stats.totalHabits, icon: "🎯" },
-              { title: labels.entriesThisWeek, value: stats.entriesThisWeek, icon: "📅" },
-              { title: labels.todayProgress, value: `${stats.todayCompletion}%`, icon: "📈" },
-              { title: labels.currentStreak, value: stats.currentStreak, sub: labels.days, icon: "🔥" },
-            ].map((stat, index) => (
-              <motion.div
-                key={stat.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ 
-                  duration: 0.5, 
-                  delay: index * 0.1,
-                  type: "spring",
-                  stiffness: 100
-                }}
-                className="stats-card"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="text-2xl">{stat.icon}</div>
-                  <div>
-                    <div className="text-xs uppercase tracking-wider opacity-70">
-                      {stat.title}
-                    </div>
-                    <div className="text-3xl font-extrabold leading-none">{stat.value}</div>
-                    {stat.sub && <div className="text-sm opacity-80 mt-0.5">{stat.sub}</div>}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+      {/* Toolbar */}
+      <section className="mx-auto max-w-7xl px-3 md:px-6 mt-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="flex-1">
+          <SmartSearchBar
+            lang={lang}
+            habits={habits as any}
+            reports={[
+              { id: "line", title: T[lang].reportTitles.line },
+              { id: "heat", title: T[lang].reportTitles.heat },
+              { id: "cloud", title: T[lang].reportTitles.cloud },
+            ]}
+            onPickHabit={handleSelectHabit}
+            onPickReport={goToReportsTab}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <ThemeToggle
+            lang={lang}
+            currentTheme={
+              mounted ? (resolvedTheme as "light" | "dark") : undefined
+            }
+            onChangeTheme={setTheme}
+          />
+          <BackgroundPicker lang={lang} />
+          <FocusModeToggle lang={lang} variant="chip" />
+        </div>
+      </section>
 
-        {/* Navigation Tabs */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="border-b border-[var(--line)] mb-8"
-        >
-          <nav className="flex space-x-8 overflow-x-auto scrollbar-none" aria-label="Tabs">
-            {[
-              { id: "overview" as TabId, label: labels.overview, icon: <BarChart3 size={18} /> },
-              { id: "habits" as TabId, label: labels.habits, icon: <Plus size={18} /> },
-              { id: "entries" as TabId, label: labels.entries, icon: <BookOpen size={18} /> },
-              { id: "reports" as TabId, label: labels.reports, icon: <TrendingUp size={18} /> },
-            ].map((tab) => (
-              <motion.button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
-                whileHover={{ y: -1 }}
-                whileTap={{ y: 0 }}
-              >
-                <div className="flex items-center space-x-2">
-                  <motion.div
-                    animate={{ 
-                      scale: activeTab === tab.id ? 1.1 : 1,
-                      color: activeTab === tab.id ? "var(--brand)" : "currentColor"
-                    }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  >
-                    {tab.icon}
-                  </motion.div>
-                  <span>{tab.label}</span>
-                </div>
-                {activeTab === tab.id && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute inset-x-0 bottom-0 h-0.5 bg-indigo-500 rounded-full"
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                )}
-              </motion.button>
-            ))}
-          </nav>
-        </motion.div>
+      {/* Top helpers */}
+      <TopHelpers
+        lang={lang}
+        hasHabits={hasHabits}
+        habits={habits}
+        entries={entries}
+      />
 
-        {/* Tab Content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            {activeTab === "overview" && (
-              <div className="space-y-6">
-                {/* Welcome Message */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-2xl p-6 border border-indigo-200/50 dark:border-indigo-800/50"
-                >
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    {lang === "ar" ? "مرحباً بك في رحلتك" : "Welcome to your journey"}
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {lang === "ar"
-                      ? "MindSync يساعدك على بناء عادات صحية وتتبع تقدمك اليومي مع رؤى ذكية."
-                      : "MindSync helps you build healthy habits and track your daily progress with smart insights."
-                    }
-                  </p>
-                </motion.div>
+      {/* Mini Stats */}
+      <section className="mx-auto max-w-7xl px-3 md:px-6 py-4 grid grid-cols-1 md:grid-cols-3 gap-3 focus-dim">
+        <AnimatedStatCard
+          lang={lang}
+          title={t.activeHabits}
+          value={habits.length}
+          sub="🧩"
+        />
+        <AnimatedStatCard
+          lang={lang}
+          title={t.entriesThisWeek}
+          value={stats.entriesThisWeek}
+          sub="📆"
+        />
+        <AnimatedStatCard
+          lang={lang}
+          title={t.todayCompletion}
+          value={stats.entriesToday}
+          sub="⚡"
+        />
+      </section>
 
-                <OnboardingCoach 
-                  hasHabits={habits.length > 0} 
-                  hasEntries={entries.length > 0} 
-                  lang={lang}
-                />
+      {/* Today progress bar */}
+      <section className="mx-auto max-w-7xl px-3 md:px-6 -mt-1 mb-3 focus-ring">
+        <ProgressBarToday
+          done={stats.entriesToday}
+          total={Math.max(habits.length, 1)}
+          label={lang === "ar" ? "إنجاز اليوم" : "Today's progress"}
+        />
+      </section>
 
-                <DailyPromptWidget lang={lang} />
+      {/* Steps */}
+      <div className="mx-auto max-w-7xl px-3 md:px-6 pb-8">
+        <StepTabs steps={steps as any} />
+      </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-[var(--line)] p-6 shadow-sm">
-                    <h3 className="text-lg font-semibold mb-4 flex items-center">
-                      <span className="mr-2">🧠</span>
-                      {lang === "ar" ? "تحليل ذكي" : "AI Insights"}
-                    </h3>
-                    <AiReflectionControls />
-                  </div>
-
-                  <StreakMeCard />
-                </div>
-
-                {bestHabit && (
-                  <BestHabitCard
-                    title={bestHabit.habit.name}
-                    weekPoints={bestHabit.weekPoints}
-                    streak={bestHabit.streak}
-                    lang={lang}
-                  />
-                )}
-
-                <AIInsightsCard
-                  lang={lang}
-                  weeklyAvg={3.5}
-                  missedDays={1}
-                />
-
-                <WeeklyGrouped />
-              </div>
-            )}
-
-            {activeTab === "habits" && (
-              <div className="space-y-6">
-                {/* Add Habit Form */}
-                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-[var(--line)] p-6 shadow-sm">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <span className="mr-2">➕</span>
-                    {labels.addNewHabit}
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    <div className="flex gap-3">
-                      <input
-                        placeholder={labels.habitName}
-                        value={newHabit}
-                        onChange={(e) => setNewHabit(e.target.value)}
-                        className="input flex-1"
-                      />
-                      <button 
-                        onClick={handleAddHabit} 
-                        disabled={!newHabit.trim()}
-                        className="btn-primary"
-                      >
-                        {labels.add}
-                      </button>
-                    </div>
-                    
-                    <HabitFormExtra
-                      value={newHabitExtra}
-                      onChange={setNewHabitExtra}
-                      lang={lang}
-                    />
-                  </div>
-                </div>
-
-                {/* Search and Filters */}
-                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-[var(--line)] p-4 shadow-sm">
-                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Filter size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                          placeholder={labels.searchHabits}
-                          value={habitSearchQuery}
-                          onChange={(e) => setHabitSearchQuery(e.target.value)}
-                          className="input pl-10"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{labels.filters}:</span>
-                      <HabitFilters
-                        value={habitFilter}
-                        onChange={setHabitFilter}
-                        lang={lang}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Habits List */}
-                <div className="space-y-4">
-                  <AnimatePresence>
-                    {filteredHabits.length === 0 ? (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700"
-                      >
-                        <div className="text-4xl mb-4">🌱</div>
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                          {habitSearchQuery ? (lang === "ar" ? "لا توجد نتائج" : "No results found") : labels.noHabits}
-                        </h3>
-                        <p className="text-gray-600 dark:text-gray-400">
-                          {habitSearchQuery 
-                            ? (lang === "ar" ? "جرب مصطلح بحث آخر" : "Try a different search term")
-                            : labels.addFirst
-                          }
-                        </p>
-                      </motion.div>
-                    ) : (
-                      filteredHabits.map((habit, index) => (
-                        <motion.div
-                          key={habit.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -20 }}
-                          transition={{ 
-                            duration: 0.3, 
-                            delay: index * 0.05,
-                            type: "spring",
-                            stiffness: 100
-                          }}
-                          className="bg-white dark:bg-gray-900 rounded-2xl border border-[var(--line)] p-4 shadow-sm hover:shadow-md transition-all duration-200"
-                        >
-                          {editingId === habit.id ? (
-                            <div className="flex items-center gap-3">
-                              <input
-                                value={editingName}
-                                onChange={(e) => setEditingName(e.target.value)}
-                                className="input flex-1"
-                                autoFocus
-                              />
-                              <button 
-                                onClick={async () => {
-                                  if (editingName.trim()) {
-                                    await handleUpdateHabit(editingId, editingName.trim());
-                                    setEditingId(null);
-                                    setEditingName("");
-                                  }
-                                }}
-                                className="btn-primary"
-                              >
-                                {labels.save}
-                              </button>
-                              <button 
-                                onClick={() => {
-                                  setEditingId(null);
-                                  setEditingName("");
-                                }}
-                                className="btn-secondary"
-                              >
-                                {labels.cancel}
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="space-y-3">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-3">
-                                  <motion.div 
-                                    className="text-2xl"
-                                    whileHover={{ scale: 1.2, rotate: 5 }}
-                                    transition={{ type: "spring", stiffness: 300 }}
-                                  >
-                                    {habit.icon || "📌"}
-                                  </motion.div>
-                                  <div>
-                                    <h4 className="font-medium text-gray-900 dark:text-white">
-                                      {habit.name}
-                                    </h4>
-                                    <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                                      <span>
-                                        🔥 {streaks[habit.id]?.current || 0} {labels.days}
-                                      </span>
-                                      <span>•</span>
-                                      <span className="capitalize">
-                                        {habit.frequency === "weekly" 
-                                          ? (lang === "ar" ? "أسبوعي" : "Weekly")
-                                          : (lang === "ar" ? "يومي" : "Daily")
-                                        }
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center space-x-2">
-                                  <button
-                                    onClick={() => handleCheckinHabit(habit.id)}
-                                    className="btn-success"
-                                  >
-                                    <CheckCircle size={16} className="mr-1" />
-                                    <span className="hidden sm:inline">{labels.markDone}</span>
-                                    <span className="sm:hidden">✓</span>
-                                  </button>
-                                  
-                                  <button
-                                    onClick={() => {
-                                      setEditingId(habit.id);
-                                      setEditingName(habit.name);
-                                    }}
-                                    className="btn-secondary"
-                                  >
-                                    <Edit2 size={16} className="mr-1" />
-                                    <span className="hidden sm:inline">{labels.edit}</span>
-                                    <span className="sm:hidden">✏️</span>
-                                  </button>
-                                  
-                                  <button
-                                    onClick={() => handleDeleteHabit(habit.id)}
-                                    className="btn-danger"
-                                  >
-                                    <Trash2 size={16} className="mr-1" />
-                                    <span className="hidden sm:inline">{labels.delete}</span>
-                                    <span className="sm:hidden">🗑️</span>
-                                  </button>
-                                </div>
-                              </div>
-
-                              {habit.description && (
-                                <p className="text-sm text-gray-600 dark:text-gray-400 pl-11">
-                                  {habit.description}
-                                </p>
-                              )}
-
-                              <div className="pl-11">
-                                <BadgesRow
-                                  lang={lang}
-                                  streak={streaks[habit.id]?.current || 0}
-                                  weekCount={5}
-                                  consistency={85}
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </motion.div>
-                      ))
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-            )}
-
-            {activeTab === "entries" && (
-              <div className="space-y-6">
-                {/* Add Entry Form */}
-                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-[var(--line)] p-6 shadow-sm">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <span className="mr-2">📝</span>
-                    {labels.addNewEntry}
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <select
-                      className="input"
-                      value={entryForm.habitId}
-                      onChange={(e) => setEntryForm({ ...entryForm, habitId: e.target.value })}
-                    >
-                      <option value="">{labels.chooseHabit}</option>
-                      {habits.map((habit) => (
-                        <option key={habit.id} value={habit.id}>
-                          {habit.icon} {habit.name}
-                        </option>
-                      ))}
-                    </select>
-
-                    <select
-                      className="input"
-                      value={entryForm.mood}
-                      onChange={(e) => setEntryForm({ ...entryForm, mood: e.target.value })}
-                    >
-                      {moods.map((mood) => (
-                        <option key={mood} value={mood}>
-                          {mood}
-                        </option>
-                      ))}
-                    </select>
-
-                    <input
-                      placeholder={labels.reflection}
-                      value={entryForm.reflection}
-                      onChange={(e) => setEntryForm({ ...entryForm, reflection: e.target.value })}
-                      className="input"
-                    />
-
-                    <button 
-                      onClick={handleAddEntry} 
-                      disabled={!entryForm.habitId}
-                      className="btn-primary"
-                    >
-                      {labels.add}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Search and Filter */}
-                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-[var(--line)] p-4 shadow-sm">
-                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Filter size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                          placeholder={labels.searchEntries}
-                          value={entrySearchQuery}
-                          onChange={(e) => setEntrySearchQuery(e.target.value)}
-                          className="input pl-10"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <select
-                        className="input w-auto"
-                        value={currentHabitId || ""}
-                        onChange={(e) => handleFilterByHabit(e.target.value || null)}
-                      >
-                        <option value="">{labels.allHabits}</option>
-                        {habits.map((habit) => (
-                          <option key={habit.id} value={habit.id}>
-                            {habit.icon} {habit.name}
-                          </option>
-                        ))}
-                      </select>
-                      {currentHabitId && (
-                        <button
-                          onClick={() => handleFilterByHabit(null)}
-                          className="btn-secondary"
-                        >
-                          {labels.clearFilter}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Entries List */}
-                <div className="space-y-3">
-                  <AnimatePresence>
-                    {filteredEntries.length === 0 ? (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700"
-                      >
-                        <div className="text-4xl mb-4">📝</div>
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                          {entrySearchQuery ? (lang === "ar" ? "لا توجد نتائج" : "No results found") : labels.noEntries}
-                        </h3>
-                        <p className="text-gray-600 dark:text-gray-400">
-                          {entrySearchQuery 
-                            ? (lang === "ar" ? "جرب مصطلح بحث آخر" : "Try a different search term")
-                            : labels.addFirstEntry
-                          }
-                        </p>
-                      </motion.div>
-                    ) : (
-                      filteredEntries.map((entry, index) => {
-                        const habit = habits.find(h => h.id === entry.habitId);
-                        return (
-                          <motion.div
-                            key={entry.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ 
-                              duration: 0.3, 
-                              delay: index * 0.05,
-                              type: "spring",
-                              stiffness: 100
-                            }}
-                            className="bg-white dark:bg-gray-900 rounded-xl border border-[var(--line)] p-4 shadow-sm hover:shadow-md transition-all duration-200"
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2 mb-2">
-                                  <span className="text-xl">{entry.mood}</span>
-                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    {habit?.icon} {habit?.name}
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    <Calendar size={12} className="inline mr-1" />
-                                    {formatRelativeTime(entry.createdAt, lang)}
-                                  </span>
-                                </div>
-                                {entry.reflection && (
-                                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed pl-7">
-                                    {entry.reflection}
-                                  </p>
-                                )}
-                              </div>
-
-                              <div className="flex items-center space-x-2 ml-4">
-                                <button
-                                  onClick={() => handleEditEntry(entry)}
-                                  className="btn-secondary"
-                                >
-                                  <Edit2 size={14} className="mr-1" />
-                                  <span className="hidden sm:inline">{labels.edit}</span>
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteEntry(entry.id)}
-                                  className="btn-danger"
-                                >
-                                  <Trash2 size={14} className="mr-1" />
-                                  <span className="hidden sm:inline">{labels.delete}</span>
-                                </button>
-                              </div>
-                            </div>
-                          </motion.div>
-                        );
-                      })
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-            )}
-
-            {activeTab === "reports" && (
-              <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {labels.reportsTitle}
-                    </h2>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
-                      {labels.reportsSubtitle}
-                    </p>
-                  </div>
-                  <ExportPdfButton targetId="reports-container" lang={lang} />
-                </div>
-
-                <InsightsPanel
-                  entries={entries}
-                  habits={habits}
-                  lang={lang}
-                />
-
-                <div id="reports-container" className="space-y-6">
-                  <ProgressLine
-                    data={reportData.line}
-                    title={labels.dailyProgress}
-                    lang={lang}
-                  />
-
-                  <EntriesHeatmap
-                    values={reportData.heat}
-                    startDate={start}
-                    endDate={end}
-                    title={labels.activityHeatmap}
-                    lang={lang}
-                  />
-
-                  <NotesWordCloud
-                    words={reportData.words}
-                    title={labels.wordCloud}
-                    lang={lang}
-                  />
-
-                  <MonthlySummary />
-                </div>
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </main>
-
-      {/* Modals and Sheets */}
+      {/* Floating actions */}
+      <FabMenu
+        onQuickHabit={() => setOpenQuickHabit(true)}
+        onProHabit={() => setOpenProHabit(true)}
+        onQuickLog={() => setOpenQuickLogPop(true)}
+        onProEntry={() => setOpenEntrySheet(true)}
+      />
       <CommandPalette
-        open={showCommandPalette}
-        onOpenChange={setShowCommandPalette}
-        onQuickHabit={() => {
-          setShowCommandPalette(false);
-          setShowQuickHabit(true);
-        }}
-        onProHabit={() => {
-          setShowCommandPalette(false);
-          setShowProHabit(true);
-        }}
-        onQuickLog={() => {
-          setShowCommandPalette(false);
-          setShowQuickLog(true);
-        }}
-        onProEntry={() => {
-          setShowCommandPalette(false);
-          setShowEntrySheet(true);
-        }}
+        onQuickHabit={() => setOpenQuickHabit(true)}
+        onProHabit={() => setOpenProHabit(true)}
+        onQuickLog={() => setOpenQuickLogPop(true)}
+        onProEntry={() => setOpenEntrySheet(true)}
       />
 
+      {/* Sheets/Popovers */}
       <QuickAddHabitPopover
-        open={showQuickHabit}
-        onOpenChange={setShowQuickHabit}
+        open={openQuickHabit}
+        onOpenChange={setOpenQuickHabit}
         onAdvanced={() => {
-          setShowQuickHabit(false);
-          setShowProHabit(true);
+          setOpenQuickHabit(false);
+          setOpenProHabit(true);
         }}
       />
-
-      <AddHabitSheet
-        open={showProHabit}
-        onOpenChange={setShowProHabit}
-      />
-
+      <AddHabitSheet open={openProHabit} onOpenChange={setOpenProHabit} />
       <QuickLogPopover
-        open={showQuickLog}
-        onOpenChange={setShowQuickLog}
+        open={openQuickLogPop}
+        onOpenChange={setOpenQuickLogPop}
       />
+      <EntrySheet open={openEntrySheet} onOpenChange={setOpenEntrySheet} />
 
-      <EntrySheet
-        open={showEntrySheet}
-        onOpenChange={setShowEntrySheet}
-      />
-    </div>
+      {/* Legacy Quick Log bottom sheet */}
+      {showQuickLog && (
+        <LegacyQuickLog
+          habits={habits}
+          qlog={qlog}
+          setQlog={setQlog}
+          onClose={() => setShowQuickLog(false)}
+          onSave={handleQuickLogSave}
+          t={t}
+        />
+      )}
+
+      {/* AI Modal */}
+      <PrettyModal
+        open={openAiModal}
+        onClose={() => setOpenAiModal(false)}
+        title={T[lang].aiModalTitle}
+        subtitle={T[lang].aiModalSub}
+        dir={dir as any}
+      >
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--bg-1)] p-3 md:p-4 shadow-sm">
+          <AiReflectionControls />
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setOpenAiModal(false)}
+            className="btn-secondary"
+          >
+            {T[lang].aiClose}
+          </button>
+        </div>
+      </PrettyModal>
+    </main>
   );
 }

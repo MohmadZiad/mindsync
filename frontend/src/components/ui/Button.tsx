@@ -1,8 +1,5 @@
 "use client";
-
 import * as React from "react";
-import { motion } from "framer-motion";
-
 import { cn } from "./cn";
 
 type Variant = "primary" | "muted" | "danger" | "success" | "ghost" | "outline";
@@ -18,7 +15,7 @@ export interface ButtonProps
   fullWidth?: boolean;
 }
 
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
+export function Button({
   className,
   variant = "primary",
   size = "md",
@@ -29,13 +26,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   children,
   disabled,
   ...props
-}, ref) => {
+}: ButtonProps) {
   const base = "btn theme-smooth touch";
   const variants: Record<Variant, string> = {
     primary: "btn--primary",
     muted: "btn--ghost",
     ghost: "btn--ghost",
-    outline: "border border-base bg-[var(--bg-1)] hover:bg-[var(--bg-2)]",
+    outline: "border border-base bg-[var(--bg-1)]",
     danger: "bg-[hsl(var(--danger))] text-white hover:opacity-90",
     success: "bg-[hsl(var(--success))] text-white hover:opacity-90",
   };
@@ -46,8 +43,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   };
 
   return (
-    <motion.button
-      ref={ref}
+    <button
       className={cn(
         base,
         variants[variant],
@@ -57,9 +53,6 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
         className
       )}
       disabled={disabled || loading}
-      whileHover={{ scale: disabled || loading ? 1 : 1.02 }}
-      whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
-      transition={{ type: "spring", stiffness: 400, damping: 17 }}
       {...props}
     >
       <span className="inline-flex items-center gap-2">
@@ -75,8 +68,6 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
         <span className="truncate">{children}</span>
         {rightIcon ? <span className="inline-flex">{rightIcon}</span> : null}
       </span>
-    </motion.button>
+    </button>
   );
-});
-
-Button.displayName = "Button";
+}

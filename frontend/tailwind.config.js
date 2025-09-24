@@ -11,18 +11,19 @@ module.exports = {
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
 
-  // Safelist classes that might be constructed dynamically at runtime
+  // Safelist any classes that might be constructed dynamically at runtime
+  // (e.g., indigo/purple/sky used by your mood bridge or string-built classNames)
   safelist: [
+    // text/bg/border/ring colors often toggled via props or data
     {
       pattern:
         /(text|bg|border|ring)-(indigo|purple|sky)-(50|100|200|300|400|500|600)/,
-      variants: ['hover', 'focus', 'active'],
     },
-    { 
-      pattern: /(from|to)-(indigo|purple|sky)-(300|400|500|600)/, 
-      variants: ['hover', 'focus'] 
-    },
-    // Mood/body classes (applied outside of JSX utility contexts)
+    // gradient endpoints used in legacy headers
+    { pattern: /(from|to)-(indigo|purple|sky)-(300|400|500|600)/ },
+    // state/utility variants that may be composed in strings
+    { pattern: /(hover|focus|active):.*/ },
+    // your mood/body classes (applied outside of JSX utility contexts)
     "moodify-all",
     "mood-calm",
     "mood-focus",
