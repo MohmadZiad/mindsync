@@ -5,8 +5,8 @@ import React, { useEffect } from "react";
 import { Provider as ReduxProvider } from "react-redux";
 import { store } from "@/redux/store";
 import { ThemeProvider } from "next-themes";
-import { ToastProvider } from "@/ui/Toaster";
-import { I18nProvider } from "@/ui/i18n";
+import { ToastProvider } from "@/components/ui/Toaster";
+import { I18nProvider } from "@/components/ui/i18n";
 
 const FOCUS_KEY = "ms-focus"; // "1" | "0"
 

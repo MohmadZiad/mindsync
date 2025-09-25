@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { useI18n } from "@/ui/i18n";
+import { useI18n } from "@/components/ui/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus } from "lucide-react";
 

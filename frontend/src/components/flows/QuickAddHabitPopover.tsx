@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useAppDispatch } from "@/redux/hooks";
 import { addHabit, fetchHabits } from "@/redux/slices/habitSlice";
-import { useI18n } from "@/ui/i18n";
+import { useI18n } from "@/components/ui/i18n";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 

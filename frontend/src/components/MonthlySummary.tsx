@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { entriesService } from "@/services/entries";
-import { Card } from "@/ui/Card";
+import { Card } from "./card";
 
 export default function MonthlySummary() {
   // default: first day of current month -> today (yyyy-mm-dd)

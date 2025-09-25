@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useFormContext } from "react-hook-form";
-import { useI18n } from "@/ui/i18n";
+import { useI18n } from "@/components/ui/i18n";
 
 export function EntryTemplates() {
   const { setValue, watch } = useFormContext<any>();

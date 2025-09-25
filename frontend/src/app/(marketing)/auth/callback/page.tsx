@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch } from "@/redux/hooks";
 import { meThunk } from "@/redux/slices/authSlice";
-import { useI18n } from "@/ui/i18n";
+import { useI18n } from "@/components/ui/i18n";
 
 type Phase = "auth" | "redirect" | "error";
 

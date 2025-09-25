@@ -1,5 +1,5 @@
 "use client";
-import AnimatedCard from "@/ui/AnimatedCard";
+import AnimatedCard from "@/components/ui/AnimatedCard";
 
 export default function AIInsightsCard({
   lang="en",

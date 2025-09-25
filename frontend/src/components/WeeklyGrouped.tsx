@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { entriesService, type WeeklyGroupedResp } from "@/services/entries";
-import { Card } from "@/ui/Card";
+import { Card } from "./card";
 
 export default function WeeklyGrouped() {
   const [data, setData] = useState<WeeklyGroupedResp | null>(null);

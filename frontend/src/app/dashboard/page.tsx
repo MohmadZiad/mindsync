@@ -33,38 +33,37 @@ import type { Streak } from "@/services/streaks";
 import { groupEntriesDaily, wordsFromNotes } from "@/lib/reporting";
 
 /* ---------------- Fixed UI ---------------- */
-import AnimatedStatCard from "@/ui/AnimatedStatCard";
-import SmartSearchBar from "@/ui/SmartSearchBar";
-import ThemeToggle from "@/ui/ThemeToggle";
-import BackgroundPicker from "@/ui/BackgroundPicker";
-import ProgressBarToday from "@/ui/ProgressBarToday";
+import AnimatedStatCard from "@/components/ui/AnimatedStatCard";
+import SmartSearchBar from "@/components/ui/SmartSearchBar";
+import ThemeToggle from "@/components/ui/ThemeToggle";
+import BackgroundPicker from "@/components/ui/BackgroundPicker";
+import ProgressBarToday from "@/components/ui/ProgressBarToday";
 
 /* ---------------- Addons ------------------ */
 import FocusModeToggle from "@/components/addons/FocusModeToggle";
 
 /* ---------------- Lazy chunks ------------- */
 const StepTabs = dynamic(() => import("@/components/StepTabs"), { ssr: false });
-const FabMenu = dynamic(() => import("@/features/habits/flows/FabMenu"), {
+const FabMenu = dynamic(() => import("@/components/flows/FabMenu"), {
   ssr: false,
 });
 const CommandPalette = dynamic(
-  () => import("@/features/habits/flows/CommandPalette"),
+  () => import("@/components/flows/CommandPalette"),
   { ssr: false }
 );
 const QuickAddHabitPopover = dynamic(
-  () => import("@/features/habits/flows/QuickAddHabitPopover"),
+  () => import("@/components/flows/QuickAddHabitPopover"),
   { ssr: false }
 );
 const AddHabitSheet = dynamic(
-  () => import("@/features/habits/flows/AddHabitSheet"),
+  () => import("@/components/flows/AddHabitSheet"),
   { ssr: false }
 );
 const QuickLogPopover = dynamic(
-  () => import("@/features/entries/flows/QuickLogPopover"),
+  () => import("@/components/flows/QuickLogPopover"),
   { ssr: false }
 );
 const EntrySheet = dynamic(() => import("@/components/flows/EntrySheet"), {
-const EntrySheet = dynamic(() => import("@/features/entries/flows/EntrySheet"), {
   ssr: false,
 });
 const ConfettiSuccess = dynamic(
@@ -73,41 +72,41 @@ const ConfettiSuccess = dynamic(
 );
 
 /* ---------------- Section deps (inline sections use these) ---------------- */
-const NoteModal = dynamic(() => import("@/features/entries/components/NoteModal"), {
+const NoteModal = dynamic(() => import("@/components/NoteModal"), {
   ssr: false,
 });
-const HabitFormExtra = dynamic(() => import("@/features/habits/components/HabitFormExtra"));
+const HabitFormExtra = dynamic(() => import("@/components/HabitFormExtra"));
 const AnimatedCard = dynamic(() => import("@/components/ui/AnimatedCard"));
-const StreakMeCard = dynamic(() => import("@/features/habits/components/StreakMeCard"));
+const StreakMeCard = dynamic(() => import("@/components/StreakMeCard"));
 const AiReflectionControls = dynamic(
-  () => import("@/features/entries/components/AiReflectionControls"),
+  () => import("@/components/AiReflectionControls"),
   { ssr: false }
 );
 const ProgressLine = dynamic(
-  () => import("@/features/reports/components/ProgressLine"),
+  () => import("@/components/reports/ProgressLine"),
   { ssr: false }
 );
 const EntriesHeatmap = dynamic(
-  () => import("@/features/reports/components/EntriesHeatmap"),
+  () => import("@/components/reports/EntriesHeatmap"),
   { ssr: false }
 );
 const NotesWordCloud = dynamic(
-  () => import("@/features/reports/components/NotesWordCloud"),
+  () => import("@/components/reports/NotesWordCloud"),
   { ssr: false }
 );
 const ExportPdfButton = dynamic(
-  () => import("@/features/reports/components/ExportPdfButton"),
+  () => import("@/components/reports/ExportPdfButton"),
   { ssr: false }
 );
-const WeeklyGrouped = dynamic(() => import("@/features/entries/components/WeeklyGrouped"), {
+const WeeklyGrouped = dynamic(() => import("@/components/WeeklyGrouped"), {
   ssr: false,
 });
-const MonthlySummary = dynamic(() => import("@/features/entries/components/MonthlySummary"), {
+const MonthlySummary = dynamic(() => import("@/components/MonthlySummary"), {
   ssr: false,
 });
 
 /* ---------------- Modal shell ------------- */
-import PrettyModal from "@/ui/PrettyModal";
+import PrettyModal from "@/components/ui/PrettyModal";
 
 /* ===================== i18n ===================== */
 export type Lang = "en" | "ar";
