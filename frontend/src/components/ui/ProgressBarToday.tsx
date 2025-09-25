@@ -25,53 +25,50 @@ export default function ProgressBarToday({
   intent = "brand",
   className,
 }: ProgressBarTodayProps) {
+  // percentage (0..100)
   const pct = React.useMemo(() => {
-    if (!total || total < 0) return 0;
+    if (!total || total <= 0) return 0;
     const p = Math.round((Math.max(0, done) / Math.max(1, total)) * 100);
     return Math.min(100, Math.max(0, p));
   }, [done, total]);
 
   const dir = lang === "ar" ? "rtl" : "ltr";
-  const text =
-    typeof label === "string"
+
+  // label text (respect string or {en,ar} or default)
+  const text: string = React.useMemo(() => {
+    if (typeof label === "string") return label;
+    if (label) return lang === "ar" ? label.ar : label.en;
+    return lang === "ar" ? "إنجاز اليوم" : "Today’s Progress";
+  }, [label, lang]);
+
   const ref = React.useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true });
-  
-      ? label
-      : label
-      ? lang === "ar"
-        ? label.ar
-        : label.en
-      : lang === "ar"
-      ? "إنجاز اليوم"
-      : "Today’s Progress";
 
+  // padding/height by size
   const pad = size === "sm" ? "p-4" : size === "lg" ? "p-6" : "p-5";
   const barH = size === "sm" ? "h-2" : size === "lg" ? "h-4" : "h-3";
 
-  const gradients = {
+  // bar colors
+  const gradients: Record<
+    NonNullable<ProgressBarTodayProps["intent"]>,
+    string
+  > = {
     brand: "linear-gradient(90deg, var(--brand), var(--brand-accent))",
     success: "linear-gradient(90deg, #10b981, #059669)",
     warning: "linear-gradient(90deg, #f59e0b, #d97706)",
     danger: "linear-gradient(90deg, #ef4444, #dc2626)",
   };
-  
   const barBg = gradients[intent];
-  
-  const bgColors = {
+
+  const bgColors: Record<
+    NonNullable<ProgressBarTodayProps["intent"]>,
+    string
+  > = {
     brand: "bg-[var(--brand)]/10",
     success: "bg-green-100 dark:bg-green-900/20",
     warning: "bg-yellow-100 dark:bg-yellow-900/20",
     danger: "bg-red-100 dark:bg-red-900/20",
   };
-
-    intent === "success"
-      ? "linear-gradient(90deg,#22c55e,#16a34a)"
-      : intent === "warning"
-      ? "linear-gradient(90deg,#f59e0b,#f97316)"
-      : intent === "danger"
-      ? "linear-gradient(90deg,#ef4444,#dc2626)"
-      : "linear-gradient(90deg,#6D5EF1,#F15ECC)"; // brand
 
   const labelId = React.useId();
 
@@ -83,13 +80,11 @@ export default function ProgressBarToday({
       initial={{ opacity: 0, y: 20 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className={`card-elevated ${bgColors[intent]} ${pad} ${
-        className || ""
-      }`}
+      className={`card-elevated ${bgColors[intent]} ${pad} ${className ?? ""}`}
     >
       <header className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <motion.div 
+          <motion.div
             className="text-2xl"
             animate={{ rotate: [0, 10, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
@@ -97,7 +92,10 @@ export default function ProgressBarToday({
             ⚡
           </motion.div>
           <div>
-            <div id={labelId} className="text-sm font-medium text-[var(--ink-2)]">
+            <div
+              id={labelId}
+              className="text-sm font-medium text-[var(--ink-2)]"
+            >
               {text}
             </div>
             {showCount && (
@@ -107,7 +105,7 @@ export default function ProgressBarToday({
             )}
           </div>
         </div>
-        <motion.div 
+        <motion.div
           className="text-2xl font-bold text-[var(--brand)]"
           initial={{ scale: 0 }}
           animate={inView ? { scale: 1 } : {}}
@@ -133,7 +131,7 @@ export default function ProgressBarToday({
           animate={inView ? { width: `${pct}%` } : {}}
           transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
         >
-          {/* Animated shine effect */}
+          {/* Animated shine effect (تأكد أن لديك keyframes shimmer في CSS) */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[shimmer_2s_infinite]" />
         </motion.div>
       </div>

@@ -113,11 +113,3 @@ export default function PrettyModal({
     </AnimatePresence>
   );
 }
-            </div>
-            <div className="mt-4">{children}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}

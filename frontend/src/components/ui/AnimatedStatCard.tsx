@@ -104,11 +104,3 @@ export default function AnimatedStatCard({
     </motion.div>
   );
 }
-          {title}
-        </div>
-        <div className="text-3xl font-extrabold leading-none">{value}</div>
-        {sub ? <div className="text-sm opacity-80 mt-0.5">{sub}</div> : null}
-      </div>
-    </motion.div>
-  );
-}
