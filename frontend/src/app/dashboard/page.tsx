@@ -485,76 +485,142 @@ const HabitsSection = memo(function HabitsSection(props: {
         {habits.map((h) => {
           const curr = streaks[h.id]?.current ?? 0;
           return (
-            <li
+            <motion.li
               key={h.id}
-              className="border border-[var(--line)] rounded-2xl p-3 bg-[var(--bg-1)] shadow-sm card-hover"
+              className="group relative"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: habits.indexOf(h) * 0.05 }}
+              layout
             >
-              {editHabit && editHabit.id === h.id ? (
-                <div className="flex gap-2 w-full">
-                  <input
-                    className="input flex-1"
-                    value={editHabit.name}
-                    onChange={(e) =>
-                      setEditHabit({ id: h.id, name: e.target.value })
-                    }
-                  />
-                  <button
-                    className="btn-primary"
-                    onClick={() => onEditSave(h.id, editHabit.name)}
+              <div className="card-interactive p-5 h-full">
+                {/* Gradient overlay for active state */}
+                {currentHabitId === h.id && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-[var(--brand)]/10 to-[var(--brand-accent)]/5 rounded-2xl" />
+                )}
+                
+                {editHabit && editHabit.id === h.id ? (
+                  <motion.div 
+                    className="flex gap-3 w-full"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                   >
-                    {i18n.save}
-                  </button>
-                  <button
-                    className="btn-secondary"
-                    onClick={() => setEditHabit(null)}
-                  >
-                    {i18n.cancel}
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between gap-3">
-                  <button
-                    className={`text-left flex-1 ${currentHabitId === h.id ? "font-semibold underline" : ""}`}
-                    onClick={() => onSelectHabit(h.id)}
-                    title={h.name}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{h.icon ?? "📌"}</span>
-                      <div className="flex items-center gap-2">
-                        <span>{h.name}</span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
-                          🔥 {curr}{" "}
-                          {curr === 1
-                            ? (i18n.day ?? "day")
-                            : (i18n.days ?? "days")}
-                        </span>
+                    <input
+                      className="input flex-1"
+                      value={editHabit.name}
+                      onChange={(e) =>
+                        setEditHabit({ id: h.id, name: e.target.value })
+                      }
+                      autoFocus
+                    />
+                    <button
+                      className="btn-primary-sm"
+                      onClick={() => onEditSave(h.id, editHabit.name)}
+                    >
+                      {i18n.save}
+                    </button>
+                    <button
+                      className="btn-secondary px-4 py-2 text-sm"
+                      onClick={() => setEditHabit(null)}
+                    >
+                      {i18n.cancel}
+                    </button>
+                  </motion.div>
+                ) : (
+                  <div className="relative space-y-4">
+                    {/* Main content */}
+                    <button
+                      className="text-left w-full group/habit"
+                      onClick={() => onSelectHabit(h.id)}
+                      title={h.name}
+                    >
+                      <div className="flex items-start gap-3">
+                        <motion.div 
+                          className="text-2xl p-2 rounded-xl bg-[var(--bg-2)] group-hover/habit:bg-[var(--brand)]/10 transition-colors duration-200"
+                          whileHover={{ scale: 1.1, rotate: 5 }}
+                          transition={{ type: "spring", stiffness: 400 }}
+                        >
+                          {h.icon ?? "📌"}
+                        </motion.div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className={cn(
+                            "font-semibold text-[var(--ink-1)] mb-1 transition-colors duration-200",
+                            currentHabitId === h.id && "text-[var(--brand)]"
+                          )}>
+                            {h.name}
+                          </div>
+                          
+                          {h.description && (
+                            <div className="text-sm text-[var(--ink-2)] line-clamp-2 mb-2">
+                              {h.description}
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-2">
+                            <span className={cn(
+                              "inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium",
+                              curr > 0 
+                                ? "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+                                : "bg-[var(--bg-3)] text-[var(--ink-3)]"
+                            )}>
+                              🔥 {curr} {curr === 1 ? (i18n.day ?? "day") : (i18n.days ?? "days")}
+                            </span>
+                            
+                            <span className="text-xs px-2 py-1 rounded-full bg-[var(--bg-3)] text-[var(--ink-3)]">
+                              {h.frequency === "weekly" ? "أسبوعي" : "يومي"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
+                    </button>
+                    
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <motion.button
+                        className="btn-primary-sm flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCheckin(h.id);
+                        }}
+                        title={i18n.todayDone}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <span className="text-base">✓</span>
+                        {i18n.todayDone}
+                      </motion.button>
+                      
+                      <motion.button
+                        className="btn-ghost p-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditHabit({ id: h.id, name: h.name });
+                        }}
+                        title={i18n.edit}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <span className="text-base">✏️</span>
+                      </motion.button>
+                      
+                      <motion.button
+                        className="btn-ghost p-2 text-[var(--error)] hover:bg-[var(--error-bg)]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(h.id);
+                        }}
+                        title={i18n.del}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <span className="text-base">🗑️</span>
+                      </motion.button>
                     </div>
-                  </button>
-                  <div className="flex items-center gap-2">
-                    <button
-                      className="text-sm px-2 py-1 rounded bg-green-600 text-white"
-                      onClick={() => onCheckin(h.id)}
-                      title={i18n.todayDone}
-                    >
-                      {i18n.todayDone}
-                    </button>
-                    <button
-                      className="text-sm px-2 py-1 border rounded"
-                      onClick={() => setEditHabit({ id: h.id, name: h.name })}
-                    >
-                      {i18n.edit}
-                    </button>
-                    <button
-                      className="text-sm px-2 py-1 rounded bg-red-600 text-white"
-                      onClick={() => onDelete(h.id)}
-                    >
-                      {i18n.del}
-                    </button>
                   </div>
-                </div>
-              )}
-            </li>
+                )}
+              </div>
+            </motion.li>
           );
         })}
       </ul>
@@ -1450,13 +1516,13 @@ export default function DashboardMain() {
       <ConfettiSuccess />
 
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-[var(--line)] backdrop-blur bg-[var(--bg-0)]/75">
+      <header className="sticky top-0 z-40 border-b border-[var(--line)]/50 backdrop-blur-xl bg-[var(--bg-0)]/80 shadow-sm">
         <div className="mx-auto max-w-7xl px-3 md:px-6 flex items-center justify-between py-3">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-mood/90">
+            <div className="text-xs uppercase tracking-wider text-[var(--ink-3)] font-medium">
               {t.dash}
             </div>
-            <h1 className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-indigo-500 to-fuchsia-600 bg-clip-text text-transparent">
+            <h1 className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] bg-clip-text text-transparent">
               {t.helloTime(
                 (user?.email?.split("@")[0] ?? "").replace(/\./g, " "),
                 new Date().getHours()
@@ -1464,9 +1530,9 @@ export default function DashboardMain() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <select
-              className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
+              className="input-sm min-w-[120px]"
               value={lang}
               onChange={(e) => setLang(e.target.value as Lang)}
               aria-label={t.lang}
@@ -1478,23 +1544,26 @@ export default function DashboardMain() {
 
             <button
               type="button"
-              className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
+              className="btn-primary-sm"
               onClick={goToHabitsTab}
             >
+              <span className="text-base">➕</span>
               {t.addHabit}
             </button>
             <button
               type="button"
-              className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
+              className="btn-secondary px-4 py-2 text-sm"
               onClick={() => setShowQuickLog(true)}
             >
+              <span className="text-base">📝</span>
               {t.quickLog}
             </button>
             <button
               type="button"
-              className="px-3 py-1.5 rounded-xl border bg-[var(--bg-1)]"
+              className="btn-ghost px-4 py-2 text-sm text-[var(--error)] hover:bg-[var(--error-bg)]"
               onClick={() => dispatch(logoutThunk())}
             >
+              <span className="text-base">🚪</span>
               {t.logout}
             </button>
           </div>

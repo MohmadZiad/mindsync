@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "./cn";
 
 type Size = "sm" | "md" | "lg";
@@ -12,6 +13,8 @@ type InputProps = Native & {
   hint?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  label?: string;
+  animated?: boolean;
 };
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
@@ -23,60 +26,119 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       hint,
       leftIcon,
       rightIcon,
+      label,
+      animated = true,
       ...rest
     } = props;
+    
+    const [focused, setFocused] = React.useState(false);
+    const inputId = React.useId();
 
     const sizes: Record<Size, string> = {
-      sm: "h-9 text-sm rounded-xl",
-      md: "h-10 text-sm rounded-xl",
-      lg: "h-11 text-base rounded-2xl",
+      sm: "h-10 text-sm rounded-lg px-3",
+      md: "h-12 text-sm rounded-xl px-4",
+      lg: "h-14 text-base rounded-xl px-5",
     };
 
     // ثبّت النوع بعد إزالة التضارب
     const sz: Size = uiSize;
     const withIcons = Boolean(leftIcon || rightIcon);
+    const hasError = Boolean(error);
 
     const inputEl = (
-      <input
+      <motion.input
+        id={inputId}
         ref={ref}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         className={cn(
-          "input w-full bg-[var(--bg-0)] border border-base theme-smooth",
+          "w-full bg-[var(--bg-1)] border transition-all duration-200 outline-none",
+          "placeholder:text-[var(--ink-3)]",
           sizes[sz],
-          withIcons && "pl-9 pr-9",
-          error && "border-[hsl(var(--danger))] focus:ring-0",
+          withIcons && (sz === "sm" ? "pl-10 pr-10" : sz === "lg" ? "pl-12 pr-12" : "pl-11 pr-11"),
+          hasError 
+            ? "border-[var(--error)] focus:ring-2 focus:ring-[var(--error)]/20" 
+            : "border-[var(--line)] focus:ring-2 focus:ring-[var(--brand)]/30 focus:border-[var(--brand)] hover:border-[var(--line-strong)]",
           className
         )}
-        aria-invalid={!!error || undefined}
+        aria-invalid={hasError || undefined}
+        aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
+        whileFocus={animated ? { scale: 1.01 } : undefined}
         {...rest}
       />
     );
 
-    if (!withIcons && !hint && !error) return inputEl;
+    if (!withIcons && !hint && !error && !label) return inputEl;
 
     return (
-      <div className="w-full">
-        <div className="relative">
+      <div className="w-full space-y-2">
+        {label && (
+          <motion.label 
+            htmlFor={inputId}
+            className="label"
+            initial={animated ? { opacity: 0, y: -10 } : undefined}
+            animate={animated ? { opacity: 1, y: 0 } : undefined}
+            transition={{ duration: 0.2 }}
+          >
+            {label}
+          </motion.label>
+        )}
+        
+        <div className="relative group">
           {leftIcon && (
-            <span className="absolute inset-y-0 left-2 grid place-items-center text-muted">
+            <motion.span 
+              className={cn(
+                "absolute inset-y-0 grid place-items-center text-[var(--ink-3)] transition-colors duration-200",
+                sz === "sm" ? "left-3" : sz === "lg" ? "left-4" : "left-3.5"
+              )}
+              animate={focused ? { color: "var(--brand)", scale: 1.1 } : {}}
+              transition={{ duration: 0.2 }}
+            >
               {leftIcon}
-            </span>
+            </motion.span>
           )}
           {inputEl}
           {rightIcon && (
-            <span className="absolute inset-y-0 right-2 grid place-items-center text-muted">
+            <motion.span 
+              className={cn(
+                "absolute inset-y-0 grid place-items-center text-[var(--ink-3)] transition-colors duration-200",
+                sz === "sm" ? "right-3" : sz === "lg" ? "right-4" : "right-3.5"
+              )}
+              animate={focused ? { color: "var(--brand)", scale: 1.1 } : {}}
+              transition={{ duration: 0.2 }}
+            >
               {rightIcon}
-            </span>
+            </motion.span>
           )}
+          
+          {/* Focus ring enhancement */}
+          <motion.div
+            className="absolute inset-0 rounded-xl border-2 border-[var(--brand)] pointer-events-none"
+            initial={{ opacity: 0, scale: 1.02 }}
+            animate={focused ? { opacity: 0.3, scale: 1 } : { opacity: 0, scale: 1.02 }}
+            transition={{ duration: 0.2 }}
+          />
         </div>
-        {(hint || error) && (
-          <div
-            className={cn(
-              "mt-1 text-xs",
-              error ? "text-[hsl(var(--danger))]" : "text-muted"
-            )}
-          >
-            {typeof error === "string" ? error : hint}
-          </div>
+        
+        <AnimatePresence>
+          {(hint || error) && (
+            <motion.div
+              id={error ? `${inputId}-error` : `${inputId}-hint`}
+              className={cn(
+                "text-sm flex items-center gap-2",
+                hasError ? "text-[var(--error)]" : "text-[var(--ink-2)]"
+              )}
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.2 }}
+            >
+              {hasError && <span className="text-base">⚠️</span>}
+              {!hasError && hint && <span className="text-base">💡</span>}
+              <span>{typeof error === "string" ? error : hint}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
         )}
       </div>
     );
